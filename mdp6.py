@@ -8,11 +8,12 @@ from collections import defaultdict
 import osmnx as ox
 import numpy as np
 
+from algorithm import Algorithm
 from lib import get_angle
 from lib import get_edge_cost
 
 
-class MDP(object):
+class MDP(Algorithm):
     def __init__(self, G):
         self.G = ox.project_graph(G)
         self.S = set({})  # [node1, node2, ..]
@@ -60,7 +61,10 @@ class MDP(object):
         for edge in self.G.edges():
             self.C[edge] = get_edge_cost(self.G, *edge)
 
-    def setup(self):
+    def setup(self, start, goal):
+        self.start = start
+        self.goal = goal
+
         self.remove_zero_cost_loops()
         self.remove_dead_ends()
         self._setup()
@@ -291,6 +295,10 @@ class MDP(object):
             nodes.append(curr_node)
 
         return nodes
+
+    def solve(self):
+        V, Q = self.solve_value_iteration()
+        return self.get_policy(V)
 
 
 if __name__ == '__main__':

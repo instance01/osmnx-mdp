@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import osmnx as ox
 import networkx as nx
 
+from algorithm import Algorithm
 from lib import aerial_dist
 from lib import get_node_properties
 
@@ -11,7 +12,7 @@ from lib import get_node_properties
 # TODO: unittests
 
 
-class LPA_Star(object):
+class LPA_Star(Algorithm):
     def __init__(self, G):
         self.G = G
         # TODO Don't hardcode start/goal lmao

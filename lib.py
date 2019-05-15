@@ -32,6 +32,8 @@ def get_angle(p1, p2, origin):
 
 
 def aerial_dist(node1, node2, R=6356.8):
+    # TODO: Use osmnx
+    # great_circle_vec(lat1, lng1, lat2, lng2, earth_radius=6371009)
     """Haversine
     R shall be radius of earth in km.
 

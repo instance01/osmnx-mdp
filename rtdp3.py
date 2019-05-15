@@ -2,13 +2,14 @@ import pickle
 
 import numpy as np
 
+from algorithm import Algorithm
 from lib import aerial_dist
 from lib import get_time_to_drive
 from lib import draw_value_graph
 from mdp6 import MDP
 
 
-class RTDP(object):
+class RTDP(Algorithm):
     def __init__(self, mdp):
         self.mdp = mdp
         self.H = {}
@@ -16,10 +17,14 @@ class RTDP(object):
         self.start = 246878841
         self.goal = 372796487
 
-    def setup(self):
+    def setup(self, start, goal):
+        self.start = start
+        self.goal = goal
         self.G = self.mdp.G
-        goal = self.G.nodes.data()[self.goal]
         self.Q = {}
+
+        goal = self.G.nodes.data()[self.goal]
+
         for node in self.G.nodes.data():
             # TODO: Below comment is outdated, multiplier not needed anymore.
             # The heuristic has to be admissible. Apparently *10 or even no
@@ -69,6 +74,13 @@ class RTDP(object):
         for _ in range(n):
             path = self._run_trial()
         return path
+
+    def solve(self):
+        return self.run_trials()
+
+    # TODO
+    # def drive(self, policy, start, goal):
+    #     pass
 
 
 if __name__ == '__main__':

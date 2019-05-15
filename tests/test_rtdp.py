@@ -16,9 +16,7 @@ class TestRTDP(unittest.TestCase):
         mdp.make_goal_self_absorbing()
 
         rtdp = rtdp3.RTDP(mdp)
-        rtdp.start = 1
-        rtdp.goal = 6
-        rtdp.setup()
+        rtdp.setup(start=1, goal=6)
         path = rtdp.run_trials(10)
         self.assertEqual(path, [1, 2, 4, 6])
 
