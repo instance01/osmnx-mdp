@@ -39,7 +39,7 @@ class MDP(object):
         self.P[node][(node, self.goal)] = [(self.goal, 1.0)]
         self.C[(node, self.goal)] = 100000.
 
-    def setup(self):
+    def _setup(self):
         for node in self.G.nodes():
             self.S.add(node)
             self.A[node] = [edge for edge in self.G.edges(nbunch=node)]
@@ -59,6 +59,13 @@ class MDP(object):
 
         for edge in self.G.edges():
             self.C[edge] = get_edge_cost(self.G, *edge)
+
+    def setup(self):
+        self.remove_zero_cost_loops()
+        self.remove_dead_ends()
+        self._setup()
+        self.make_goal_self_absorbing()
+        self.angle_nodes = self.update_uncertain_intersections()
 
     def make_goal_self_absorbing(self):
         """Add a zero-cost loop at the goal to absorb cost.
@@ -291,11 +298,7 @@ if __name__ == '__main__':
         G = pickle.load(f)
 
     mdp = MDP(G)
-    mdp.remove_zero_cost_loops()
-    mdp.remove_dead_ends()
     mdp.setup()
-    mdp.make_goal_self_absorbing()  # TODO: This could be moved into setup()
-    mdp.angle_nodes = mdp.update_uncertain_intersections()
     V, Q = mdp.solve_value_iteration()
 
     with open('model5.pickle', 'wb+') as f:

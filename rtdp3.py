@@ -76,11 +76,7 @@ if __name__ == '__main__':
         G = pickle.load(f)
 
     mdp = MDP(G)
-    mdp.remove_zero_cost_loops()
-    mdp.remove_dead_ends()
     mdp.setup()
-    mdp.make_goal_self_absorbing()
-    mdp.angle_nodes = mdp.update_uncertain_intersections()
 
     rtdp = RTDP(mdp)
     rtdp.init()

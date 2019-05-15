@@ -12,7 +12,7 @@ class TestRTDP(unittest.TestCase):
         mdp.start = 1
         mdp.goal = 6
         mdp.remove_zero_cost_loops()
-        mdp.setup()
+        mdp._setup()
         mdp.make_goal_self_absorbing()
 
         rtdp = rtdp3.RTDP(mdp)

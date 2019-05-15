@@ -89,7 +89,7 @@ class MDPTest(unittest.TestCase):
     def test_mdp_setup(self):
         mdp = mdp6.MDP(_setup_mdp())
         mdp.goal = 6
-        mdp.setup()
+        mdp._setup()
 
         A, C, P, S = self._get_initialized_mdp_attrs()
 
@@ -104,7 +104,7 @@ class MDPTest(unittest.TestCase):
         project_graph_mock.return_value = G
         mdp = mdp6.MDP(G)
         mdp.goal = 6
-        mdp.setup()
+        mdp._setup()
         A, C, P, S = self._get_initialized_mdp_attrs()
         mdp.A = A
         mdp.C = C
@@ -136,7 +136,7 @@ class MDPTest(unittest.TestCase):
         project_graph_mock.return_value = G
         mdp = mdp6.MDP(G)
         mdp.goal = 6
-        mdp.setup()
+        mdp._setup()
         angles = mdp.update_uncertain_intersections()
         self.assertEqual(angles, [])
 
@@ -160,7 +160,7 @@ class MDPTest(unittest.TestCase):
         project_graph_mock.return_value = G
         mdp = mdp6.MDP(G)
         mdp.goal = 6
-        mdp.setup()
+        mdp._setup()
         angles = mdp.update_uncertain_intersections()
         self.assertEqual(angles, [2])
 
@@ -183,7 +183,7 @@ class MDPTest(unittest.TestCase):
         project_graph_mock.return_value = G
         mdp = mdp6.MDP(G)
         mdp.goal = 6
-        mdp.setup()
+        mdp._setup()
         angles = mdp.update_uncertain_intersections()
         self.assertEqual(angles, [])
 
