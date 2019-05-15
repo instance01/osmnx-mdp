@@ -18,7 +18,7 @@ class TestRTDP(unittest.TestCase):
         rtdp = rtdp3.RTDP(mdp)
         rtdp.start = 1
         rtdp.goal = 6
-        rtdp.init()
+        rtdp.setup()
         path = rtdp.run_trials(10)
         self.assertEqual(path, [1, 2, 4, 6])
 

@@ -16,7 +16,7 @@ class RTDP(object):
         self.start = 246878841
         self.goal = 372796487
 
-    def init(self):
+    def setup(self):
         self.G = self.mdp.G
         goal = self.G.nodes.data()[self.goal]
         self.Q = {}
@@ -79,7 +79,7 @@ if __name__ == '__main__':
     mdp.setup()
 
     rtdp = RTDP(mdp)
-    rtdp.init()
+    rtdp.setup()
     path = rtdp.run_trials()
 
     time_to_drive = get_time_to_drive(path, rtdp.G)  # Minutes
