@@ -8,5 +8,5 @@ class Algorithm(object):
     def solve(self):
         raise NotImplementedError
 
-    def drive(self, policy, start, goal):
+    def drive(self, policy, diverge_policy):
         raise NotImplementedError

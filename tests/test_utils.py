@@ -4,12 +4,12 @@ import networkx as nx
 def _setup_mdp():
     G = nx.MultiDiGraph()
 
-    G.add_node(1, x=0, y=0)
-    G.add_node(2, x=2, y=0)
-    G.add_node(3, x=3, y=1)
-    G.add_node(4, x=3, y=1.2)
-    G.add_node(5, x=0, y=2)
-    G.add_node(6, x=4, y=1)
+    G.add_node(1, x=0, y=0, lat=0, lon=0)
+    G.add_node(2, x=2, y=0, lat=2, lon=0)
+    G.add_node(3, x=3, y=1, lat=3, lon=1)
+    G.add_node(4, x=3, y=1.2, lat=3, lon=1.2)
+    G.add_node(5, x=0, y=2, lat=0, lon=2)
+    G.add_node(6, x=4, y=1, lat=4, lon=1)
 
     G.add_edge(1, 2, length=6.)
     G.add_edge(1, 5, length=6.)

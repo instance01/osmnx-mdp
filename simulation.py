@@ -1,8 +1,11 @@
+import random
 import pickle
 from timeit import default_timer as timer
 
+import numpy as np
 import osmnx as ox
 
+from lib import draw_value_graph
 from mdp6 import MDP
 from rtdp3 import RTDP
 from lpa_star5 import LPA_Star
@@ -58,7 +61,7 @@ def load_maps():
             LOCATIONS[map_id][i]['goal'] = ox.utils.get_nearest_node(G, location['goal'])
 
 
-def run_simulation(algorithm, map_id, start, goal, diverge_policy):
+def run_simulation(algorithm, map_id, start, goal, diverge_policy, debug=False):
     """Run a simulation on a map using a specific algorithm.
 
     Algorithm shall be an algorithm class such as RTDP or D* Lite that
@@ -75,22 +78,38 @@ def run_simulation(algorithm, map_id, start, goal, diverge_policy):
 
     algorithm.setup(start, goal)
     policy = algorithm.solve()
-    path = algorithm.drive(policy, start, goal)
+    path = algorithm.drive(policy, diverge_policy)
 
     end_time = timer()
 
-    # from lib import draw_value_graph
-    # draw_value_graph(algorithm.G, path)
+    if debug:
+        draw_value_graph(algorithm.G, path)
 
     print("Seconds for calculation:", end_time - start_time)
+    return path
 
 
-if __name__ == '__main__':
+def generate_diverge_policy(G, density=.5):
+    """Generate a divergence policy for all nodes:
+    Diverge at roughly $(density) percent of nodes.
+    We diverge by taking a random successor of the node.
+    So this could also lie on the real path.
+    """
+    policy = {}
+
+    for node in G.nodes():
+        r = random.random()
+        if r < density:
+            successors = list(G.successors(node))
+            if len(successors) == 0:
+                continue
+            policy[node] = np.random.choice(successors, 1)[0]
+
+    return policy
+
+
+def run_simulations():
     load_maps()
-
-    def diverge_policy(node, successors):
-        # TODO
-        return node
 
     for map_id in MAPS.keys():
         for location in LOCATIONS[map_id]:
@@ -98,12 +117,19 @@ if __name__ == '__main__':
             start = location['start']
             goal = location['goal']
 
+            diverge_policy = generate_diverge_policy(G)
+
             mdp = MDP(G)
             run_simulation(mdp, map_id, start, goal, diverge_policy)
 
             mdp = MDP(G)
+            mdp.setup(start, goal)
             rtdp = RTDP(mdp)
             run_simulation(rtdp, map_id, start, goal, diverge_policy)
 
-            lpa = LPA_Star(G)
-            run_simulation(lpa, map_id, start, goal, diverge_policy)
+            # lpa = LPA_Star(G)
+            # run_simulation(lpa, map_id, start, goal, diverge_policy)
+
+
+if __name__ == '__main__':
+    run_simulations()

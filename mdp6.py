@@ -280,18 +280,23 @@ class MDP(Algorithm):
 
         return policy
 
-    def drive(self, policy, start=None, goal=None):
-        if start is None:
-            start = self.start
-        if goal is None:
-            goal = self.goal
+    def drive(self, policy, diverge_policy={}):
+        visited = set()
 
-        nodes = [start]
-        curr_node = start
-        while curr_node != goal:
+        nodes = [self.start]
+        curr_node = self.start
+        while curr_node != self.goal:
             if curr_node not in policy:
                 break
-            curr_node = self.A[curr_node][policy[curr_node]][1]
+
+            diverged_node = diverge_policy.get(curr_node, None)
+
+            if diverged_node is None or diverged_node in visited:
+                curr_node = self.A[curr_node][policy[curr_node]][1]
+            else:
+                curr_node = diverged_node
+                visited.add(diverged_node)
+
             nodes.append(curr_node)
 
         return nodes
