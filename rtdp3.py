@@ -71,6 +71,8 @@ class RTDP(Algorithm):
         return visited
 
     def run_trials(self, n=1000):
+        # TODO: Stop criterion is missing, this is vanilla RTDP.
+        # TODO: Add LRTDP, BRTDP
         for _ in range(n):
             path = self._run_trial()
         return path
@@ -78,20 +80,59 @@ class RTDP(Algorithm):
     def solve(self):
         return self.run_trials()
 
-    # TODO
-    # def drive(self, policy, start, goal):
-    #     pass
+    def drive(self, path, diverge_policy={}):
+        # TODO: The below is an own implementation of RTDP as a replanner.
+        # There's no publication for this as far as I know, so take with a
+        # grain of salt.
+        # Options:
+        # * Try using old Q values (but if we diverge too far, the states
+        #   don't have Q values)
+        # * Replan from current node, so run trials again
+        visited = set()
+
+        path_lookup = set(path)
+        path = iter(path)
+
+        nodes = [self.start]
+        curr_node = next(path)
+        while curr_node != self.goal:
+            if curr_node not in path_lookup:
+                # Replan
+                self.start = curr_node
+                # TODO: Reuse H or not?
+                self.H = {}
+
+                path = self.run_trials()
+
+                path_lookup = set(path)
+                path = iter(path)
+
+                # Path returned by run_trials always contains start node
+                # too. We don't need it.
+                next(path)
+
+            diverged_node = diverge_policy.get(curr_node, None)
+            next_curr_path = next(path)
+            if diverged_node is None or diverged_node in visited:
+                curr_node = next_curr_path
+            else:
+                curr_node = diverged_node
+                visited.add(diverged_node)
+
+            nodes.append(curr_node)
+
+        return nodes
 
 
 if __name__ == '__main__':
-    with open('maxvorstadt2.pickle', 'rb') as f:
+    with open('data/maxvorstadt.pickle', 'rb') as f:
         G = pickle.load(f)
 
     mdp = MDP(G)
-    mdp.setup()
+    mdp.setup(246878841, 372796487)
 
     rtdp = RTDP(mdp)
-    rtdp.setup()
+    rtdp.setup(246878841, 372796487)
     path = rtdp.run_trials()
 
     time_to_drive = get_time_to_drive(path, rtdp.G)  # Minutes
