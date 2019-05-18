@@ -13,7 +13,7 @@ class MDPTest(unittest.TestCase):
                 1: [(1, 2), (1, 5), (1, 6)],
                 2: [(2, 3), (2, 4), (2, 6)],
                 3: [(3, 6)],
-                4: [(4, 6), (4, 6)],
+                4: [(4, 6)],
                 5: [(5, 6)],
                 6: [(6, 3), (6, 6)]
             }
@@ -81,7 +81,7 @@ class MDPTest(unittest.TestCase):
 
     def test_add_costly_jump_to_goal(self):
         mdp = mdp6.MDP(_setup_mdp())
-        mdp.add_costly_jump_to_goal(4)
+        mdp._add_costly_jump_to_goal(4)
         self.assertEqual(mdp.A, {4: [(4, 372796487)]})
         self.assertEqual(mdp.P, {4: {(4, 372796487): [(372796487, 1.0)]}})
         self.assertEqual(mdp.C, {(4, 372796487): 100000.0})
@@ -99,7 +99,7 @@ class MDPTest(unittest.TestCase):
         self.assertEqual(mdp.S, S)
 
     @patch('osmnx.project_graph')
-    def test_update_uncertain_intersections(self, project_graph_mock):
+    def test_make_low_angle_intersections_uncertain(self, project_graph_mock):
         G = _setup_mdp()
         project_graph_mock.return_value = G
         mdp = mdp6.MDP(G)
@@ -110,7 +110,7 @@ class MDPTest(unittest.TestCase):
         mdp.C = C
         mdp.P = P
         mdp.S = S
-        angles = mdp.update_uncertain_intersections()
+        angles = mdp.make_low_angle_intersections_uncertain()
         self.assertEqual(angles, [2])
         P = self._get_angle_updated_P()
         self.assertEqual(mdp.P, P)
@@ -137,7 +137,7 @@ class MDPTest(unittest.TestCase):
         mdp = mdp6.MDP(G)
         mdp.goal = 6
         mdp._setup()
-        angles = mdp.update_uncertain_intersections()
+        angles = mdp.make_low_angle_intersections_uncertain()
         self.assertEqual(angles, [])
 
         # We're coming from node 1.
@@ -161,7 +161,7 @@ class MDPTest(unittest.TestCase):
         mdp = mdp6.MDP(G)
         mdp.goal = 6
         mdp._setup()
-        angles = mdp.update_uncertain_intersections()
+        angles = mdp.make_low_angle_intersections_uncertain()
         self.assertEqual(angles, [2])
 
         # We're coming from node 3 and end up in a T-shaped intersection.
@@ -184,7 +184,7 @@ class MDPTest(unittest.TestCase):
         mdp = mdp6.MDP(G)
         mdp.goal = 6
         mdp._setup()
-        angles = mdp.update_uncertain_intersections()
+        angles = mdp.make_low_angle_intersections_uncertain()
         self.assertEqual(angles, [])
 
     @patch('osmnx.project_graph')
@@ -250,17 +250,210 @@ class MDPTest(unittest.TestCase):
         self.assertEqual(mdp.P, {1: {(1, 1): [(1, 1.0)]}})
         self.assertEqual(mdp.C, {(1, 1): 0})
 
-    def test_remove_dead_ends(self):
-        # TODO Test
-        pass
+    @patch('osmnx.project_graph')
+    def test_remove_dead_ends(self, project_graph_mock):
+        #  1 - 2
+        #  |   |
+        #  4 - 3
+        #  |
+        #  5 - 7
+        #  |
+        #  6
+        G = nx.MultiDiGraph()
+        G.add_edge(1, 2)
+        G.add_edge(2, 3)
+        G.add_edge(3, 4)
+        G.add_edge(4, 1)
+        G.add_edge(4, 5)
+        G.add_edge(5, 6)
+        G.add_edge(5, 7)
 
-    def test_get_Q_value(self):
-        # TODO Test
-        pass
+        project_graph_mock.return_value = G
+        mdp = mdp6.MDP(G)
+        mdp.remove_dead_ends()
 
-    def test_drive(self):
-        # TODO Test
-        pass
+        self.assertEqual(list(mdp.G.nodes()), [1, 2, 3, 4])
+
+        #  1 - 2
+        #  |   |
+        #  4 - 3
+        #  |
+        #  5<->6
+        G = nx.MultiDiGraph()
+        G.add_edge(1, 2)
+        G.add_edge(2, 3)
+        G.add_edge(3, 4)
+        G.add_edge(4, 1)
+        G.add_edge(4, 5)
+        G.add_edge(5, 6)
+        G.add_edge(6, 5)
+
+        project_graph_mock.return_value = G
+        mdp = mdp6.MDP(G)
+
+        mdp.remove_dead_ends()
+
+        self.assertEqual(list(mdp.G.nodes()), [1, 2, 3, 4])
+
+        #  1 - 2 - 9
+        #  |   |
+        #  4 - 3
+        #  |
+        #  5<->6<->8
+        #  |
+        #  7
+        G = nx.MultiDiGraph()
+        G.add_edge(1, 2)
+        G.add_edge(2, 3)
+        G.add_edge(3, 4)
+        G.add_edge(4, 1)
+        G.add_edge(4, 5)
+        G.add_edge(5, 6)
+        G.add_edge(6, 5)
+        G.add_edge(6, 8)
+        G.add_edge(8, 6)
+        G.add_edge(5, 7)
+        G.add_edge(2, 9)
+
+        project_graph_mock.return_value = G
+        mdp = mdp6.MDP(G)
+
+        mdp.remove_dead_ends()
+
+        self.assertEqual(list(mdp.G.nodes()), [1, 2, 3, 4])
+
+    @patch('osmnx.project_graph')
+    def test_get_normal_intersection(self, project_graph_mock):
+        G = nx.MultiDiGraph()
+
+        G.add_node(1, x=2, y=0)
+        G.add_node(2, x=2, y=2)
+        G.add_node(3, x=0, y=2)
+        G.add_node(4, x=4, y=2)
+        G.add_node(5, x=2, y=4)
+        G.add_node(6, x=0, y=4)
+        G.add_node(7, x=4, y=4)
+        G.add_node(8, x=2, y=6)
+
+        G.add_edge(1, 2, length=60.)
+        G.add_edge(2, 3, length=60.)
+        G.add_edge(2, 4, length=60.)
+        G.add_edge(2, 5, length=60.)
+        G.add_edge(5, 6, length=60.)
+        G.add_edge(5, 7, length=60.)
+        G.add_edge(5, 8, length=60.)
+
+        project_graph_mock.return_value = G
+        mdp = mdp6.MDP(G)
+        mdp._setup()
+
+        want = [
+            mdp6.Intersection(left_node=3, right_node=4, straight_on_node=5, origin_edge=(1, 2, {'length': 60.0})),
+            mdp6.Intersection(left_node=6, right_node=7, straight_on_node=8, origin_edge=(2, 5, {'length': 60.0}))
+        ]
+        self.assertEqual(mdp._get_normal_intersections(), want)
+
+        G.node[3]['x'] = 1
+        G.node[3]['y'] = 0
+
+        project_graph_mock.return_value = G
+        mdp = mdp6.MDP(G)
+        mdp._setup()
+
+        want = [
+            mdp6.Intersection(left_node=None, right_node=4, straight_on_node=5, origin_edge=(1, 2, {'length': 60.0})),
+            mdp6.Intersection(left_node=6, right_node=7, straight_on_node=8, origin_edge=(2, 5, {'length': 60.0}))
+        ]
+        self.assertEqual(mdp._get_normal_intersections(), want)
+
+        G.node[4]['x'] = 3
+        G.node[4]['y'] = 0
+
+        project_graph_mock.return_value = G
+        mdp = mdp6.MDP(G)
+        mdp._setup()
+
+        want = [
+            mdp6.Intersection(left_node=6, right_node=7, straight_on_node=8, origin_edge=(2, 5, {'length': 60.0}))
+        ]
+        self.assertEqual(mdp._get_normal_intersections(), want)
+
+    @patch('osmnx.project_graph')
+    def test_make_close_intersections_uncertain(self, project_graph_mock):
+        G = nx.MultiDiGraph()
+
+        G.add_node(1, x=2, y=0)
+        G.add_node(2, x=2, y=2)
+        G.add_node(3, x=0, y=2)
+        G.add_node(4, x=4, y=2)
+        G.add_node(5, x=2, y=4)
+        G.add_node(6, x=0, y=4)
+        G.add_node(7, x=4, y=4)
+        G.add_node(8, x=2, y=6)
+
+        G.add_edge(1, 2, length=60.)
+        G.add_edge(2, 3, length=60.)
+        G.add_edge(2, 4, length=60.)
+        G.add_edge(2, 5, length=60.)
+        G.add_edge(5, 6, length=60.)
+        G.add_edge(5, 7, length=60.)
+        G.add_edge(5, 8, length=60.)
+
+        project_graph_mock.return_value = G
+        mdp = mdp6.MDP(G)
+        mdp._setup()
+
+        want = [
+            mdp6.Intersection(left_node=3, right_node=4, straight_on_node=5, origin_edge=(1, 2, {'length': 60.0}))
+        ]
+        self.assertEqual(mdp.make_close_intersections_uncertain(), want)
+
+        G.node[3]['x'] = 1
+        G.node[3]['y'] = 0
+
+        project_graph_mock.return_value = G
+        mdp = mdp6.MDP(G)
+        mdp._setup()
+
+        want = [
+            mdp6.Intersection(left_node=None, right_node=4, straight_on_node=5, origin_edge=(1, 2, {'length': 60.0}))
+        ]
+        self.assertEqual(mdp.make_close_intersections_uncertain(), want)
+
+        G.node[4]['x'] = 3
+        G.node[4]['y'] = 0
+
+        project_graph_mock.return_value = G
+        mdp = mdp6.MDP(G)
+        mdp._setup()
+
+        self.assertEqual(mdp.make_close_intersections_uncertain(), [])
+
+        # TODO: More test cases. E.g. if the second intersection is not a
+        # 'normal' intersection.
+
+    @patch('osmnx.project_graph')
+    def test_drive(self, project_graph_mock):
+        G = _setup_mdp()
+        project_graph_mock.return_value = G
+        mdp = mdp6.MDP(G)
+        mdp.start = 1
+        mdp.goal = 6
+        mdp.A, mdp.C, mdp.P, mdp.S = self._get_initialized_mdp_attrs()
+        mdp.C[6, 6] = 0.
+
+        V_want, Q_want = self._get_solved_attrs()
+
+        policy = {1: 0, 2: 1, 3: 0, 4: 0, 5: 0, 6: 1}
+
+        self.assertEqual(mdp.drive(policy, {}), [1, 2, 4, 6])
+
+        diverge_policy = {2: 3}
+        self.assertEqual(mdp.drive(policy, diverge_policy), [1, 2, 3, 6])
+
+        # Test whether loops are resolved appropriately
+        diverge_policy = {4: 2}
+        self.assertEqual(mdp.drive(policy, diverge_policy), [1, 2, 4, 2, 4, 6])
 
 
 if __name__ == '__main__':

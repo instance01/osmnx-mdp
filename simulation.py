@@ -68,11 +68,11 @@ def run_simulation(algorithm, map_id, start, goal, diverge_policy, debug=False):
     implements the functions:
         setup()
         solve()
-        drive(policy, start, goal)
+        drive(policy, diverge_policy)
 
     start and goal shall be in the form of (lat, lon)
-    diverge_policy shall be a function that returns for a given node and its
-    options the next node.
+    diverge_policy shall be a function in the form diverge_policy(G, node)
+    and return for a given node and its options (successors) the next node.
     """
     start_time = timer()
 
@@ -98,8 +98,7 @@ def generate_diverge_policy(G, density=.5):
     policy = {}
 
     for node in G.nodes():
-        r = random.random()
-        if r < density:
+        if random.random() < density:
             successors = list(G.successors(node))
             if len(successors) == 0:
                 continue

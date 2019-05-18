@@ -103,7 +103,7 @@ def get_node_properties(G, path, values=None, extra=[]):
             val = hex(int(254 - (val - min_val) / diff_val * 254))[2:4].zfill(2)
             node_colors.append(HEX_FORMAT % val)
 
-    node_sizes = [50 if node in path else 8 for node in G.nodes()]
+    node_sizes = [50 if node in path or node in extra else 8 for node in G.nodes()]
 
     return node_colors, node_sizes
 

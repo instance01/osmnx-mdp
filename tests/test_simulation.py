@@ -1,6 +1,5 @@
 import unittest
 from unittest.mock import patch
-from unittest.mock import PropertyMock
 
 from test_utils import _setup_mdp
 

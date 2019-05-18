@@ -35,7 +35,7 @@ G2.graph.update({
     'name': mdp.G.graph['name']})
 
 
-nc, ns = get_node_properties(G2, col_nodes, V)
+nc, ns = get_node_properties(G2, col_nodes, V, extra=mdp.close_nodes)
 nx.draw_networkx(
         G2,
         nx.get_node_attributes(G2, 'pos'),

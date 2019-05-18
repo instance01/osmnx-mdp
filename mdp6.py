@@ -4,6 +4,7 @@ import copy
 import pickle
 from itertools import combinations
 from collections import defaultdict
+from collections import namedtuple
 
 import osmnx as ox
 import numpy as np
@@ -11,6 +12,13 @@ import numpy as np
 from algorithm import Algorithm
 from lib import get_angle
 from lib import get_edge_cost
+
+
+# TODO: Put somewhere else or make it a class
+Intersection = namedtuple(
+    'Intersection',
+    ['left_node', 'right_node', 'straight_on_node', 'origin_edge']
+)
 
 
 class MDP(Algorithm):
@@ -23,7 +31,7 @@ class MDP(Algorithm):
         self.start = 246878841
         self.goal = 372796487
 
-    def add_costly_jump_to_goal(self, node):
+    def _add_costly_jump_to_goal(self, node):
         """This is to avoid dead ends.
         We do this by adding a very costly jump to the goal to each node.
         If a node ends up being a dead end, i.e. doesn't have any outgoing
@@ -36,9 +44,11 @@ class MDP(Algorithm):
         fSSPUDE (same paper as above).
         """
         # TODO: Consider doing the proper fSSPUDE way.
-        self.A[node].append((node, self.goal))
-        self.P[node][(node, self.goal)] = [(self.goal, 1.0)]
-        self.C[(node, self.goal)] = 100000.
+        # Don't add costly jump to nodes adjacent to the goal.
+        if self.goal not in self.G.successors(node):
+            self.A[node].append((node, self.goal))
+            self.P[node][(node, self.goal)] = [(self.goal, 1.0)]
+            self.C[(node, self.goal)] = 100000.
 
     def _setup(self):
         for node in self.G.nodes():
@@ -53,10 +63,7 @@ class MDP(Algorithm):
                 self.P[node][action].append((edge[1], 1.0))
 
             # This is to avoid dead ends.
-            self.add_costly_jump_to_goal(node)
-            # TODO: BTW we overwrite costs of nodes adjacent to goal in lines
-            # below, so order is important here. That's bad code, fix.
-            # TODO Add comment regarding this
+            self._add_costly_jump_to_goal(node)
 
         for edge in self.G.edges():
             self.C[edge] = get_edge_cost(self.G, *edge)
@@ -69,7 +76,15 @@ class MDP(Algorithm):
         self.remove_dead_ends()
         self._setup()
         self.make_goal_self_absorbing()
-        self.angle_nodes = self.update_uncertain_intersections()
+        self.angle_nodes = self.make_low_angle_intersections_uncertain()
+
+        intersections = mdp.make_close_intersections_uncertain()
+        close_nodes = [x.origin_edge[1] for x in intersections]
+        mdp.close_nodes = close_nodes
+
+        total_uncertain_nodes = len(self.angle_nodes) + len(self.close_nodes)
+        uncertainty_percent = total_uncertain_nodes / len(self.G.nodes()) * 100
+        print('%f%% of nodes are uncertain.' % uncertainty_percent)
 
     def make_goal_self_absorbing(self):
         """Add a zero-cost loop at the goal to absorb cost.
@@ -151,9 +166,129 @@ class MDP(Algorithm):
             temp_P[edge] = [(node_to, .9), (other_node, .1)]
         else:
             temp_P[edge].append((other_node, .1))
-            temp_P[edge][0] = (node_to, temp_P[edge][0] - .1)
+            temp_P[edge][0] = (node_to, temp_P[edge][0][1] - .1)
 
-    def update_uncertain_intersections(self, max_angle=30):
+    def _get_normal_intersection(self, edge):
+        origin_node = edge[1]
+
+        straight_on_node = None
+        left_node = None
+        right_node = None
+
+        for node in self.G.successors(origin_node):
+            p1 = self._get_coordinates(edge[0])
+            p2 = self._get_coordinates(node)
+            origin = self._get_coordinates(origin_node)
+
+            angle = get_angle(p1, p2, origin)
+            if angle < 0:
+                angle += 360
+
+            if abs(angle - 90) < 10:
+                left_node = node
+
+            if abs(angle - 270) < 10:
+                right_node = node
+
+            if abs(angle - 180) < 10:
+                straight_on_node = node
+
+        if straight_on_node and (right_node or left_node):
+            return Intersection(
+                left_node,
+                right_node,
+                straight_on_node,
+                edge
+            )
+
+    def _get_normal_intersections(self):
+        """Scan graph for intersections satisfying the following condition:
+
+        A node with >= 2 outgoing edges is needed with the following
+        angles:
+            * 180
+            * 90 or 270
+
+        Returns a list of nodes that satisfy the condition.
+        """
+        intersections = []
+
+        for edge in self.G.edges.data():
+            intersection = self._get_normal_intersection(edge)
+            if intersection:
+                intersections.append(intersection)
+
+        return intersections
+
+    def make_close_intersections_uncertain(self, max_length=100):
+        """Scan graph for intersections that follow very closely.
+
+        Use cases:
+            - When you're supposed to go to the right or left, but go straight
+              on because you've missed the intersection as it's very close.
+            - When you're supposed to go straight on so that you can turn right
+              or left on the next intersection, but you do so on the current
+              one, which is too early.
+        """
+        close_intersections = []
+
+        for intersection in self._get_normal_intersections():
+            next_edge = (intersection.origin_edge[1], intersection.straight_on_node)
+            next_intersection = self._get_normal_intersection(next_edge)
+
+            if not next_intersection:
+                continue
+
+            origin_edge_length = intersection.origin_edge[2]['length']
+            next_edge_length = self.G[next_edge[0]][next_edge[1]][0]['length']
+
+            # TODO: Consider ox.clean_intersections, then that <20 check isn't
+            # needed anymore.
+            if next_edge_length > max_length or origin_edge_length < 20:
+                continue
+
+            origin_node = intersection.origin_edge[1]
+
+            # TODO Cleanup below
+
+            if (intersection.left_node and next_intersection.left_node):
+                close_intersections.append(intersection)
+                self._make_edge_uncertain(
+                        self.P[origin_node],
+                        next_edge,
+                        intersection.left_node)
+                self._make_edge_uncertain(
+                        self.P[origin_node],
+                        (origin_node, intersection.left_node),
+                        intersection.straight_on_node)
+
+            if (intersection.right_node and next_intersection.right_node):
+                # TODO NIBBA bad code
+                if intersection not in close_intersections:
+                    close_intersections.append(intersection)
+                self._make_edge_uncertain(
+                        self.P[origin_node],
+                        next_edge,
+                        intersection.right_node)
+                self._make_edge_uncertain(
+                        self.P[origin_node],
+                        (origin_node, intersection.right_node),
+                        intersection.straight_on_node)
+
+        return close_intersections
+
+    def make_low_angle_intersections_uncertain(self, max_angle=30):
+        """
+         (2)   (3)
+          *     *
+           \   /
+            \ /
+             * (1)
+
+        If angle between edges (1, 2) and (1, 3) is small enough,
+        make those edges uncertain, i.e. add a 10% chance end up
+        in the other node and not the expected one.
+        """
         # TODO: Code cleanup, esp. _get_coordinates
         # TODO: Docstring
         angle_nodes = []
@@ -189,15 +324,6 @@ class MDP(Algorithm):
                 # Thus it is not a critical intersection.
                 angle = get_angle(p1, p3, origin) - get_angle(p2, p3, origin)
                 if abs(angle) <= max_angle:
-                    #  (2)   (3)
-                    #   *     *
-                    #    \   /
-                    #     \ /
-                    #      * (1)
-
-                    # If angle between edges (1, 2) and (1, 3) is small enough,
-                    # make those edges uncertain, i.e. add a 10% chance end up
-                    # in the other node and not the expected one.
                     edge1 = e1[:2]
                     edge2 = e2[:2]
 
@@ -205,13 +331,15 @@ class MDP(Algorithm):
                     self._make_edge_uncertain(temp_P, edge2, edge1[1])
 
                     num_critical_nodes += 1
+
             if num_critical_nodes > 0:
                 angle_nodes.append(origin_node)
+
             self.P[origin_node].update(temp_P)
 
         return angle_nodes
 
-    def get_Q_value(self, prev_V, gamma, state, action):
+    def _get_Q_value(self, prev_V, gamma, state, action):
         node_to = action[1]
 
         immediate_cost = 0
@@ -246,7 +374,7 @@ class MDP(Algorithm):
 
             for s in self.S:
                 for a in self.A[s]:
-                    Q[s][a] = self.get_Q_value(prev_V, gamma, s, a)
+                    Q[s][a] = self._get_Q_value(prev_V, gamma, s, a)
 
                 if Q[s]:
                     a = min(Q[s], key=Q[s].get)
@@ -281,6 +409,7 @@ class MDP(Algorithm):
         return policy
 
     def drive(self, policy, diverge_policy={}):
+        # Make sure we don't loop indefinitely due to diverge policy
         visited = set()
 
         nodes = [self.start]
@@ -307,11 +436,11 @@ class MDP(Algorithm):
 
 
 if __name__ == '__main__':
-    with open('maxvorstadt2.pickle', 'rb') as f:
+    with open('data/maxvorstadt.pickle', 'rb') as f:
         G = pickle.load(f)
 
     mdp = MDP(G)
-    mdp.setup()
+    mdp.setup(246878841, 372796487)
     V, Q = mdp.solve_value_iteration()
 
     with open('model5.pickle', 'wb+') as f:
