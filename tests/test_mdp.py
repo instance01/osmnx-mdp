@@ -81,10 +81,16 @@ class MDPTest(unittest.TestCase):
 
     def test_add_costly_jump_to_goal(self):
         mdp = mdp6.MDP(_setup_mdp())
+        mdp.goal = 6
         mdp._add_costly_jump_to_goal(4)
-        self.assertEqual(mdp.A, {4: [(4, 372796487)]})
-        self.assertEqual(mdp.P, {4: {(4, 372796487): [(372796487, 1.0)]}})
-        self.assertEqual(mdp.C, {(4, 372796487): 100000.0})
+        self.assertEqual(mdp.A, {})
+        self.assertEqual(mdp.P, {})
+        self.assertEqual(mdp.C, {})
+
+        mdp._add_costly_jump_to_goal(1)
+        self.assertEqual(mdp.A, {1: [(1, 6)]})
+        self.assertEqual(mdp.P, {1: {(1, 6): [(6, 1.0)]}})
+        self.assertEqual(mdp.C, {(1, 6): 100000.0})
 
     def test_mdp_setup(self):
         mdp = mdp6.MDP(_setup_mdp())
@@ -252,7 +258,7 @@ class MDPTest(unittest.TestCase):
 
     @patch('osmnx.project_graph')
     def test_remove_dead_ends(self, project_graph_mock):
-        #  1 - 2
+        #  1 - 2 - 8
         #  |   |
         #  4 - 3
         #  |
@@ -267,12 +273,14 @@ class MDPTest(unittest.TestCase):
         G.add_edge(4, 5)
         G.add_edge(5, 6)
         G.add_edge(5, 7)
+        G.add_edge(2, 8)
 
         project_graph_mock.return_value = G
         mdp = mdp6.MDP(G)
+        mdp.goal = 8
         mdp.remove_dead_ends()
 
-        self.assertEqual(list(mdp.G.nodes()), [1, 2, 3, 4])
+        self.assertEqual(list(mdp.G.nodes()), [1, 2, 3, 4, 8])
 
         #  1 - 2
         #  |   |
@@ -290,7 +298,7 @@ class MDPTest(unittest.TestCase):
 
         project_graph_mock.return_value = G
         mdp = mdp6.MDP(G)
-
+        mdp.goal = 3
         mdp.remove_dead_ends()
 
         self.assertEqual(list(mdp.G.nodes()), [1, 2, 3, 4])
@@ -317,7 +325,7 @@ class MDPTest(unittest.TestCase):
 
         project_graph_mock.return_value = G
         mdp = mdp6.MDP(G)
-
+        mdp.goal = 3
         mdp.remove_dead_ends()
 
         self.assertEqual(list(mdp.G.nodes()), [1, 2, 3, 4])
@@ -345,6 +353,8 @@ class MDPTest(unittest.TestCase):
 
         project_graph_mock.return_value = G
         mdp = mdp6.MDP(G)
+        mdp.start = 1
+        mdp.goal = 8
         mdp._setup()
 
         want = [
@@ -358,6 +368,8 @@ class MDPTest(unittest.TestCase):
 
         project_graph_mock.return_value = G
         mdp = mdp6.MDP(G)
+        mdp.start = 1
+        mdp.goal = 8
         mdp._setup()
 
         want = [
@@ -371,6 +383,8 @@ class MDPTest(unittest.TestCase):
 
         project_graph_mock.return_value = G
         mdp = mdp6.MDP(G)
+        mdp.start = 1
+        mdp.goal = 8
         mdp._setup()
 
         want = [
@@ -401,6 +415,7 @@ class MDPTest(unittest.TestCase):
 
         project_graph_mock.return_value = G
         mdp = mdp6.MDP(G)
+        mdp.goal = 3
         mdp._setup()
 
         want = [
@@ -413,6 +428,7 @@ class MDPTest(unittest.TestCase):
 
         project_graph_mock.return_value = G
         mdp = mdp6.MDP(G)
+        mdp.goal = 3
         mdp._setup()
 
         want = [
@@ -425,6 +441,7 @@ class MDPTest(unittest.TestCase):
 
         project_graph_mock.return_value = G
         mdp = mdp6.MDP(G)
+        mdp.goal = 3
         mdp._setup()
 
         self.assertEqual(mdp.make_close_intersections_uncertain(), [])

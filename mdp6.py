@@ -28,8 +28,6 @@ class MDP(Algorithm):
         self.A = defaultdict(list)  # {node1: [edge1, edge2, ..], ..}
         self.P = defaultdict(dict)  # {node1: {(node1, node_to): [(node_to, 1.0)], ..}, ..}
         self.C = {}  # {node_from: {node_to1: 2, node_to2: 3, ..}, ..}
-        self.start = 246878841
-        self.goal = 372796487
 
     def _add_costly_jump_to_goal(self, node):
         """This is to avoid dead ends.
@@ -78,9 +76,9 @@ class MDP(Algorithm):
         self.make_goal_self_absorbing()
         self.angle_nodes = self.make_low_angle_intersections_uncertain()
 
-        intersections = mdp.make_close_intersections_uncertain()
+        intersections = self.make_close_intersections_uncertain()
         close_nodes = [x.origin_edge[1] for x in intersections]
-        mdp.close_nodes = close_nodes
+        self.close_nodes = close_nodes
 
         total_uncertain_nodes = len(self.angle_nodes) + len(self.close_nodes)
         uncertainty_percent = total_uncertain_nodes / len(self.G.nodes()) * 100

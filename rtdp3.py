@@ -14,8 +14,6 @@ class RTDP(Algorithm):
         self.mdp = mdp
         self.H = {}
         self.h = {}
-        self.start = 246878841
-        self.goal = 372796487
 
     def setup(self, start, goal):
         self.start = start
