@@ -17,6 +17,10 @@ MAPS = {
     'Maxvorstadt': {
         'file': 'data/maxvorstadt.pickle',
         'place': 'Maxvorstadt, Munich, Germany'
+    },
+    'Munich': {
+        'file': 'data/munich.pickle',
+        'place': 'Munich, Germany'
     }
 }
 
@@ -29,6 +33,16 @@ LOCATIONS = {
             'metadata': {
                 'id': 'RWUNI',
                 'info': 'Richard-Wagner-Str to Geschwister-Scholl-Platz (University)',
+            }
+        }
+    ],
+    'Munich': [
+        {
+            'start': (48.164821, 11.3383748),
+            'goal': (48.1263449, 11.614636),
+            'metadata': {
+                'id': 'AURIMUN',
+                'info': 'Aubing to Riem through Munich',
             }
         }
     ]
@@ -76,6 +90,7 @@ def run_simulation(algorithm, map_id, start, goal, diverge_policy, debug=False):
     diverge_policy shall be a function in the form diverge_policy(G, node)
     and return for a given node and its options (successors) the next node.
     """
+    print("Running %s." % algorithm.__class__)
     start_time = timer()
 
     algorithm.setup(start, goal)

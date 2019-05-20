@@ -13,10 +13,18 @@ def get_edge_cost(G, node_from, node_to):
     # In osmnx context this should never happen, but this should be tested.
     edge_data = G.edges[node_from, node_to, 0]
 
-    if isinstance(edge_data.get('maxspeed'), list):
+    # TODO: Magic numbers
+    maxspeed = edge_data.get('maxspeed', 30)
+    if maxspeed == 'none':
+        maxspeed = 120  # TODO: Reconsider this
+    elif maxspeed == 'signals':
+        maxspeed = 50
+    elif maxspeed == 'walk':
+        maxspeed = 30
+    elif isinstance(maxspeed, list):
         maxspeed = 30
     else:
-        maxspeed = int(edge_data.get('maxspeed', 30))
+        maxspeed = int(maxspeed)
 
     length = edge_data['length'] / 1000.  # km
     return length / maxspeed

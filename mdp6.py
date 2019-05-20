@@ -12,6 +12,7 @@ import numpy as np
 from algorithm import Algorithm
 from lib import get_angle
 from lib import get_edge_cost
+from lib import remove_dead_ends
 
 
 # TODO: Put somewhere else or make it a class
@@ -390,6 +391,8 @@ class MDP(Algorithm):
 if __name__ == '__main__':
     with open('data/maxvorstadt.pickle', 'rb') as f:
         G = pickle.load(f)
+
+    remove_dead_ends(G, 372796487)
 
     mdp = MDP(G)
     mdp.setup(246878841, 372796487)
