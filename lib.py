@@ -5,6 +5,9 @@ import osmnx as ox
 
 
 def get_edge_cost(G, node_from, node_to):
+    """Edge cost is the amount of time (in hours) an edge takes to travel, i.e.
+    length divided by maxspeed.
+    """
     # TODO: Explain that 0.. It's networkx key, when you have multiple edges
     # in parallel, to distinguish them.
     # In osmnx context this should never happen, but this should be tested.
@@ -120,3 +123,61 @@ def draw_value_graph(G, path, values=None, extra=[], annotate=False):
             node_color=node_colors,
             node_zorder=2,
             annotate=annotate)
+
+
+def remove_zero_cost_loops(G):
+    """Apparently osmnx gives us looping edges (that go back to itself) on
+    the border of the map. The problem is that they're zero-cost loops.
+    Let's just remove them.
+    """
+    loops = [edge for edge in G.edges() if edge[0] == edge[1]]
+    for loop in loops:
+        G.remove_edge(*loop)
+
+
+def remove_dead_ends(G, goal):
+    """Since the map (in current tests Maxvorstadt) is 'cut out' of Munich,
+    some paths leave the map without coming back. This means if a driver
+    were to follow this path, he would not be able to come back, so this
+    is a dead end.
+    Value iteration does not converge with dead ends.
+    Since we know where our dead ends lie, we can simply filter them out
+    and don't have to resort to other models such as fSSPUDE etc. TODO
+    Paper: Kolobov, Stochastic Shortest Path MDPs with Dead Ends
+    """
+    while True:
+        # TODO: This possibly doesn't have to be a set.
+        todel = set()
+
+        candidates = []
+        for node in G.nodes():
+            if node == goal:
+                continue
+
+            predecessors = list(G.predecessors(node))
+            successors = list(G.successors(node))
+
+            has_loop = predecessors == successors and len(predecessors) == 1
+            if not successors or has_loop:
+                candidates.append(node)
+
+        for candidate in candidates:
+            open_ = set(G.predecessors(candidate))
+            open_.add(candidate)
+
+            while open_:
+                node = open_.pop()
+
+                if node in todel:
+                    continue
+
+                successors = list(G.successors(node))
+                if len(successors) <= 1:
+                    open_.update(G.predecessors(node))
+                    todel.add(node)
+
+        if not todel:
+            break
+
+        for node in todel:
+            G.remove_node(node)

@@ -6,9 +6,11 @@ import numpy as np
 import osmnx as ox
 
 from lib import draw_value_graph
+from lib import remove_dead_ends
+from lib import remove_zero_cost_loops
 from mdp6 import MDP
 from rtdp3 import RTDP
-from lpa_star5 import LPA_Star
+from dstar_lite1 import DStar_Lite
 
 
 MAPS = {
@@ -116,6 +118,10 @@ def run_simulations():
             start = location['start']
             goal = location['goal']
 
+            # Preprocess graph
+            remove_zero_cost_loops(G)
+            remove_dead_ends(G, goal)
+
             diverge_policy = generate_diverge_policy(G)
 
             mdp = MDP(G)
@@ -126,8 +132,8 @@ def run_simulations():
             rtdp = RTDP(mdp)
             run_simulation(rtdp, map_id, start, goal, diverge_policy)
 
-            # lpa = LPA_Star(G)
-            # run_simulation(lpa, map_id, start, goal, diverge_policy)
+            dstar = DStar_Lite(G)
+            run_simulation(dstar, map_id, start, goal, diverge_policy)
 
 
 if __name__ == '__main__':

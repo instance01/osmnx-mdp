@@ -30,6 +30,7 @@ class MDP(Algorithm):
         self.C = {}  # {node_from: {node_to1: 2, node_to2: 3, ..}, ..}
 
     def _add_costly_jump_to_goal(self, node):
+        # TODO: This seems to be not needed anymore.
         """This is to avoid dead ends.
         We do this by adding a very costly jump to the goal to each node.
         If a node ends up being a dead end, i.e. doesn't have any outgoing
@@ -60,9 +61,6 @@ class MDP(Algorithm):
                 # For now we end up in correct state 100% of the time.
                 self.P[node][action].append((edge[1], 1.0))
 
-            # This is to avoid dead ends.
-            self._add_costly_jump_to_goal(node)
-
         for edge in self.G.edges():
             self.C[edge] = get_edge_cost(self.G, *edge)
 
@@ -70,8 +68,6 @@ class MDP(Algorithm):
         self.start = start
         self.goal = goal
 
-        self.remove_zero_cost_loops()
-        self.remove_dead_ends()
         self._setup()
         self.make_goal_self_absorbing()
         self.angle_nodes = self.make_low_angle_intersections_uncertain()
@@ -90,62 +86,6 @@ class MDP(Algorithm):
         self.A[self.goal].append((self.goal, self.goal))
         self.C[(self.goal, self.goal)] = 0
         self.P[self.goal][(self.goal, self.goal)] = [(self.goal, 1.0)]
-
-    def remove_zero_cost_loops(self):
-        """Apparently osmnx gives us looping edges (that go back to itself) on
-        the border of the map. The problem is that they're zero-cost loops.
-        Let's just remove them.
-        """
-        loops = [edge for edge in self.G.edges() if edge[0] == edge[1]]
-        for loop in loops:
-            self.G.remove_edge(*loop)
-
-    def remove_dead_ends(self):
-        """Since the map (in current tests Maxvorstadt) is 'cut out' of Munich,
-        some paths leave the map without coming back. This means if a driver
-        were to follow this path, he would not be able to come back, so this
-        is a dead end.
-        Value iteration does not converge with dead ends.
-        Since we know where our dead ends lie, we can simply filter them out
-        and don't have to resort to other models such as fSSPUDE etc. TODO
-        Paper: Kolobov, Stochastic Shortest Path MDPs with Dead Ends
-        """
-        while True:
-            # TODO: This possibly doesn't have to be a set.
-            todel = set()
-
-            candidates = []
-            for node in self.G.nodes():
-                if node == self.goal:
-                    continue
-
-                predecessors = list(self.G.predecessors(node))
-                successors = list(self.G.successors(node))
-
-                has_loop = predecessors == successors and len(predecessors) == 1
-                if not successors or has_loop:
-                    candidates.append(node)
-
-            for candidate in candidates:
-                open_ = set(self.G.predecessors(candidate))
-                open_.add(candidate)
-
-                while open_:
-                    node = open_.pop()
-
-                    if node in todel:
-                        continue
-
-                    successors = list(self.G.successors(node))
-                    if len(successors) <= 1:
-                        open_.update(self.G.predecessors(node))
-                        todel.add(node)
-
-            if not todel:
-                break
-
-            for node in todel:
-                self.G.remove_node(node)
 
     def _get_coordinates(self, node):
         return self.G.nodes[node]['x'], self.G.nodes[node]['y']
@@ -302,6 +242,18 @@ class MDP(Algorithm):
             num_critical_nodes = 0
 
             for (e1, e2) in combinations(edges_out, 2):
+                # We can't reuse the edge that goes back as one of the
+                # out_edges.
+                # 1   3
+                #  \  |
+                #   \ |
+                #     2
+                # We come from 1, and without the checks below we reuse
+                # edge (1, 2) and erroneously find a critical angle
+                # between (1, 2) and (2, 3).
+                if e1[:2] == edge[1::-1] or e2[:2] == edge[1::-1]:
+                    continue
+
                 p1 = self._get_coordinates(e1[1])
                 p2 = self._get_coordinates(e2[1])
 
