@@ -2,12 +2,14 @@ import unittest
 from unittest.mock import patch
 from unittest.mock import PropertyMock
 
-import osmnx as ox
+import networkx as nx
 
 from lib import get_angle
 from lib import aerial_dist
 from lib import get_edge_cost
 from lib import get_time_to_drive
+from lib import remove_zero_cost_loops
+from lib import remove_dead_ends
 from test_utils import _setup_mdp
 
 
@@ -62,7 +64,7 @@ class TestLib(unittest.TestCase):
         G = _setup_mdp()
 
         time = get_time_to_drive([1, 2, 4, 6], G)
-        self.assertEqual(time, 0.028)
+        self.assertEqual(time, 0.038)
 
         G.node[1]['lat'] = 48.1473983
         G.node[1]['lon'] = 11.5631933
@@ -71,6 +73,85 @@ class TestLib(unittest.TestCase):
 
         time = get_time_to_drive([1, 6], G)
         self.assertEqual(time, 2.7189014503436333)
+
+    def test_remove_zero_cost_loops(self):
+        G = nx.MultiDiGraph()
+
+        G.add_node(1, x=0, y=0)
+        G.add_node(2, x=2, y=5)
+        G.add_node(3, x=2, y=0)
+
+        G.add_edge(2, 3, length=6.)
+        G.add_edge(3, 3, length=6.)
+        G.add_edge(2, 1, length=4.)
+
+        remove_zero_cost_loops(G)
+
+        self.assertEqual(list(G.edges()), [(2, 3), (2, 1)])
+
+    def test_remove_dead_ends(self):
+        #  1 - 2 - 8
+        #  |   |
+        #  4 - 3
+        #  |
+        #  5 - 7
+        #  |
+        #  6
+        G = nx.MultiDiGraph()
+        G.add_edge(1, 2)
+        G.add_edge(2, 3)
+        G.add_edge(3, 4)
+        G.add_edge(4, 1)
+        G.add_edge(4, 5)
+        G.add_edge(5, 6)
+        G.add_edge(5, 7)
+        G.add_edge(2, 8)
+
+        remove_dead_ends(G, 8)
+
+        self.assertEqual(list(G.nodes()), [1, 2, 3, 4, 8])
+
+        #  1 - 2
+        #  |   |
+        #  4 - 3
+        #  |
+        #  5<->6
+        G = nx.MultiDiGraph()
+        G.add_edge(1, 2)
+        G.add_edge(2, 3)
+        G.add_edge(3, 4)
+        G.add_edge(4, 1)
+        G.add_edge(4, 5)
+        G.add_edge(5, 6)
+        G.add_edge(6, 5)
+
+        remove_dead_ends(G, 3)
+
+        self.assertEqual(list(G.nodes()), [1, 2, 3, 4])
+
+        #  1 - 2 - 9
+        #  |   |
+        #  4 - 3
+        #  |
+        #  5<->6<->8
+        #  |
+        #  7
+        G = nx.MultiDiGraph()
+        G.add_edge(1, 2)
+        G.add_edge(2, 3)
+        G.add_edge(3, 4)
+        G.add_edge(4, 1)
+        G.add_edge(4, 5)
+        G.add_edge(5, 6)
+        G.add_edge(6, 5)
+        G.add_edge(6, 8)
+        G.add_edge(8, 6)
+        G.add_edge(5, 7)
+        G.add_edge(2, 9)
+
+        remove_dead_ends(G, 3)
+
+        self.assertEqual(list(G.nodes()), [1, 2, 3, 4])
 
 
 if __name__ == '__main__':

@@ -14,12 +14,11 @@ class TestSimulation(unittest.TestCase):
 
     @patch('osmnx.project_graph')
     def test_run_simulation(self, mock_obj):
-        G = _setup_mdp()
+        G = _setup_mdp(remove_dead_ends=True)
         mock_obj.return_value = G
         mdp = mdp6.MDP(G)
         mdp.start = 1
         mdp.goal = 6
-        mdp.setup = lambda x, y: mdp._setup()
 
         # When we get to state 2, best path would be to go state 4.
         # We diverge to 3.
@@ -44,14 +43,16 @@ class TestSimulation(unittest.TestCase):
     @patch('random.random')
     # Don't import mdp6.MDP, but simulation.MDP due to the from import in
     # simulation.py
-    @patch('simulation.MDP.setup', autospec=True)
+    #@patch('simulation.MDP.setup', autospec=True)
     @patch('simulation.load_maps', spec=lambda: None)
+    @patch('simulation.remove_dead_ends', spec=lambda: None)
     @patch('osmnx.project_graph')
     def test_run_simulations(
             self,
             mock_project_graph,
+            mock_remove_dead_ends,
             mock_load_maps,
-            mock_MDP_setup,
+            #mock_MDP_setup,
             mock_random,
             mock_choice):
         # It's important that the diverge policy stays the same for each
@@ -62,7 +63,7 @@ class TestSimulation(unittest.TestCase):
         mock_random.side_effect = lambda: next(random_seq)
         mock_choice.side_effect = lambda successors, _, __=False: [successors[0]]
 
-        G = _setup_mdp()
+        G = _setup_mdp(remove_dead_ends=True)
         mock_project_graph.return_value = G
 
         results = []
@@ -93,14 +94,7 @@ class TestSimulation(unittest.TestCase):
                 ]
             }
 
-            def _setup(self, start, goal):
-                self.start = start
-                self.goal = goal
-                self._setup()
-
-            mock_MDP_setup.side_effect = _setup
-
             with patch('simulation.MAPS', MAPS), patch('simulation.LOCATIONS', LOCATIONS):
                 simulation.run_simulations()
 
-            self.assertEqual(results, [[1, 2, 3, 6], [1, 2, 3, 6]])
+            self.assertEqual(results, [[1, 2, 3, 6], [1, 2, 3, 6], {1, 2, 3, 6}])
