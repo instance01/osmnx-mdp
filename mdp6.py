@@ -363,6 +363,7 @@ class MDP(Algorithm):
         visited = set()
 
         nodes = [self.start]
+        nodes_lookup = set(nodes)
         curr_node = self.start
         while curr_node != self.goal:
             if curr_node not in policy:
@@ -370,7 +371,8 @@ class MDP(Algorithm):
 
             diverged_node = diverge_policy.get(curr_node, None)
 
-            if diverged_node is None or diverged_node in visited:
+            going_backward = diverged_node in visited or diverged_node in nodes_lookup
+            if diverged_node is None or going_backward:
                 curr_node = self.A[curr_node][policy[curr_node]][1]
             else:
                 curr_node = diverged_node

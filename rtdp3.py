@@ -111,7 +111,9 @@ class RTDP(Algorithm):
 
             diverged_node = diverge_policy.get(curr_node, None)
             next_curr_path = next(path)
-            if diverged_node is None or diverged_node in visited:
+            # TODO: PEP-8
+            going_backwards = diverged_node in visited or diverged_node in path_lookup
+            if diverged_node is None or going_backwards:
                 curr_node = next_curr_path
             else:
                 curr_node = diverged_node
