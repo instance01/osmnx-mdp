@@ -1,1 +1,1 @@
-python3 -m pytest -s tests
+python3 -m pytest -s --pyargs osmnx_mdp.tests
