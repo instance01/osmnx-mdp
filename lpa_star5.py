@@ -33,7 +33,7 @@ class LPA_Star(Algorithm):
     def heuristic_func(self, node):
         goal_node = self.G_projected.nodes[self.goal]
         node = self.G_projected.nodes[node]
-        return aerial_dist(node, goal_node) * 1000 / 50.  # In hours, optimistic
+        return aerial_dist(node, goal_node) / 50.  # In hours, optimistic
 
     def calculate_key(self, node):
         key = min(self.g[node], self.rhs[node])
@@ -67,7 +67,7 @@ class LPA_Star(Algorithm):
         else:
             maxspeed = int(edge_data.get('maxspeed', 30))
 
-        return edge_data['length'] / maxspeed
+        return edge_data['length'] * 1000 / maxspeed
 
     def update_vertex(self, u):
         if u != self.start:
@@ -145,7 +145,7 @@ class LPA_Star(Algorithm):
 
 
 if __name__ == '__main__':
-    with open('maxvorstadt2.pickle', 'rb') as f:
+    with open('data/maxvorstadt.pickle', 'rb') as f:
         G = pickle.load(f)
 
     lpa = LPA_Star(G)
