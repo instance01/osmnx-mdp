@@ -66,6 +66,9 @@ def load_maps():
             print('Loading fresh map from OSM.')
             G = load_map_from_osm(map_metadata['place'])
 
+            print('Projecting graph. This might take a while..')
+            G = ox.project_graph(G)
+
             with open(map_metadata['file'], 'wb+') as f:
                 pickle.dump(G, f)
 

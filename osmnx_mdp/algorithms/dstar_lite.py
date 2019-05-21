@@ -15,7 +15,7 @@ from osmnx_mdp.lib import get_edge_cost
 
 class DStar_Lite(Algorithm):
     def __init__(self, G):
-        self.G = ox.project_graph(G)
+        self.G = G
 
         # TODO: Explain
         self.k = 0

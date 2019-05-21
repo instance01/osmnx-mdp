@@ -6,7 +6,6 @@ from itertools import combinations
 from collections import defaultdict
 from collections import namedtuple
 
-import osmnx as ox
 import numpy as np
 
 from osmnx_mdp.algorithms.algorithm import Algorithm
@@ -23,7 +22,7 @@ Intersection = namedtuple(
 
 class MDP(Algorithm):
     def __init__(self, G):
-        self.G = ox.project_graph(G)
+        self.G = G
         self.S = set({})  # [node1, node2, ..]
         self.A = defaultdict(list)  # {node1: [edge1, edge2, ..], ..}
         self.P = defaultdict(dict)  # {node1: {(node1, node_to): [(node_to, 1.0)], ..}, ..}
@@ -287,16 +286,19 @@ class MDP(Algorithm):
         return angle_nodes
 
     def _get_Q_value(self, prev_V, gamma, state, action):
-        node_to = action[1]
+        immediate_cost = self.C[action]
 
-        immediate_cost = 0
+        # sum() is slower than a for loop, because the array is usually only
+        # a few elements (we usually have only 1 or 2 outcomes).
+        # So the overhead of creating a new array is too big.
+        # future_cost = sum(
+        #     chance * gamma * prev_V[next_node]
+        #     for next_node, chance in self.P[state][action]
+        # )
+
         future_cost = 0
-        for outcome in self.P[state][action]:
-            curr_node_to = outcome[0]
-            chance = outcome[1]
-
-            immediate_cost += chance * self.C[(state, node_to)]
-            future_cost += chance * gamma * prev_V[curr_node_to]
+        for next_node, chance in self.P[state][action]:
+            future_cost += chance * gamma * prev_V[next_node]
 
         return immediate_cost + future_cost
 
@@ -317,8 +319,7 @@ class MDP(Algorithm):
         start = time.time()
 
         for i in range(max_iter):
-            # TODO: This deepcopy is most likely very costly..
-            prev_V = copy.deepcopy(V)
+            prev_V = copy.copy(V)
 
             for s in self.S:
                 for a in self.A[s]:
@@ -328,7 +329,7 @@ class MDP(Algorithm):
                     a = min(Q[s], key=Q[s].get)
                     V[s] = Q[s][a]
 
-            c = sum([abs(x - y) for x, y in zip(prev_V.values(), V.values())])
+            c = sum(abs(x - y) for x, y in zip(prev_V.values(), V.values()))
 
             # below just debug output
             if verbose:

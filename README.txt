@@ -24,3 +24,7 @@ Miscellaneous methods:
 
 Technologies:
 * osmnx (OpenStreetMap + networkx)
+
+
+Development:
+pip3 install -e .
