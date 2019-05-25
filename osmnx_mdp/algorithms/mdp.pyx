@@ -1,0 +1,658 @@
+# cython: language_level=3
+# cython: profile=True
+#from libcpp.unordered_map cimport unordered_map as unordered_map2
+from libcpp.pair cimport pair
+from libcpp.vector cimport vector
+# cdef extern from "<algorithm>" namespace "std":
+#     #Iter find_if[Iter, Func](Iter first, Iter last, Func pred)
+#     iter min_element(iter first, iter last);
+
+cdef extern from "<google/dense_hash_map>" namespace "google" nogil:
+    cdef cppclass dense_hash_map[T, U, Hash=*]:
+        void set_empty_key(T& key)
+        ctypedef T key_type
+        ctypedef U mapped_type
+        ctypedef Hash hasher
+        ctypedef pair[const T, U] value_type
+        cppclass iterator:
+            pair[T, U]& operator*()
+            iterator operator++()
+            iterator operator--()
+            bint operator==(iterator)
+            bint operator!=(iterator)
+        cppclass reverse_iterator:
+            pair[T, U]& operator*()
+            iterator operator++()
+            iterator operator--()
+            bint operator==(reverse_iterator)
+            bint operator!=(reverse_iterator)
+        cppclass const_iterator(iterator):
+            pass
+        cppclass const_reverse_iterator(reverse_iterator):
+            pass
+        dense_hash_map() except +
+        dense_hash_map(dense_hash_map&) except +
+        #dense_hash_map(key_compare&)
+        U& operator[](T&)
+        #dense_hash_map& operator=(dense_hash_map&)
+        bint operator==(dense_hash_map&, dense_hash_map&)
+        bint operator!=(dense_hash_map&, dense_hash_map&)
+        bint operator<(dense_hash_map&, dense_hash_map&)
+        bint operator>(dense_hash_map&, dense_hash_map&)
+        bint operator<=(dense_hash_map&, dense_hash_map&)
+        bint operator>=(dense_hash_map&, dense_hash_map&)
+        U& at(const T&)
+        const U& const_at "at"(const T&)
+        iterator begin()
+        const_iterator const_begin "begin"()
+        void clear()
+        size_t count(T&)
+        bint empty()
+        iterator end()
+        const_iterator const_end "end"()
+        pair[iterator, iterator] equal_range(T&)
+        pair[const_iterator, const_iterator] const_equal_range "equal_range"(const T&)
+        iterator erase(iterator)
+        iterator erase(iterator, iterator)
+        size_t erase(T&)
+        iterator find(T&)
+        const_iterator const_find "find"(T&)
+        pair[iterator, bint] insert(pair[T, U]) # XXX pair[T,U]&
+        iterator insert(iterator, pair[T, U]) # XXX pair[T,U]&
+        iterator insert(iterator, iterator)
+        #key_compare key_comp()
+        iterator lower_bound(T&)
+        const_iterator const_lower_bound "lower_bound"(T&)
+        size_t max_size()
+        reverse_iterator rbegin()
+        const_reverse_iterator const_rbegin "rbegin"()
+        reverse_iterator rend()
+        const_reverse_iterator const_rend "rend"()
+        size_t size()
+        void swap(dense_hash_map&)
+        iterator upper_bound(T&)
+        const_iterator const_upper_bound "upper_bound"(T&)
+        #value_compare value_comp()
+        void max_load_factor(float)
+        float max_load_factor()
+        void rehash(size_t)
+        void reserve(size_t)
+        size_t bucket_count()
+        size_t max_bucket_count()
+        size_t bucket_size(size_t)
+        size_t bucket(const T&)
+
+cdef extern from "<unordered_map>" namespace "std" nogil:
+    cdef cppclass unordered_map[T, U, Hash]:
+        ctypedef T key_type
+        ctypedef U mapped_type
+        ctypedef pair[const T, U] value_type
+        ctypedef Hash hasher
+        cppclass iterator:
+            pair[T, U]& operator*()
+            iterator operator++()
+            iterator operator--()
+            bint operator==(iterator)
+            bint operator!=(iterator)
+        cppclass reverse_iterator:
+            pair[T, U]& operator*()
+            iterator operator++()
+            iterator operator--()
+            bint operator==(reverse_iterator)
+            bint operator!=(reverse_iterator)
+        cppclass const_iterator(iterator):
+            pass
+        cppclass const_reverse_iterator(reverse_iterator):
+            pass
+        unordered_map() except +
+        unordered_map(unordered_map&) except +
+        #unordered_map(key_compare&)
+        U& operator[](T&)
+        #unordered_map& operator=(unordered_map&)
+        bint operator==(unordered_map&, unordered_map&)
+        bint operator!=(unordered_map&, unordered_map&)
+        bint operator<(unordered_map&, unordered_map&)
+        bint operator>(unordered_map&, unordered_map&)
+        bint operator<=(unordered_map&, unordered_map&)
+        bint operator>=(unordered_map&, unordered_map&)
+        U& at(const T&)
+        const U& const_at "at"(const T&)
+        iterator begin()
+        const_iterator const_begin "begin"()
+        void clear()
+        size_t count(T&)
+        bint empty()
+        iterator end()
+        const_iterator const_end "end"()
+        pair[iterator, iterator] equal_range(T&)
+        pair[const_iterator, const_iterator] const_equal_range "equal_range"(const T&)
+        iterator erase(iterator)
+        iterator erase(iterator, iterator)
+        size_t erase(T&)
+        iterator find(T&)
+        const_iterator const_find "find"(T&)
+        pair[iterator, bint] insert(pair[T, U]) # XXX pair[T,U]&
+        iterator insert(iterator, pair[T, U]) # XXX pair[T,U]&
+        iterator insert(iterator, iterator)
+        #key_compare key_comp()
+        iterator lower_bound(T&)
+        const_iterator const_lower_bound "lower_bound"(T&)
+        size_t max_size()
+        reverse_iterator rbegin()
+        const_reverse_iterator const_rbegin "rbegin"()
+        reverse_iterator rend()
+        const_reverse_iterator const_rend "rend"()
+        size_t size()
+        void swap(unordered_map&)
+        iterator upper_bound(T&)
+        const_iterator const_upper_bound "upper_bound"(T&)
+        #value_compare value_comp()
+        void max_load_factor(float)
+        float max_load_factor()
+        void rehash(size_t)
+        void reserve(size_t)
+        size_t bucket_count()
+        size_t max_bucket_count()
+        size_t bucket_size(size_t)
+        size_t bucket(const T&)
+
+cdef extern from "testthis.hpp":
+    int Xd (float gamma, int state)
+    struct pair_hash:
+        long operator(pair[long, long])
+    #void solve(
+    #    unordered_map2[long, float] V,
+    #    vector[long] S,
+    #    unordered_map2[long, vector[pair[long, long]]] A,
+    #    unordered_map[pair[long, long], float, pair_hash] C,
+    #    unordered_map2[long, unordered_map[pair[long, long], vector[pair[long, float]], pair_hash]] P,
+    #    int max_iter
+    #)
+    void solve(
+        dense_hash_map[long, float] V,
+        vector[long] S,
+        dense_hash_map[long, vector[pair[long, long]]] A,
+        dense_hash_map[pair[long, long], float, pair_hash] C,
+        dense_hash_map[long, dense_hash_map[pair[long, long], vector[pair[long, float]], pair_hash]] P,
+        int max_iter
+    )
+
+cdef int Xdf(float gamma, int state):
+    return Xd(gamma, state)
+
+import time
+import sys
+import copy
+import pickle
+from itertools import combinations
+from collections import defaultdict
+from collections import namedtuple
+
+import numpy as np
+
+from osmnx_mdp.lib cimport get_angle
+from osmnx_mdp.lib cimport get_edge_cost
+from osmnx_mdp.lib cimport remove_dead_ends
+
+cimport cython
+
+
+Intersection = namedtuple(
+    'Intersection',
+    ['left_node', 'right_node', 'straight_on_node', 'origin_edge']
+)
+
+
+cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
+    def __reduce__(self):
+        return (self.__class__, (self.G,), {
+            "G": self.G,
+            "S": self.S,
+            "A": self.A,
+            "P": self.P,
+            "C": self.C,
+            "start": self.start,
+            "goal": self.goal,
+            "close_nodes": self.close_nodes,
+            "angle_nodes": self.angle_nodes})
+
+    def __cinit__(self, G):
+        self.__init__(G)
+
+    def __init__(self, G):
+        self.G = G
+        self.S = set({})  # [node1, node2, ..]
+        self.A = defaultdict(list)  # {node1: [edge1, edge2, ..], ..}
+        self.P = defaultdict(dict)  # {node1: {(node1, node_to): [(node_to, 1.0)], ..}, ..}
+        self.C = {}  # {node_from: {node_to1: 2, node_to2: 3, ..}, ..}
+
+    cdef _add_costly_jump_to_goal(self, node):
+        # TODO: This seems to be not needed anymore, remove.
+        """This is to avoid dead ends.
+        We do this by adding a very costly jump to the goal to each node.
+        If a node ends up being a dead end, i.e. doesn't have any outgoing
+        edges except this one costly jump, its cost becomes as huge.
+        Thus this node becomes undesirable and will be avoided in the future.
+        See proof sketch of theorem 3 in the paper:
+            Kobolov, Stochastic Shortest Path MDPs with Dead Ends.
+        Another way would be to simply set V of a dead end node (which is not
+        the goal node) to a very high cost, as described in the definition of
+        fSSPUDE (same paper as above).
+        """
+        # Don't add costly jump to nodes adjacent to the goal.
+        if self.goal not in self.G.successors(node):
+            self.A[node].append((node, self.goal))
+            self.P[node][(node, self.goal)] = [(self.goal, 1.0)]
+            self.C[(node, self.goal)] = 100000.
+
+    cdef _setup(self):
+        for node in self.G.nodes():
+            self.S.add(node)
+            self.A[node] = [edge for edge in self.G.edges(nbunch=node)]
+
+            edges_out = self.G.edges.data(nbunch=node)
+            for edge in edges_out:
+                action = (edge[0], edge[1])
+                self.P[node][action] = self.P[node].get(action, [])
+                # For now we end up in correct state 100% of the time.
+                self.P[node][action].append((edge[1], 1.0))
+
+        for edge in self.G.edges():
+            #self.C[edge] = get_edge_cost(self.G, *edge)
+            self.C[edge] = get_edge_cost(self.G, edge[0], edge[1])
+
+    cdef setup(self, long start, long goal):
+        self.start = start
+        self.goal = goal
+
+        self._setup()
+        self.make_goal_self_absorbing()
+        self.angle_nodes = self.make_low_angle_intersections_uncertain()
+
+        intersections = self.make_close_intersections_uncertain()
+        close_nodes = [x.origin_edge[1] for x in intersections]
+        self.close_nodes = close_nodes
+
+        total_uncertain_nodes = len(self.angle_nodes) + len(self.close_nodes)
+        uncertainty_percent = total_uncertain_nodes / len(self.G.nodes()) * 100
+        print('%f%% of nodes are uncertain.' % uncertainty_percent)
+
+    cdef make_goal_self_absorbing(self):
+        """Add a zero-cost loop at the goal to absorb cost.
+        """
+        self.A[self.goal].append((self.goal, self.goal))
+        self.C[(self.goal, self.goal)] = 0
+        self.P[self.goal][(self.goal, self.goal)] = [(self.goal, 1.0)]
+
+    cdef _get_coordinates(self, node):
+        return self.G.nodes[node]['x'], self.G.nodes[node]['y']
+
+    cdef _make_edge_uncertain(self, temp_P, edge, other_node):
+        """Make taking the action of following given edge probabilistic,
+        i.e. end up in the expected edge only 90% of the time and end
+        up in other_node 10% of the time.
+        If the edge is already probabilistic, decrease its chance (e.g.
+        from 90% to 80% and so on).
+        Modifies temp_P inplace.
+        """
+        node_to = edge[1]
+
+        if edge not in temp_P:
+            temp_P[edge] = [(node_to, .9), (other_node, .1)]
+        else:
+            temp_P[edge].append((other_node, .1))
+            temp_P[edge][0] = (node_to, temp_P[edge][0][1] - .1)
+
+    cdef _get_normal_intersection(self, edge):
+        origin_node = edge[1]
+
+        straight_on_node = None
+        left_node = None
+        right_node = None
+
+        for node in self.G.successors(origin_node):
+            p1 = self._get_coordinates(edge[0])
+            p2 = self._get_coordinates(node)
+            origin = self._get_coordinates(origin_node)
+
+            angle = get_angle(p1, p2, origin)
+            if angle < 0:
+                angle += 360
+
+            if abs(angle - 90) < 10:
+                left_node = node
+
+            if abs(angle - 270) < 10:
+                right_node = node
+
+            if abs(angle - 180) < 10:
+                straight_on_node = node
+
+        if straight_on_node and (right_node or left_node):
+            return Intersection(
+                left_node,
+                right_node,
+                straight_on_node,
+                edge
+            )
+
+    cdef _get_normal_intersections(self):
+        """Scan graph for intersections satisfying the following condition:
+
+        A node with >= 2 outgoing edges is needed with the following
+        angles:
+            * 180
+            * 90 or 270
+
+        Returns a list of nodes that satisfy the condition.
+        """
+        intersections = []
+
+        for edge in self.G.edges.data():
+            intersection = self._get_normal_intersection(edge)
+            if intersection:
+                intersections.append(intersection)
+
+        return intersections
+
+    cdef make_close_intersections_uncertain(self, max_length=100):
+        """Scan graph for intersections that follow very closely.
+
+        Use cases:
+            - When you're supposed to go to the right or left, but go straight
+              on because you've missed the intersection as it's very close.
+            - When you're supposed to go straight on so that you can turn right
+              or left on the next intersection, but you do so on the current
+              one, which is too early.
+        """
+        close_intersections = []
+
+        for intersection in self._get_normal_intersections():
+            next_edge = (intersection.origin_edge[1], intersection.straight_on_node)
+            next_intersection = self._get_normal_intersection(next_edge)
+
+            if not next_intersection:
+                continue
+
+            origin_edge_length = intersection.origin_edge[2]['length']
+            next_edge_length = self.G[next_edge[0]][next_edge[1]][0]['length']
+
+            # TODO: Consider ox.clean_intersections, then that <20 check isn't
+            # needed anymore.
+            if next_edge_length > max_length or origin_edge_length < 20:
+                continue
+
+            origin_node = intersection.origin_edge[1]
+
+            # TODO Cleanup below
+
+            if (intersection.left_node and next_intersection.left_node):
+                close_intersections.append(intersection)
+                self._make_edge_uncertain(
+                        self.P[origin_node],
+                        next_edge,
+                        intersection.left_node)
+                self._make_edge_uncertain(
+                        self.P[origin_node],
+                        (origin_node, intersection.left_node),
+                        intersection.straight_on_node)
+
+            if (intersection.right_node and next_intersection.right_node):
+                # TODO: Improve code
+                if intersection not in close_intersections:
+                    close_intersections.append(intersection)
+                self._make_edge_uncertain(
+                        self.P[origin_node],
+                        next_edge,
+                        intersection.right_node)
+                self._make_edge_uncertain(
+                        self.P[origin_node],
+                        (origin_node, intersection.right_node),
+                        intersection.straight_on_node)
+
+        return close_intersections
+
+    cdef make_low_angle_intersections_uncertain(self, max_angle=30):
+        """
+         (2)   (3)
+          *     *
+           \   /
+            \ /
+             * (1)
+
+        If angle between edges (1, 2) and (1, 3) is small enough,
+        make those edges uncertain, i.e. add a 10% chance end up
+        in the other node and not the expected one.
+        """
+        angle_nodes = []
+
+        for edge in self.G.edges.data():
+            p3 = self._get_coordinates(edge[0])
+            origin_node = edge[1]
+            origin = self._get_coordinates(origin_node)
+
+            edges_out = self.G.edges.data(nbunch=origin_node)
+            temp_P = {}
+
+            num_critical_nodes = 0
+
+            for (e1, e2) in combinations(edges_out, 2):
+                # We can't reuse the edge that goes back as one of the
+                # out_edges.
+                # 1   3
+                #  \  |
+                #   \ |
+                #     2
+                # We come from 1, and without the checks below we reuse
+                # edge (1, 2) and erroneously find a critical angle
+                # between (1, 2) and (2, 3).
+                if e1[:2] == edge[1::-1] or e2[:2] == edge[1::-1]:
+                    continue
+
+                p1 = self._get_coordinates(e1[1])
+                p2 = self._get_coordinates(e2[1])
+
+                # The following line solves the following scenario:
+                # 1   3   4
+                #  \  |  /
+                #   \ | /
+                #     2
+                # Let's say we come from node 3 and we're currently at node 2.
+                # We used to simply get the angle between the two edges (here
+                # (1, 2) and (4, 2)), which in this case is <30 degrees.
+                # But this is a T-shaped intersection, just sharper. This is
+                # not a critical intersection.
+                # So currently we get the angle between edge (4, 2) and (3, 2),
+                # which is e.g. 20 degrees, and the angle between (1, 2) and
+                # (3, 2), which is then 340 degrees.
+                # It follows that the difference of both is 320 > 30 degrees.
+                # Thus it is not a critical intersection.
+                angle = get_angle(p1, p3, origin) - get_angle(p2, p3, origin)
+                if abs(angle) <= max_angle:
+                    edge1 = e1[:2]
+                    edge2 = e2[:2]
+
+                    self._make_edge_uncertain(temp_P, edge1, edge2[1])
+                    self._make_edge_uncertain(temp_P, edge2, edge1[1])
+
+                    num_critical_nodes += 1
+
+            if num_critical_nodes > 0:
+                angle_nodes.append(origin_node)
+
+            self.P[origin_node].update(temp_P)
+
+        return angle_nodes
+
+    cdef _get_Q_value(self, prev_V, gamma, state, action):
+        #test({1: 2})
+        #Xdf(gamma, state)
+        cdef float immediate_cost = self.C[action]
+
+        # sum() is slower than a for loop, because the array is usually only
+        # a few elements (we usually have only 1 or 2 outcomes).
+        # So the overhead of creating a new array is too big.
+        # future_cost = sum(
+        #     chance * gamma * prev_V[next_node]
+        #     for next_node, chance in self.P[state][action]
+        # )
+
+        cdef float future_cost = 0
+        for next_node, chance in self.P[state][action]:
+            future_cost += chance * gamma * prev_V[next_node]
+
+        return immediate_cost + future_cost
+
+    cdef solve_value_iteration(
+            self,
+            float gamma=1.,
+            int max_iter=5000,
+            float eps=1e-30,
+            bint verbose=True):
+        """Solve the MDP with value iteration.
+        """
+        #cdef dict V = {}
+        #cdef dict Q = {}
+        #for s in self.S:
+        #    Q[s] = {a: 0. for a in self.A[s]}
+        #    V[s] = 0.
+
+        #cdef unordered_map2[long, float] V
+
+        #cdef vector[long] S = self.S
+
+        #cdef unordered_map2[long, vector[pair[long, long]]] A
+        #for k, v in self.A.items():
+        #    A[k] = v
+
+        #cdef unordered_map[pair[long, long], float, pair_hash] C
+        #for k, v in self.C.items():
+        #    C[k] = v
+
+        #cdef unordered_map2[long, unordered_map[pair[long, long], vector[pair[long, float]], pair_hash]] P
+        #cdef unordered_map[pair[long, long], vector[pair[long, float]], pair_hash] curr
+        #for k, v in self.P.items():
+        #    for k_, v_ in v.items():
+        #        curr[k_] = v_
+        #    P[k] = curr
+        #    curr.clear()
+
+        cdef dense_hash_map[long, float] V
+        V.set_empty_key(0)
+
+        cdef vector[long] S = self.S
+
+        cdef dense_hash_map[long, vector[pair[long, long]]] A
+        A.set_empty_key(0)
+        for k, v in self.A.items():
+            A[k] = v
+
+        cdef dense_hash_map[pair[long, long], float, pair_hash] C
+        C.set_empty_key((0, 0))
+        for k, v in self.C.items():
+            C[k] = v
+
+        cdef dense_hash_map[long, dense_hash_map[pair[long, long], vector[pair[long, float]], pair_hash]] P
+        P.set_empty_key(0)
+        cdef dense_hash_map[pair[long, long], vector[pair[long, float]], pair_hash] curr
+        curr.set_empty_key((0, 0))
+        for k, v in self.P.items():
+            for k_, v_ in v.items():
+                curr[k_] = v_
+            P[k] = curr
+            curr.clear()
+
+
+        solve(V, S, A, C, P, max_iter)
+
+        #return V, {}
+        ret = {}
+        for k, v in V:
+            ret[k] = v
+        return ret, {}
+
+        #start = time.time()
+
+        #for i in range(max_iter):
+        #    prev_V = copy.copy(V)
+
+        #    for s in self.S:
+        #        for a in self.A[s]:
+        #            Q[s][a] = self._get_Q_value(prev_V, gamma, s, a)
+
+        #        #if Q[s]:
+        #        a = min(Q[s], key=Q[s].get)
+        #        V[s] = Q[s][a]
+
+        #    # TODO: Only do this every 100 calls:
+        #    if i % 100 == 0:
+        #        c = sum(abs(x - y) for x, y in zip(prev_V.values(), V.values()))
+        #        #c = sum([abs(x - y) for x, y in zip(prev_V.values(), vals)])
+
+        #        if c <= eps:
+        #            if verbose:
+        #                print('CONVERGED:', i, c)
+        #            break
+
+        #        # below just debug output
+        #        if verbose:
+        #            #if i % 100 == 0:
+        #            curr_time = time.time() - start
+        #            sys.stdout.write('\r(%.2f) [%d] %.14f' % (curr_time, i, c))
+        #            sys.stdout.flush()
+
+        #return V, Q
+
+    cdef get_policy(self, V):
+        policy = {}
+        for s in self.S:
+            actions = []
+            for a in self.A[s]:
+                v = sum([x[1] * (self.C[(s, a[1])] + V[x[0]]) for x in self.P[s][a]])
+                actions.append(v)
+            if actions:
+                policy[s] = np.argmin(actions)
+
+        return policy
+
+    cdef drive(self, policy, diverge_policy):
+        # Make sure we don't loop indefinitely due to diverge policy
+        visited = set()
+
+        nodes = [self.start]
+        nodes_lookup = set(nodes)
+        curr_node = self.start
+        while curr_node != self.goal:
+            if curr_node not in policy:
+                break
+
+            diverged_node = diverge_policy.get(curr_node, None)
+
+            going_backward = diverged_node in visited or diverged_node in nodes_lookup
+            if diverged_node is None or going_backward:
+                curr_node = self.A[curr_node][policy[curr_node]][1]
+            else:
+                curr_node = diverged_node
+                visited.add(diverged_node)
+
+            nodes.append(curr_node)
+
+        return nodes
+
+    cdef solve(self):
+        V, _ = self.solve_value_iteration()
+        return self.get_policy(V)
+
+
+if __name__ == '__main__':
+    with open('../data/maxvorstadt.pickle', 'rb') as f:
+        G = pickle.load(f)
+
+    remove_dead_ends(G, 372796487)
+
+    mdp = MDP(G)
+    mdp.setup(246878841, 372796487)
+    V, Q = mdp.solve_value_iteration()
+
+    with open('model5.pickle', 'wb+') as f:
+        pickle.dump([mdp, V, Q], f)

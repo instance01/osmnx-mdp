@@ -28,3 +28,4 @@ Technologies:
 
 Development:
 pip3 install -e .
+sparsehash package

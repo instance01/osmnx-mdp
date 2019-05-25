@@ -1,0 +1,64 @@
+20.593947% of nodes are uncertain.
+sort by cumulative (the function itself plus all child functions called inside)
+Sat May 25 22:48:22 2019    mdp.profile
+
+         6533331 function calls in 10.771 seconds
+
+   Ordered by: cumulative time
+   List reduced from 58 to 20 due to restriction <20>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000   10.771   10.771 {built-in method builtins.exec}
+        1    0.000    0.000   10.771   10.771 <string>:1(<module>)
+        1    0.016    0.016   10.771   10.771 {osmnx_mdp.mdp_profile.run}
+        1    6.271    6.271    6.295    6.295 osmnx_mdp/algorithms/mdp.pyx:506(solve_value_iteration)
+        1    0.000    0.000    4.460    4.460 osmnx_mdp/algorithms/mdp.pyx:264(setup)
+        1    0.053    0.053    2.287    2.287 osmnx_mdp/algorithms/mdp.pyx:358(make_close_intersections_uncertain)
+    43965    1.449    0.000    2.168    0.000 osmnx_mdp/algorithms/mdp.pyx:306(_get_normal_intersection)
+        1    0.934    0.934    1.744    1.744 osmnx_mdp/algorithms/mdp.pyx:415(make_low_angle_intersections_uncertain)
+        1    0.011    0.011    1.650    1.650 osmnx_mdp/algorithms/mdp.pyx:339(_get_normal_intersections)
+   518407    0.356    0.000    0.982    0.000 osmnx_mdp/algorithms/mdp.pyx:287(_get_coordinates)
+  1036816    0.364    0.000    0.479    0.000 /usr/lib/python3.7/site-packages/networkx/classes/graph.py:646(nodes)
+        1    0.164    0.164    0.429    0.429 osmnx_mdp/algorithms/mdp.pyx:248(_setup)
+   442304    0.254    0.000    0.317    0.000 /usr/lib/python3.7/site-packages/networkx/classes/reportviews.py:805(<genexpr>)
+    32947    0.024    0.000    0.203    0.000 /usr/lib/python3.7/site-packages/networkx/classes/reportviews.py:801(__len__)
+  1036814    0.147    0.000    0.147    0.000 /usr/lib/python3.7/site-packages/networkx/classes/reportviews.py:177(__getitem__)
+    90613    0.034    0.000    0.141    0.000 /usr/lib/python3.7/site-packages/networkx/classes/multidigraph.py:512(edges)
+    32947    0.020    0.000    0.139    0.000 {built-in method builtins.sum}
+    45307    0.029    0.000    0.131    0.000 /usr/lib/python3.7/site-packages/networkx/classes/reportviews.py:1114(data)
+    57666    0.077    0.000    0.129    0.000 /usr/lib/python3.7/site-packages/networkx/classes/reportviews.py:769(__init__)
+   126425    0.026    0.000    0.118    0.000 /usr/lib/python3.7/site-packages/networkx/classes/reportviews.py:802(<genexpr>)
+
+
+sort by total time (only the function itself not its childrens)
+Sat May 25 22:48:22 2019    mdp.profile
+
+         6533331 function calls in 10.771 seconds
+
+   Ordered by: internal time
+   List reduced from 58 to 20 due to restriction <20>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    6.271    6.271    6.295    6.295 osmnx_mdp/algorithms/mdp.pyx:506(solve_value_iteration)
+    43965    1.449    0.000    2.168    0.000 osmnx_mdp/algorithms/mdp.pyx:306(_get_normal_intersection)
+        1    0.934    0.934    1.744    1.744 osmnx_mdp/algorithms/mdp.pyx:415(make_low_angle_intersections_uncertain)
+  1036816    0.364    0.000    0.479    0.000 /usr/lib/python3.7/site-packages/networkx/classes/graph.py:646(nodes)
+   518407    0.356    0.000    0.982    0.000 osmnx_mdp/algorithms/mdp.pyx:287(_get_coordinates)
+   442304    0.254    0.000    0.317    0.000 /usr/lib/python3.7/site-packages/networkx/classes/reportviews.py:805(<genexpr>)
+        1    0.164    0.164    0.429    0.429 osmnx_mdp/algorithms/mdp.pyx:248(_setup)
+  1036814    0.147    0.000    0.147    0.000 /usr/lib/python3.7/site-packages/networkx/classes/reportviews.py:177(__getitem__)
+  1036816    0.115    0.000    0.115    0.000 /usr/lib/python3.7/site-packages/networkx/classes/reportviews.py:167(__init__)
+    57666    0.077    0.000    0.129    0.000 /usr/lib/python3.7/site-packages/networkx/classes/reportviews.py:769(__init__)
+        1    0.053    0.053    2.287    2.287 osmnx_mdp/algorithms/mdp.pyx:358(make_close_intersections_uncertain)
+    90613    0.043    0.000    0.114    0.000 /usr/lib/python3.7/site-packages/networkx/classes/reportviews.py:804(__iter__)
+    90610    0.043    0.000    0.071    0.000 /usr/lib/python3.7/site-packages/networkx/classes/reportviews.py:778(<lambda>)
+    90613    0.037    0.000    0.108    0.000 /usr/lib/python3.7/site-packages/networkx/classes/reportviews.py:906(__init__)
+    90613    0.034    0.000    0.141    0.000 /usr/lib/python3.7/site-packages/networkx/classes/multidigraph.py:512(edges)
+   476462    0.032    0.000    0.032    0.000 {method 'items' of 'dict' objects}
+    90613    0.032    0.000    0.042    0.000 /usr/lib/python3.7/site-packages/networkx/classes/multidigraph.py:318(succ)
+    57663    0.030    0.000    0.052    0.000 /usr/lib/python3.7/site-packages/networkx/classes/graph.py:1844(nbunch_iter)
+    90613    0.029    0.000    0.071    0.000 {built-in method builtins.hasattr}
+    45307    0.029    0.000    0.131    0.000 /usr/lib/python3.7/site-packages/networkx/classes/reportviews.py:1114(data)
+
+
+

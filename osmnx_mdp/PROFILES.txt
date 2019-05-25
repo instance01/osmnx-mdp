@@ -1,0 +1,7 @@
+
+mdp1: at the beginning
+mdp2: after some minor performance fixes (see 'Performance improvements' commit May 21)
+mdp3: after basic cythonizing
+mdp4: after moving solve_value_iteration into C++ module
+mdp5: after using googles dense_hash_map
+

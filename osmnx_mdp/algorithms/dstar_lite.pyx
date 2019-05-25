@@ -1,0 +1,177 @@
+# cython: language_level=3
+from libc.math cimport INFINITY
+
+import pickle
+
+import matplotlib.pyplot as plt
+import osmnx as ox
+import networkx as nx
+
+from osmnx_mdp.lib cimport aerial_dist
+from osmnx_mdp.lib cimport get_node_properties
+from osmnx_mdp.lib cimport get_edge_cost
+
+cimport osmnx_mdp.algorithms.algorithm
+
+
+# TODO: unittests
+
+
+cdef class DStar_Lite(osmnx_mdp.algorithms.algorithm.Algorithm):
+    def __init__(self, G):
+        # TODO RENAME
+        #self.cpp = cpp_DStar_Lite()
+        #print(self.cpp.rhs)
+
+        self.G = G
+
+        # TODO: Explain
+        self.k = 0
+
+        # Estimate of distance from current node to start node
+        # rhs is an estimate using g value of predecessors + distance from
+        # current node to the predecessor.
+        # g is the previously calculated g-value (similar to A*).
+        # Thus rhs will mostly be a bit ahead of g.
+        self.rhs = {}
+        self.g = {}
+
+        self.U = {}  # TODO: queue.PriorityQueue()
+        self.backup = {}  # TODO: Remove
+
+    cdef setup(self, long start, long goal):
+        self.start = start
+        self.goal = goal
+
+        # TODO Per paper: It's not necessary to init all states to inf here
+        # We can also do it when we encounter a new state in
+        # compute_shortest_path
+        for node in self.G.nodes():
+            self.rhs[node] = INFINITY
+            self.g[node] = INFINITY
+
+        self.rhs[self.goal] = 0
+        self.U[self.goal] = self.calculate_key(self.goal)
+        self.backup[self.goal] = self.calculate_key(self.goal)
+
+    cdef heuristic_func(self, node):
+        start_node = self.G.nodes[self.start]
+        node = self.G.nodes[node]
+        # Divide by 50 since we need an admissible heuristic that doesn't
+        # over-estimate, and 50 is optimistic (since in most of the city
+        # we have 30 and 50 maxspeed).
+        # TODO: However on highways this is not optimistic anymore.
+        return aerial_dist(node, start_node) / 50.  # Hours
+
+    cdef calculate_key(self, node):
+        key = min(self.g[node], self.rhs[node])
+        return [key + self.heuristic_func(node) + self.k, key]
+
+    cdef update_vertex(self, u):
+        if u != self.goal:
+            nodes = list(self.G.successors(u))
+
+            self.rhs[u] = min([
+                    self.g[node] + get_edge_cost(self.G, u, node)
+                    for node in nodes])
+        if u in self.U:
+            del self.U[u]
+
+        if self.g[u] != self.rhs[u]:
+            self.U[u] = self.calculate_key(u)
+            self.backup[u] = self.calculate_key(u)
+
+    cdef compute_shortest_path(self):
+        while len(self.U) > 0 and \
+                (min(self.U.values()) < self.calculate_key(self.start) or
+                    self.rhs[self.start] != self.g[self.start]):
+            u = min(self.U, key=self.U.get)
+            k_old = self.U[u]
+            del self.U[u]
+
+            key = self.calculate_key(u)
+            if k_old < key:
+                self.U[u] = key
+                self.backup[u] = key
+            elif self.g[u] > self.rhs[u]:
+                self.g[u] = self.rhs[u]
+            else:
+                self.g[u] = INFINITY
+                self.update_vertex(u)
+
+            for node in self.G.predecessors(u):
+                self.update_vertex(node)
+
+    cdef solve(self):
+        self.compute_shortest_path()
+
+    cdef drive(self, policy, diverge_policy):
+        last_start = self.start
+
+        # TODO
+        # TODO
+        # TODO Is the order here given ?
+        visited = set({})
+        visited.add(self.start)
+
+        print('ffffffffffffffff', visited)
+
+        while self.start != self.goal:
+            if self.g[self.start] == INFINITY:
+                raise Exception('No path found.')
+
+            diverged_node = diverge_policy.get(self.start, None)
+            if diverged_node is None or diverged_node in visited:
+                nodes = list(self.G.successors(self.start))
+
+                # Cython doesn't support lambda.?
+                # the self argument is important it seems.
+                def min_func(G, start, g, node):
+                    #return get_edge_cost(self.G, self.start, node) + self.g[node]
+                    return get_edge_cost(G, start, node) + g[node]
+                #x = lambda self, node: get_edge_cost(self.G, self.start, node) + self.g[node]
+                #self.start = min(nodes, key=lambda self, node: get_edge_cost(self.G, self.start, node) + self.g[node])
+                import functools
+                self.start = min(nodes, key=functools.partial(min_func, self.G, self.start, self.g))
+
+                visited.add(self.start)
+            else:
+                visited.add(diverged_node)
+                self.start = diverged_node
+
+                self.k += aerial_dist(
+                        self.G.nodes[last_start],
+                        self.G.nodes[self.start])
+                last_start = self.start
+                self.compute_shortest_path()
+
+        print('FFF', visited)
+        return list(visited)
+
+
+if __name__ == '__main__':
+    with open('data/maxvorstadt.pickle', 'rb') as f:
+        G = pickle.load(f)
+
+    dstar = DStar_Lite(G)
+    dstar.setup(246878841, 372796487)
+    dstar.compute_shortest_path()
+    col_nodes = list(dstar.drive({}, {}))
+    print(col_nodes)
+
+    x = {}
+    for k, v in dstar.backup.items():
+        x[k] = v[0]
+
+    nc, ns = get_node_properties(dstar.G, col_nodes, x)
+    for node in dstar.G.nodes(data=True):
+        dstar.G.node[node[0]]['pos'] = (node[1]['x'], node[1]['y'])
+    nx.draw_networkx(
+            dstar.G,
+            nx.get_node_attributes(dstar.G, 'pos'),
+            node_size=ns,
+            node_color=nc,
+            node_zorder=2,
+            with_labels=False)
+
+    plt.show()
