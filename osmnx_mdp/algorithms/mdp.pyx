@@ -247,19 +247,17 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
 
     cdef _setup(self):
         for node in self.G.nodes():
-            self.S.add(node)
-            self.A[node] = [edge for edge in self.G.edges(nbunch=node)]
+            successors = list(self.G.successors(node))
 
-            edges_out = self.G.edges.data(nbunch=node)
-            for edge in edges_out:
-                action = (edge[0], edge[1])
+            self.S.add(node)
+            self.A[node] = [(node, succ) for succ in successors]
+
+            for succ in successors:
+                action = (node, succ)
                 self.P[node][action] = self.P[node].get(action, [])
                 # For now we end up in correct state 100% of the time.
-                self.P[node][action].append((edge[1], 1.0))
-
-        for edge in self.G.edges():
-            #self.C[edge] = get_edge_cost(self.G, *edge)
-            self.C[edge] = get_edge_cost(self.G, edge[0], edge[1])
+                self.P[node][action].append((succ, 1.0))
+                self.C[action] = get_edge_cost(self.G, node, succ)
 
     cdef setup(self, long start, long goal):
         self.start = start
@@ -274,7 +272,7 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
         self.close_nodes = close_nodes
 
         total_uncertain_nodes = len(self.angle_nodes) + len(self.close_nodes)
-        uncertainty_percent = total_uncertain_nodes / len(self.G.nodes()) * 100
+        uncertainty_percent = total_uncertain_nodes / self.G.number_of_nodes() * 100
         print('%f%% of nodes are uncertain.' % uncertainty_percent)
 
     cdef make_goal_self_absorbing(self):
@@ -536,6 +534,10 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
         #        curr[k_] = v_
         #    P[k] = curr
         #    curr.clear()
+
+
+        # Direct assignment is not possible since cython doesnt know how to concert a dense_hash_map to a Python object.
+        # But iterators work.
 
         cdef dense_hash_map[long, float] V
         V.set_empty_key(0)

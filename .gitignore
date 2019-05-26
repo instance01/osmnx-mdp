@@ -1,4 +1,9 @@
 cache
 __pycache__
-.pyc
-.swp
+*.pyc
+*.swp
+*.so
+osmnx_mdp.egg-info/
+sparsepp/
+build/
+cereal/

@@ -923,7 +923,7 @@ struct __pyx_obj_9osmnx_mdp_5tests_15test_simulation___pyx_scope_struct__test_ge
 
 
 /* "osmnx_mdp/tests/test_simulation.pyx":54
- *     @patch('osmnx_mdp.lib.remove_dead_ends', spec=lambda: None)
+ *     @patch('osmnx_mdp.simulation.remove_dead_ends', spec=lambda: None)
  *     @patch('osmnx.project_graph')
  *     def test_run_simulations(             # <<<<<<<<<<<<<<
  *             self,
@@ -1555,12 +1555,12 @@ static const char __pyx_k_osmnx_mdp_simulation_MAPS[] = "osmnx_mdp.simulation.MA
 static const char __pyx_k_osmnx_mdp_tests_test_utils[] = "osmnx_mdp.tests.test_utils";
 static const char __pyx_k_test_generate_diverge_policy[] = "test_generate_diverge_policy";
 static const char __pyx_k_TestSimulation_test_load_maps[] = "TestSimulation.test_load_maps";
-static const char __pyx_k_osmnx_mdp_lib_remove_dead_ends[] = "osmnx_mdp.lib.remove_dead_ends";
 static const char __pyx_k_osmnx_mdp_simulation_LOCATIONS[] = "osmnx_mdp.simulation.LOCATIONS";
 static const char __pyx_k_osmnx_mdp_simulation_load_maps[] = "osmnx_mdp.simulation.load_maps";
 static const char __pyx_k_osmnx_mdp_tests_test_simulation[] = "osmnx_mdp.tests.test_simulation";
 static const char __pyx_k_TestSimulation_test_generate_div[] = "TestSimulation.test_generate_diverge_policy.<locals>.<lambda>";
 static const char __pyx_k_TestSimulation_test_run_simulati[] = "TestSimulation.test_run_simulations.<locals>.<lambda>";
+static const char __pyx_k_osmnx_mdp_simulation_remove_dead[] = "osmnx_mdp.simulation.remove_dead_ends";
 static const char __pyx_k_osmnx_mdp_simulation_run_simulat[] = "osmnx_mdp.simulation.run_simulation";
 static const char __pyx_k_osmnx_mdp_tests_test_simulation_2[] = "osmnx_mdp/tests/test_simulation.pyx";
 static const char __pyx_k_TestSimulation_test_generate_div_2[] = "TestSimulation.test_generate_diverge_policy";
@@ -1610,11 +1610,11 @@ static PyObject *__pyx_n_s_module;
 static PyObject *__pyx_n_s_name;
 static PyObject *__pyx_kp_u_numpy_random_choice;
 static PyObject *__pyx_n_s_orig;
-static PyObject *__pyx_kp_u_osmnx_mdp_lib_remove_dead_ends;
 static PyObject *__pyx_n_s_osmnx_mdp_simulation;
 static PyObject *__pyx_kp_u_osmnx_mdp_simulation_LOCATIONS;
 static PyObject *__pyx_kp_u_osmnx_mdp_simulation_MAPS;
 static PyObject *__pyx_kp_u_osmnx_mdp_simulation_load_maps;
+static PyObject *__pyx_kp_u_osmnx_mdp_simulation_remove_dead;
 static PyObject *__pyx_kp_u_osmnx_mdp_simulation_run_simulat;
 static PyObject *__pyx_n_s_osmnx_mdp_tests_test_simulation;
 static PyObject *__pyx_kp_s_osmnx_mdp_tests_test_simulation_2;
@@ -2512,7 +2512,7 @@ static PyObject *__pyx_pf_9osmnx_mdp_5tests_15test_simulation_14TestSimulation_4
 }
 
 /* "osmnx_mdp/tests/test_simulation.pyx":54
- *     @patch('osmnx_mdp.lib.remove_dead_ends', spec=lambda: None)
+ *     @patch('osmnx_mdp.simulation.remove_dead_ends', spec=lambda: None)
  *     @patch('osmnx.project_graph')
  *     def test_run_simulations(             # <<<<<<<<<<<<<<
  *             self,
@@ -3089,7 +3089,7 @@ static PyObject *__pyx_lambda_funcdef_lambda3(CYTHON_UNUSED PyObject *__pyx_self
  *     # simulation.py
  *     #@patch('simulation.MDP.setup', autospec=True)
  *     @patch('osmnx_mdp.simulation.load_maps', spec=lambda: None)             # <<<<<<<<<<<<<<
- *     @patch('osmnx_mdp.lib.remove_dead_ends', spec=lambda: None)
+ *     @patch('osmnx_mdp.simulation.remove_dead_ends', spec=lambda: None)
  *     @patch('osmnx.project_graph')
  */
 
@@ -3125,7 +3125,7 @@ static PyObject *__pyx_lambda_funcdef_lambda4(CYTHON_UNUSED PyObject *__pyx_self
 /* "osmnx_mdp/tests/test_simulation.pyx":52
  *     #@patch('simulation.MDP.setup', autospec=True)
  *     @patch('osmnx_mdp.simulation.load_maps', spec=lambda: None)
- *     @patch('osmnx_mdp.lib.remove_dead_ends', spec=lambda: None)             # <<<<<<<<<<<<<<
+ *     @patch('osmnx_mdp.simulation.remove_dead_ends', spec=lambda: None)             # <<<<<<<<<<<<<<
  *     @patch('osmnx.project_graph')
  *     def test_run_simulations(
  */
@@ -3160,7 +3160,7 @@ static PyObject *__pyx_lambda_funcdef_lambda5(CYTHON_UNUSED PyObject *__pyx_self
 }
 
 /* "osmnx_mdp/tests/test_simulation.pyx":54
- *     @patch('osmnx_mdp.lib.remove_dead_ends', spec=lambda: None)
+ *     @patch('osmnx_mdp.simulation.remove_dead_ends', spec=lambda: None)
  *     @patch('osmnx.project_graph')
  *     def test_run_simulations(             # <<<<<<<<<<<<<<
  *             self,
@@ -3995,7 +3995,7 @@ static PyObject *__pyx_pf_9osmnx_mdp_5tests_15test_simulation_14TestSimulation_6
   }
 
   /* "osmnx_mdp/tests/test_simulation.pyx":54
- *     @patch('osmnx_mdp.lib.remove_dead_ends', spec=lambda: None)
+ *     @patch('osmnx_mdp.simulation.remove_dead_ends', spec=lambda: None)
  *     @patch('osmnx.project_graph')
  *     def test_run_simulations(             # <<<<<<<<<<<<<<
  *             self,
@@ -4337,11 +4337,11 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_name, __pyx_k_name, sizeof(__pyx_k_name), 0, 0, 1, 1},
   {&__pyx_kp_u_numpy_random_choice, __pyx_k_numpy_random_choice, sizeof(__pyx_k_numpy_random_choice), 0, 1, 0, 0},
   {&__pyx_n_s_orig, __pyx_k_orig, sizeof(__pyx_k_orig), 0, 0, 1, 1},
-  {&__pyx_kp_u_osmnx_mdp_lib_remove_dead_ends, __pyx_k_osmnx_mdp_lib_remove_dead_ends, sizeof(__pyx_k_osmnx_mdp_lib_remove_dead_ends), 0, 1, 0, 0},
   {&__pyx_n_s_osmnx_mdp_simulation, __pyx_k_osmnx_mdp_simulation, sizeof(__pyx_k_osmnx_mdp_simulation), 0, 0, 1, 1},
   {&__pyx_kp_u_osmnx_mdp_simulation_LOCATIONS, __pyx_k_osmnx_mdp_simulation_LOCATIONS, sizeof(__pyx_k_osmnx_mdp_simulation_LOCATIONS), 0, 1, 0, 0},
   {&__pyx_kp_u_osmnx_mdp_simulation_MAPS, __pyx_k_osmnx_mdp_simulation_MAPS, sizeof(__pyx_k_osmnx_mdp_simulation_MAPS), 0, 1, 0, 0},
   {&__pyx_kp_u_osmnx_mdp_simulation_load_maps, __pyx_k_osmnx_mdp_simulation_load_maps, sizeof(__pyx_k_osmnx_mdp_simulation_load_maps), 0, 1, 0, 0},
+  {&__pyx_kp_u_osmnx_mdp_simulation_remove_dead, __pyx_k_osmnx_mdp_simulation_remove_dead, sizeof(__pyx_k_osmnx_mdp_simulation_remove_dead), 0, 1, 0, 0},
   {&__pyx_kp_u_osmnx_mdp_simulation_run_simulat, __pyx_k_osmnx_mdp_simulation_run_simulat, sizeof(__pyx_k_osmnx_mdp_simulation_run_simulat), 0, 1, 0, 0},
   {&__pyx_n_s_osmnx_mdp_tests_test_simulation, __pyx_k_osmnx_mdp_tests_test_simulation, sizeof(__pyx_k_osmnx_mdp_tests_test_simulation), 0, 0, 1, 1},
   {&__pyx_kp_s_osmnx_mdp_tests_test_simulation_2, __pyx_k_osmnx_mdp_tests_test_simulation_2, sizeof(__pyx_k_osmnx_mdp_tests_test_simulation_2), 0, 0, 1, 0},
@@ -4463,7 +4463,7 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  *     # simulation.py
  *     #@patch('simulation.MDP.setup', autospec=True)
  *     @patch('osmnx_mdp.simulation.load_maps', spec=lambda: None)             # <<<<<<<<<<<<<<
- *     @patch('osmnx_mdp.lib.remove_dead_ends', spec=lambda: None)
+ *     @patch('osmnx_mdp.simulation.remove_dead_ends', spec=lambda: None)
  *     @patch('osmnx.project_graph')
  */
   __pyx_tuple__14 = PyTuple_Pack(1, __pyx_kp_u_osmnx_mdp_simulation_load_maps); if (unlikely(!__pyx_tuple__14)) __PYX_ERR(0, 51, __pyx_L1_error)
@@ -4473,16 +4473,16 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   /* "osmnx_mdp/tests/test_simulation.pyx":52
  *     #@patch('simulation.MDP.setup', autospec=True)
  *     @patch('osmnx_mdp.simulation.load_maps', spec=lambda: None)
- *     @patch('osmnx_mdp.lib.remove_dead_ends', spec=lambda: None)             # <<<<<<<<<<<<<<
+ *     @patch('osmnx_mdp.simulation.remove_dead_ends', spec=lambda: None)             # <<<<<<<<<<<<<<
  *     @patch('osmnx.project_graph')
  *     def test_run_simulations(
  */
-  __pyx_tuple__15 = PyTuple_Pack(1, __pyx_kp_u_osmnx_mdp_lib_remove_dead_ends); if (unlikely(!__pyx_tuple__15)) __PYX_ERR(0, 52, __pyx_L1_error)
+  __pyx_tuple__15 = PyTuple_Pack(1, __pyx_kp_u_osmnx_mdp_simulation_remove_dead); if (unlikely(!__pyx_tuple__15)) __PYX_ERR(0, 52, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__15);
   __Pyx_GIVEREF(__pyx_tuple__15);
 
   /* "osmnx_mdp/tests/test_simulation.pyx":54
- *     @patch('osmnx_mdp.lib.remove_dead_ends', spec=lambda: None)
+ *     @patch('osmnx_mdp.simulation.remove_dead_ends', spec=lambda: None)
  *     @patch('osmnx.project_graph')
  *     def test_run_simulations(             # <<<<<<<<<<<<<<
  *             self,
@@ -5171,7 +5171,7 @@ if (!__Pyx_RefNanny) {
  *     # simulation.py
  *     #@patch('simulation.MDP.setup', autospec=True)
  *     @patch('osmnx_mdp.simulation.load_maps', spec=lambda: None)             # <<<<<<<<<<<<<<
- *     @patch('osmnx_mdp.lib.remove_dead_ends', spec=lambda: None)
+ *     @patch('osmnx_mdp.simulation.remove_dead_ends', spec=lambda: None)
  *     @patch('osmnx.project_graph')
  */
   __Pyx_GetModuleGlobalName(__pyx_t_9, __pyx_n_s_patch); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 51, __pyx_L1_error)
@@ -5190,7 +5190,7 @@ if (!__Pyx_RefNanny) {
   /* "osmnx_mdp/tests/test_simulation.pyx":52
  *     #@patch('simulation.MDP.setup', autospec=True)
  *     @patch('osmnx_mdp.simulation.load_maps', spec=lambda: None)
- *     @patch('osmnx_mdp.lib.remove_dead_ends', spec=lambda: None)             # <<<<<<<<<<<<<<
+ *     @patch('osmnx_mdp.simulation.remove_dead_ends', spec=lambda: None)             # <<<<<<<<<<<<<<
  *     @patch('osmnx.project_graph')
  *     def test_run_simulations(
  */
@@ -5209,7 +5209,7 @@ if (!__Pyx_RefNanny) {
 
   /* "osmnx_mdp/tests/test_simulation.pyx":53
  *     @patch('osmnx_mdp.simulation.load_maps', spec=lambda: None)
- *     @patch('osmnx_mdp.lib.remove_dead_ends', spec=lambda: None)
+ *     @patch('osmnx_mdp.simulation.remove_dead_ends', spec=lambda: None)
  *     @patch('osmnx.project_graph')             # <<<<<<<<<<<<<<
  *     def test_run_simulations(
  *             self,
@@ -5233,7 +5233,7 @@ if (!__Pyx_RefNanny) {
   __Pyx_DECREF(__pyx_t_14); __pyx_t_14 = 0;
 
   /* "osmnx_mdp/tests/test_simulation.pyx":54
- *     @patch('osmnx_mdp.lib.remove_dead_ends', spec=lambda: None)
+ *     @patch('osmnx_mdp.simulation.remove_dead_ends', spec=lambda: None)
  *     @patch('osmnx.project_graph')
  *     def test_run_simulations(             # <<<<<<<<<<<<<<
  *             self,
