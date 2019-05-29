@@ -7,3 +7,6 @@ mdp5: after using googles dense_hash_map
 mdp6: after moving _get_normal_intersections to C++
 mdp7: moving another _get_normal_intersection call to C++
 
+dstar1: basic cythonization
+dstar2: C++ module
+
