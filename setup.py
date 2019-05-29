@@ -20,7 +20,11 @@ setup(
             ["osmnx_mdp/algorithms/testthis.cpp"],
             include_dirs=["osmnx_mdp/algorithms/"]
         ),
-        "osmnx_mdp/algorithms/cpp_dstar_lite.cpp",
+        Extension(
+            "cpp_dstar_lite",
+            ["osmnx_mdp/algorithms/cpp_dstar_lite.cpp"],
+            include_dirs=["osmnx_mdp/algorithms/"]
+        ),
         Extension(
             "lib",
             ["osmnx_mdp/lib.cpp"],

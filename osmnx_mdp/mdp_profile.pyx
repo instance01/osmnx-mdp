@@ -4,7 +4,9 @@ import pstats
 import pickle
 
 from osmnx_mdp.algorithms.mdp cimport MDP
+from osmnx_mdp.algorithms.dstar_lite cimport DStar_Lite
 from osmnx_mdp.lib cimport remove_dead_ends
+from osmnx_mdp.lib cimport remove_zero_cost_loops
 
 #from osmnx_mdp.algorithms.mdp cimport MDP
 from osmnx_mdp.lib cimport get_time_to_drive
@@ -12,16 +14,17 @@ from osmnx_mdp.lib cimport get_node_properties
 
 
 
-PROFILE_FILE = 'mdp.profile'
+PROFILE_FILE = 'mdp1.profile'
 
 
-with open('data/munich.pickle', 'rb') as f:
+with open('data/maxvorstadt.pickle', 'rb') as f:
     locs, G = pickle.load(f)
 
 
 start = locs[0]['start']
 goal = locs[0]['goal']
 
+remove_zero_cost_loops(G)
 remove_dead_ends(G, goal)
 
 
@@ -29,6 +32,13 @@ def run():
     mdp = MDP(G)
     mdp.setup(start, goal)
     mdp.solve_value_iteration(gamma=1., max_iter=1000)
+
+    #dstar = DStar_Lite(G)
+    #dstar.setup(start, goal)
+    #dstar.compute_shortest_path()
+    #col_nodes = list(dstar.drive({}, {}))
+    #print(col_nodes)
+
     #with open('model6.pickle', 'wb+') as f:
     #    #pickle.dump([mdp, V, {}], f)
     #    pickle.dump(mdp, f)

@@ -8,21 +8,29 @@
 #include <fstream>
 #include <iostream> // cout
 #include <algorithm> // min_element
+#include <math.h>
 
-// using spp::google::dense_hash_map;
 
-int Xd(float gamma, int state) {
-    return 1;
+float get_angle(
+        float p1_x,
+        float p1_y,
+        float p2_x,
+        float p2_y,
+        float origin_x,
+        float origin_y) {
+    p1_x -= origin_x;
+    p1_y -= origin_y;
+    p2_x -= origin_x;
+    p2_y -= origin_y;
+
+    // arctan2 gives us the angle between the ray from the origin to the point
+    // and the x axis.
+    // Thus, to get the angle between two points, simply get the difference
+    // between their two angles to the x axis.
+    float angle = atan2(p2_x, p2_y) - atan2(p1_x, p1_y);
+    return 180 * angle / M_PI;
 }
 
-// void cpp_get_Q_value(
-//         google::dense_hash_map<std::pair<long, long>, float> C,
-//         google::dense_hash_map<std::pair<long, long>, float> P,
-//         google::dense_hash_map<int, int> prev_V,
-//         float gamma,
-//         long state,
-//         std::pair<long, long> action) {
-// }
 
 int main() {
     google::dense_hash_map<long, float> V;
@@ -43,6 +51,78 @@ int main() {
     // load(V, S, A, C, P);
 
     // solve(V, S, A, C, P, 1000);
+}
+
+int CPP_get_normal_intersections(
+        google::dense_hash_map<std::pair<long, long>, CPP_Intersection, pair_hash> &out,
+        google::dense_hash_map<long, std::vector<long>> &successors,
+        google::dense_hash_map<long, std::pair<float, float>> &data) {
+    out.set_empty_key(std::pair<long, long>(0, 0));
+    for (auto &x : successors) {
+        for (auto &succ : x.second) {
+            long origin_node = succ;
+
+            long straight_on_node = 0;
+            long left_node = 0;
+            long right_node = 0;
+
+            for (auto &succsucc : successors[succ]) {
+                float p1_x, p1_y, p2_x, p2_y, origin_x, origin_y;
+
+                std::tie(p1_x, p1_y) = data[x.first];
+                std::tie(p2_x, p2_y) = data[succsucc];
+                std::tie(origin_x, origin_y) = data[origin_node];
+
+                float angle = get_angle(p1_x, p1_y, p2_x, p2_y, origin_x, origin_y);
+
+                if (angle < 0)
+                    angle += 360;
+
+                if (abs(angle - 90) < 10)
+                    left_node = succsucc;
+
+                if (abs(angle - 270) < 10)
+                    right_node = succsucc;
+
+                if (abs(angle - 180) < 10)
+                    straight_on_node = succsucc;
+            }
+
+            if (straight_on_node != 0 && (right_node != 0 || left_node != 0)) {
+                CPP_Intersection intersection;
+                intersection.left_node = left_node;
+                intersection.right_node = right_node;
+                intersection.straight_on_node = straight_on_node;
+                intersection.origin_edge = std::pair<long, long>(x.first, origin_node);
+
+                out[intersection.origin_edge] = intersection;
+            }
+        }
+    }
+
+    return 0;
+}
+
+void combinations(
+        std::vector<std::pair<std::pair<long, long>, std::pair<long, long>>> &out,
+        std::vector<std::pair<long, long>> edges) {
+    for (unsigned long i = 0; i < edges.size(); ++i) {
+        for (unsigned long j = 0; j < edges.size(); ++j) {
+            if (i == j)
+                continue;
+            out.push_back(std::pair<std::pair<long, long>, std::pair<long, long>>(edges[i], edges[j]));
+        }
+    }
+}
+
+
+int CPP_make_low_angle_intersections_uncertain(
+        google::dense_hash_map<long, std::vector<long>> &successors,
+        google::dense_hash_map<long, std::pair<float, float>> &data) {
+
+    // TODO
+    
+    return 0;
 }
 
 int solve(
@@ -122,5 +202,6 @@ int solve(
         }
     }
 
+    // Cython needs an integer return.
     return 0;
 }

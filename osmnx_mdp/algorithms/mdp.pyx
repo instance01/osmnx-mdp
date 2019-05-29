@@ -7,80 +7,7 @@ from libcpp.vector cimport vector
 #     #Iter find_if[Iter, Func](Iter first, Iter last, Func pred)
 #     iter min_element(iter first, iter last);
 
-cdef extern from "<google/dense_hash_map>" namespace "google" nogil:
-    cdef cppclass dense_hash_map[T, U, Hash=*]:
-        void set_empty_key(T& key)
-        ctypedef T key_type
-        ctypedef U mapped_type
-        ctypedef Hash hasher
-        ctypedef pair[const T, U] value_type
-        cppclass iterator:
-            pair[T, U]& operator*()
-            iterator operator++()
-            iterator operator--()
-            bint operator==(iterator)
-            bint operator!=(iterator)
-        cppclass reverse_iterator:
-            pair[T, U]& operator*()
-            iterator operator++()
-            iterator operator--()
-            bint operator==(reverse_iterator)
-            bint operator!=(reverse_iterator)
-        cppclass const_iterator(iterator):
-            pass
-        cppclass const_reverse_iterator(reverse_iterator):
-            pass
-        dense_hash_map() except +
-        dense_hash_map(dense_hash_map&) except +
-        #dense_hash_map(key_compare&)
-        U& operator[](T&)
-        #dense_hash_map& operator=(dense_hash_map&)
-        bint operator==(dense_hash_map&, dense_hash_map&)
-        bint operator!=(dense_hash_map&, dense_hash_map&)
-        bint operator<(dense_hash_map&, dense_hash_map&)
-        bint operator>(dense_hash_map&, dense_hash_map&)
-        bint operator<=(dense_hash_map&, dense_hash_map&)
-        bint operator>=(dense_hash_map&, dense_hash_map&)
-        U& at(const T&)
-        const U& const_at "at"(const T&)
-        iterator begin()
-        const_iterator const_begin "begin"()
-        void clear()
-        size_t count(T&)
-        bint empty()
-        iterator end()
-        const_iterator const_end "end"()
-        pair[iterator, iterator] equal_range(T&)
-        pair[const_iterator, const_iterator] const_equal_range "equal_range"(const T&)
-        iterator erase(iterator)
-        iterator erase(iterator, iterator)
-        size_t erase(T&)
-        iterator find(T&)
-        const_iterator const_find "find"(T&)
-        pair[iterator, bint] insert(pair[T, U]) # XXX pair[T,U]&
-        iterator insert(iterator, pair[T, U]) # XXX pair[T,U]&
-        iterator insert(iterator, iterator)
-        #key_compare key_comp()
-        iterator lower_bound(T&)
-        const_iterator const_lower_bound "lower_bound"(T&)
-        size_t max_size()
-        reverse_iterator rbegin()
-        const_reverse_iterator const_rbegin "rbegin"()
-        reverse_iterator rend()
-        const_reverse_iterator const_rend "rend"()
-        size_t size()
-        void swap(dense_hash_map&)
-        iterator upper_bound(T&)
-        const_iterator const_upper_bound "upper_bound"(T&)
-        #value_compare value_comp()
-        void max_load_factor(float)
-        float max_load_factor()
-        void rehash(size_t)
-        void reserve(size_t)
-        size_t bucket_count()
-        size_t max_bucket_count()
-        size_t bucket_size(size_t)
-        size_t bucket(const T&)
+from osmnx_mdp.algorithms.dense_hash_map cimport dense_hash_map
 
 cdef extern from "<unordered_map>" namespace "std" nogil:
     cdef cppclass unordered_map[T, U, Hash]:
@@ -157,28 +84,27 @@ cdef extern from "<unordered_map>" namespace "std" nogil:
         size_t bucket(const T&)
 
 cdef extern from "testthis.hpp":
-    int Xd (float gamma, int state)
     struct pair_hash:
         long operator(pair[long, long])
-    #void solve(
-    #    unordered_map2[long, float] V,
-    #    vector[long] S,
-    #    unordered_map2[long, vector[pair[long, long]]] A,
-    #    unordered_map[pair[long, long], float, pair_hash] C,
-    #    unordered_map2[long, unordered_map[pair[long, long], vector[pair[long, float]], pair_hash]] P,
-    #    int max_iter
-    #)
     void solve(
-        dense_hash_map[long, float] V,
-        vector[long] S,
-        dense_hash_map[long, vector[pair[long, long]]] A,
-        dense_hash_map[pair[long, long], float, pair_hash] C,
-        dense_hash_map[long, dense_hash_map[pair[long, long], vector[pair[long, float]], pair_hash]] P,
+        dense_hash_map[long, float] &V,
+        vector[long] &S,
+        dense_hash_map[long, vector[pair[long, long]]] &A,
+        dense_hash_map[pair[long, long], float, pair_hash] &C,
+        dense_hash_map[long, dense_hash_map[pair[long, long], vector[pair[long, float]], pair_hash]] &P,
         int max_iter
     )
+    struct CPP_Intersection:
+        long left_node
+        long right_node
+        long straight_on_node
+        pair[long, long] origin_edge
+    void CPP_get_normal_intersections(
+        dense_hash_map[pair[long, long], CPP_Intersection, pair_hash] &out,
+        dense_hash_map[long, vector[long]] &successors,
+        dense_hash_map[long, pair[float, float]] &data
+    )
 
-cdef int Xdf(float gamma, int state):
-    return Xd(gamma, state)
 
 import time
 import sys
@@ -268,7 +194,8 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
         self.angle_nodes = self.make_low_angle_intersections_uncertain()
 
         intersections = self.make_close_intersections_uncertain()
-        close_nodes = [x.origin_edge[1] for x in intersections]
+        cdef CPP_Intersection x
+        close_nodes = [x.origin_edge.second for x in intersections]
         self.close_nodes = close_nodes
 
         total_uncertain_nodes = len(self.angle_nodes) + len(self.close_nodes)
@@ -301,38 +228,38 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
             temp_P[edge].append((other_node, .1))
             temp_P[edge][0] = (node_to, temp_P[edge][0][1] - .1)
 
-    cdef _get_normal_intersection(self, edge):
-        origin_node = edge[1]
+    #cdef _get_normal_intersection(self, edge):
+    #    origin_node = edge[1]
 
-        straight_on_node = None
-        left_node = None
-        right_node = None
+    #    straight_on_node = None
+    #    left_node = None
+    #    right_node = None
 
-        for node in self.G.successors(origin_node):
-            p1 = self._get_coordinates(edge[0])
-            p2 = self._get_coordinates(node)
-            origin = self._get_coordinates(origin_node)
+    #    for node in self.G.successors(origin_node):
+    #        p1 = self._get_coordinates(edge[0])
+    #        p2 = self._get_coordinates(node)
+    #        origin = self._get_coordinates(origin_node)
 
-            angle = get_angle(p1, p2, origin)
-            if angle < 0:
-                angle += 360
+    #        angle = get_angle(p1, p2, origin)
+    #        if angle < 0:
+    #            angle += 360
 
-            if abs(angle - 90) < 10:
-                left_node = node
+    #        if abs(angle - 90) < 10:
+    #            left_node = node
 
-            if abs(angle - 270) < 10:
-                right_node = node
+    #        if abs(angle - 270) < 10:
+    #            right_node = node
 
-            if abs(angle - 180) < 10:
-                straight_on_node = node
+    #        if abs(angle - 180) < 10:
+    #            straight_on_node = node
 
-        if straight_on_node and (right_node or left_node):
-            return Intersection(
-                left_node,
-                right_node,
-                straight_on_node,
-                edge
-            )
+    #    if straight_on_node and (right_node or left_node):
+    #        return Intersection(
+    #            left_node,
+    #            right_node,
+    #            straight_on_node,
+    #            edge
+    #        )
 
     cdef _get_normal_intersections(self):
         """Scan graph for intersections satisfying the following condition:
@@ -344,14 +271,32 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
 
         Returns a list of nodes that satisfy the condition.
         """
-        intersections = []
 
-        for edge in self.G.edges.data():
-            intersection = self._get_normal_intersection(edge)
-            if intersection:
-                intersections.append(intersection)
+        # TODO Move this into setup and put into self.
+        # So we can refer to it from everywhere
+        cdef dense_hash_map[long, vector[long]] successors
+        cdef dense_hash_map[long, pair[float, float]] data
 
-        return intersections
+        successors.set_empty_key(0)
+        data.set_empty_key(0)
+
+        for node in self.G.nodes.data():
+            successors[node[0]] = list(self.G.successors(node[0]))
+            data[node[0]] = (node[1]['x'], node[1]['y'])
+
+        cdef dense_hash_map[pair[long, long], CPP_Intersection, pair_hash] out
+        CPP_get_normal_intersections(
+            out,
+            successors,
+            data
+        )
+
+        ret = {}
+        cdef CPP_Intersection v
+        for k, v in out:
+            ret[k] = v
+
+        return ret
 
     cdef make_close_intersections_uncertain(self, max_length=100):
         """Scan graph for intersections that follow very closely.
@@ -365,14 +310,21 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
         """
         close_intersections = []
 
-        for intersection in self._get_normal_intersections():
-            next_edge = (intersection.origin_edge[1], intersection.straight_on_node)
-            next_intersection = self._get_normal_intersection(next_edge)
+        intersections = self._get_normal_intersections()
 
-            if not next_intersection:
+        cdef CPP_Intersection intersection
+        cdef CPP_Intersection next_intersection
+        for _, intersection in intersections.items():
+            next_edge = (intersection.origin_edge.second, intersection.straight_on_node)
+            # TODO: We're still using slow python dict here..
+            if next_edge in intersections:
+                next_intersection = intersections[next_edge]
+            else:
                 continue
+            origin_edge = (intersection.origin_edge.first, intersection.origin_edge.second)
 
-            origin_edge_length = intersection.origin_edge[2]['length']
+            #origin_edge_length = intersection.origin_edge[2]['length']
+            origin_edge_length = self.G[origin_edge[0]][origin_edge[1]][0]['length']
             next_edge_length = self.G[next_edge[0]][next_edge[1]][0]['length']
 
             # TODO: Consider ox.clean_intersections, then that <20 check isn't
@@ -380,7 +332,7 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
             if next_edge_length > max_length or origin_edge_length < 20:
                 continue
 
-            origin_node = intersection.origin_edge[1]
+            origin_node = origin_edge[1]
 
             # TODO Cleanup below
 
@@ -424,6 +376,16 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
         """
         angle_nodes = []
 
+        #cdef dense_hash_map[long, vector[long]] successors
+        #cdef dense_hash_map[long, pair[float, float]] data
+
+        #successors.set_empty_key(0)
+        #data.set_empty_key(0)
+
+        #for node in self.G.nodes.data():
+        #    successors[node[0]] = list(self.G.successors(node[0]))
+        #    data[node[0]] = (node[1]['x'], node[1]['y'])
+
         for edge in self.G.edges.data():
             p3 = self._get_coordinates(edge[0])
             origin_node = edge[1]
@@ -434,6 +396,18 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
 
             num_critical_nodes = 0
 
+
+            # TODO: How to model combinations in C++ ?!
+
+            from itertools import tee
+            def pairwise(iterable):
+                "s -> (s0,s1), (s1,s2), (s2, s3), ..."
+                a, b = tee(iterable)
+                next(b, None)
+                return zip(a, b)
+
+
+            #for (e1, e2) in combinations(edges_out, 2):
             for (e1, e2) in combinations(edges_out, 2):
                 # We can't reuse the edge that goes back as one of the
                 # out_edges.
@@ -483,8 +457,6 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
         return angle_nodes
 
     cdef _get_Q_value(self, prev_V, gamma, state, action):
-        #test({1: 2})
-        #Xdf(gamma, state)
         cdef float immediate_cost = self.C[action]
 
         # sum() is slower than a for loop, because the array is usually only
@@ -509,34 +481,8 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
             bint verbose=True):
         """Solve the MDP with value iteration.
         """
-        #cdef dict V = {}
-        #cdef dict Q = {}
-        #for s in self.S:
-        #    Q[s] = {a: 0. for a in self.A[s]}
-        #    V[s] = 0.
-
-        #cdef unordered_map2[long, float] V
-
-        #cdef vector[long] S = self.S
-
-        #cdef unordered_map2[long, vector[pair[long, long]]] A
-        #for k, v in self.A.items():
-        #    A[k] = v
-
-        #cdef unordered_map[pair[long, long], float, pair_hash] C
-        #for k, v in self.C.items():
-        #    C[k] = v
-
-        #cdef unordered_map2[long, unordered_map[pair[long, long], vector[pair[long, float]], pair_hash]] P
-        #cdef unordered_map[pair[long, long], vector[pair[long, float]], pair_hash] curr
-        #for k, v in self.P.items():
-        #    for k_, v_ in v.items():
-        #        curr[k_] = v_
-        #    P[k] = curr
-        #    curr.clear()
-
-
-        # Direct assignment is not possible since cython doesnt know how to concert a dense_hash_map to a Python object.
+        # Direct assignment is not possible since Cython doesnt know how to
+        # convert a dense_hash_map to a Python object.
         # But iterators work.
 
         cdef dense_hash_map[long, float] V
@@ -572,38 +518,6 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
         for k, v in V:
             ret[k] = v
         return ret, {}
-
-        #start = time.time()
-
-        #for i in range(max_iter):
-        #    prev_V = copy.copy(V)
-
-        #    for s in self.S:
-        #        for a in self.A[s]:
-        #            Q[s][a] = self._get_Q_value(prev_V, gamma, s, a)
-
-        #        #if Q[s]:
-        #        a = min(Q[s], key=Q[s].get)
-        #        V[s] = Q[s][a]
-
-        #    # TODO: Only do this every 100 calls:
-        #    if i % 100 == 0:
-        #        c = sum(abs(x - y) for x, y in zip(prev_V.values(), V.values()))
-        #        #c = sum([abs(x - y) for x, y in zip(prev_V.values(), vals)])
-
-        #        if c <= eps:
-        #            if verbose:
-        #                print('CONVERGED:', i, c)
-        #            break
-
-        #        # below just debug output
-        #        if verbose:
-        #            #if i % 100 == 0:
-        #            curr_time = time.time() - start
-        #            sys.stdout.write('\r(%.2f) [%d] %.14f' % (curr_time, i, c))
-        #            sys.stdout.flush()
-
-        #return V, Q
 
     cdef get_policy(self, V):
         policy = {}

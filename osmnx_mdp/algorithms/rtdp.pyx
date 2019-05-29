@@ -24,7 +24,8 @@ cdef class RTDP(osmnx_mdp.algorithms.algorithm.Algorithm):
         goal_node = self.G.nodes.data()[self.goal]
 
         for node in self.G.nodes.data():
-            self.h[node[0]] = aerial_dist(node[1], goal_node)
+            #self.h[node[0]] = aerial_dist(node[1], goal_node) / 50.
+            self.H[node[0]] = aerial_dist(node[1], goal_node) / 50.
             # TODO: We can just use 0-heuristic too?
             # self.h[node[0]] = 0
             self.Q[node[0]] = {action: 0 for action in self.mdp.A[node[0]]}
@@ -47,12 +48,13 @@ cdef class RTDP(osmnx_mdp.algorithms.algorithm.Algorithm):
                 node_to = action[1]
                 cost = self.mdp.C[(state, node_to)]
                 future_cost = sum([
-                        x[1] * self.H.get(x[0], self.h[x[0]])
+                        #x[1] * self.H.get(x[0], self.h[x[0]])
+                        x[1] * self.H.get(x[0])
                         for x in self.mdp.P[state][action]])
                 self.Q[state][action] = cost + future_cost
 
-            if not self.Q[state]:
-                break
+            #if not self.Q[state]:
+            #    break
 
             best_action = min(self.Q[state], key=self.Q[state].get)
             self.H[state] = self.Q[state][best_action]
@@ -62,7 +64,7 @@ cdef class RTDP(osmnx_mdp.algorithms.algorithm.Algorithm):
 
         return visited
 
-    cdef run_trials(self, n=1000):
+    cdef run_trials(self, n=100):
         # TODO: Stop criterion is missing, this is vanilla RTDP.
         for _ in range(n):
             path = self._run_trial()
@@ -89,10 +91,8 @@ cdef class RTDP(osmnx_mdp.algorithms.algorithm.Algorithm):
         while curr_node != self.goal:
             if curr_node not in path_lookup:
                 # Replan
-                try:
-                    self.start = curr_node
-                except OverflowError:
-                    print(curr_node, self.start)
+                self.start = curr_node
+
                 # TODO: Reuse H or not?
                 self.H = {}
 

@@ -836,7 +836,7 @@ struct __pyx_opt_args_9osmnx_mdp_10algorithms_3mdp_3MDP_make_low_angle_intersect
 struct __pyx_opt_args_9osmnx_mdp_10algorithms_3mdp_3MDP_solve_value_iteration;
 
 /* "osmnx_mdp/algorithms/mdp.pxd":27
- *     cdef _get_normal_intersection(self, edge)
+ *     #cdef _get_normal_intersection(self, edge)
  *     cdef _get_normal_intersections(self)
  *     cdef make_close_intersections_uncertain(self, max_length=*)             # <<<<<<<<<<<<<<
  *     cdef make_low_angle_intersections_uncertain(self, max_angle=*)
@@ -938,7 +938,6 @@ struct __pyx_vtabstruct_9osmnx_mdp_10algorithms_3mdp_MDP {
   PyObject *(*make_goal_self_absorbing)(struct __pyx_obj_9osmnx_mdp_10algorithms_3mdp_MDP *);
   PyObject *(*_get_coordinates)(struct __pyx_obj_9osmnx_mdp_10algorithms_3mdp_MDP *, PyObject *);
   PyObject *(*_make_edge_uncertain)(struct __pyx_obj_9osmnx_mdp_10algorithms_3mdp_MDP *, PyObject *, PyObject *, PyObject *);
-  PyObject *(*_get_normal_intersection)(struct __pyx_obj_9osmnx_mdp_10algorithms_3mdp_MDP *, PyObject *);
   PyObject *(*_get_normal_intersections)(struct __pyx_obj_9osmnx_mdp_10algorithms_3mdp_MDP *);
   PyObject *(*make_close_intersections_uncertain)(struct __pyx_obj_9osmnx_mdp_10algorithms_3mdp_MDP *, struct __pyx_opt_args_9osmnx_mdp_10algorithms_3mdp_3MDP_make_close_intersections_uncertain *__pyx_optional_args);
   PyObject *(*make_low_angle_intersections_uncertain)(struct __pyx_obj_9osmnx_mdp_10algorithms_3mdp_MDP *, struct __pyx_opt_args_9osmnx_mdp_10algorithms_3mdp_3MDP_make_low_angle_intersections_uncertain *__pyx_optional_args);

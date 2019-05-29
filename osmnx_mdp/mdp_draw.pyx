@@ -37,16 +37,33 @@ cdef prepare_graph_for_drawing(MDP mdp, policy):
 # IT IS OF VITAL IMPORTANCE TO SET THE TYPE TO MDP
 # MDP mdp
 cdef draw_mdp(MDP mdp, V, Q):
-    policy = mdp.get_policy(V)
-    path = mdp.drive(policy, {})
+    #policy = mdp.get_policy(V)
+    #path = mdp.drive(policy, {})
 
-    print(policy)
-    print(path)
-    print('Minutes spent driving this route:', get_time_to_drive(path, mdp.G))
+    #print(policy)
+    #print(path)
+    #print('Minutes spent driving this route:', get_time_to_drive(path, mdp.G))
 
-    G2 = prepare_graph_for_drawing(mdp, policy)
+    G2 = prepare_graph_for_drawing(mdp, {})
 
-    nc, ns = get_node_properties(G2, path, V, extra=mdp.close_nodes)
+    #extra = mdp.close_nodes
+    #extra = [102755936, 224397004]
+    extra = [25670912, 331935048, 102755936, 224397004]
+    extra = [21522300]
+    #extra = [246878841,
+    #    246878840,
+    #    345553456,
+    #    29564155,
+    #    29565897,
+    #    29565896,
+    #    637795257,
+    #    618697482,
+    #    1954425,
+    #    7983336,
+    #    1954419,
+    #    27270924
+    #]
+    nc, ns = get_node_properties(G2, [], V, extra=extra)
     nx.draw_networkx(
             G2,
             nx.get_node_attributes(G2, 'pos'),
@@ -88,6 +105,9 @@ cdef run():
     print(dir(mdp))
     mdp.setup(start, goal)
     # TODO: Lol max_iter is not getting passed to the C++ function..
-    V, _ = mdp.solve_value_iteration(gamma=1., max_iter=10000)
+    V, _ = mdp.solve_value_iteration(gamma=1., max_iter=1000)
 
     draw_mdp(mdp, V, {})
+
+
+run()

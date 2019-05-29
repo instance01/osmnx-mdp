@@ -3,7 +3,12 @@
 /* BEGIN: Cython Metadata
 {
     "distutils": {
-        "depends": [],
+        "depends": [
+            "osmnx_mdp/algorithms/cpp_dstar_lite.cpp"
+        ],
+        "include_dirs": [
+            "osmnx_mdp/algorithms"
+        ],
         "language": "c++",
         "name": "osmnx_mdp.simulation",
         "sources": [
@@ -621,7 +626,10 @@ static CYTHON_INLINE float __PYX_NAN() {
 #include "stdexcept"
 #include "typeinfo"
 #include <utility>
-#include <unordered_map>
+#include <set>
+#include <vector>
+#include <google/dense_hash_map>
+#include "cpp_dstar_lite.cpp"
 #ifdef _OPENMP
 #include <omp.h>
 #endif /* _OPENMP */
@@ -889,7 +897,7 @@ struct __pyx_opt_args_9osmnx_mdp_10algorithms_3mdp_3MDP_make_low_angle_intersect
 struct __pyx_opt_args_9osmnx_mdp_10algorithms_3mdp_3MDP_solve_value_iteration;
 
 /* "osmnx_mdp/algorithms/mdp.pxd":27
- *     cdef _get_normal_intersection(self, edge)
+ *     #cdef _get_normal_intersection(self, edge)
  *     cdef _get_normal_intersections(self)
  *     cdef make_close_intersections_uncertain(self, max_length=*)             # <<<<<<<<<<<<<<
  *     cdef make_low_angle_intersections_uncertain(self, max_angle=*)
@@ -992,15 +1000,20 @@ struct __pyx_obj_9osmnx_mdp_10algorithms_4rtdp_RTDP {
 };
 
 
-/* "osmnx_mdp/algorithms/dstar_lite.pxd":12
- * #        unordered_map[long, float] rhs
+/* "osmnx_mdp/algorithms/dstar_lite.pxd":39
+ *         int drive(cset[long] &visited, dense_hash_map[long, long] diverge_policy)
  * 
  * cdef class DStar_Lite(osmnx_mdp.algorithms.algorithm.Algorithm):             # <<<<<<<<<<<<<<
- *     #cdef cpp_DStar_Lite cpp
- * 
+ *     cdef dense_hash_map[pair[long, long], float, pair_hash] cost
+ *     cdef dense_hash_map[long, pair[float, float]] data
  */
 struct __pyx_obj_9osmnx_mdp_10algorithms_10dstar_lite_DStar_Lite {
   struct __pyx_obj_9osmnx_mdp_10algorithms_9algorithm_Algorithm __pyx_base;
+  google::dense_hash_map<std::pair<long,long> ,float,struct pair_hash>  cost;
+  google::dense_hash_map<long,std::pair<float,float> >  data;
+  google::dense_hash_map<long,std::vector<long> >  predecessors;
+  google::dense_hash_map<long,std::vector<long> >  successors;
+  cpp_DStar_Lite cpp;
   PyObject *G;
   PyObject *rhs;
   PyObject *g;
@@ -1043,7 +1056,6 @@ struct __pyx_vtabstruct_9osmnx_mdp_10algorithms_3mdp_MDP {
   PyObject *(*make_goal_self_absorbing)(struct __pyx_obj_9osmnx_mdp_10algorithms_3mdp_MDP *);
   PyObject *(*_get_coordinates)(struct __pyx_obj_9osmnx_mdp_10algorithms_3mdp_MDP *, PyObject *);
   PyObject *(*_make_edge_uncertain)(struct __pyx_obj_9osmnx_mdp_10algorithms_3mdp_MDP *, PyObject *, PyObject *, PyObject *);
-  PyObject *(*_get_normal_intersection)(struct __pyx_obj_9osmnx_mdp_10algorithms_3mdp_MDP *, PyObject *);
   PyObject *(*_get_normal_intersections)(struct __pyx_obj_9osmnx_mdp_10algorithms_3mdp_MDP *);
   PyObject *(*make_close_intersections_uncertain)(struct __pyx_obj_9osmnx_mdp_10algorithms_3mdp_MDP *, struct __pyx_opt_args_9osmnx_mdp_10algorithms_3mdp_3MDP_make_close_intersections_uncertain *__pyx_optional_args);
   PyObject *(*make_low_angle_intersections_uncertain)(struct __pyx_obj_9osmnx_mdp_10algorithms_3mdp_MDP *, struct __pyx_opt_args_9osmnx_mdp_10algorithms_3mdp_3MDP_make_low_angle_intersections_uncertain *__pyx_optional_args);
@@ -1071,12 +1083,12 @@ struct __pyx_vtabstruct_9osmnx_mdp_10algorithms_4rtdp_RTDP {
 static struct __pyx_vtabstruct_9osmnx_mdp_10algorithms_4rtdp_RTDP *__pyx_vtabptr_9osmnx_mdp_10algorithms_4rtdp_RTDP;
 
 
-/* "osmnx_mdp/algorithms/dstar_lite.pxd":12
- * #        unordered_map[long, float] rhs
+/* "osmnx_mdp/algorithms/dstar_lite.pxd":39
+ *         int drive(cset[long] &visited, dense_hash_map[long, long] diverge_policy)
  * 
  * cdef class DStar_Lite(osmnx_mdp.algorithms.algorithm.Algorithm):             # <<<<<<<<<<<<<<
- *     #cdef cpp_DStar_Lite cpp
- * 
+ *     cdef dense_hash_map[pair[long, long], float, pair_hash] cost
+ *     cdef dense_hash_map[long, pair[float, float]] data
  */
 
 struct __pyx_vtabstruct_9osmnx_mdp_10algorithms_10dstar_lite_DStar_Lite {
@@ -1535,6 +1547,9 @@ static void __Pyx_AddTraceback(const char *funcname, int c_line,
 /* CIntToPy.proto */
 static CYTHON_INLINE PyObject* __Pyx_PyInt_From_long(long value);
 
+/* None.proto */
+#include <new>
+
 /* CIntFromPy.proto */
 static CYTHON_INLINE long __Pyx_PyInt_As_long(PyObject *);
 
@@ -1584,7 +1599,13 @@ static PyTypeObject *__pyx_ptype_9osmnx_mdp_10algorithms_4rtdp_RTDP = 0;
 
 /* Module declarations from 'libcpp.utility' */
 
-/* Module declarations from 'libcpp.unordered_map' */
+/* Module declarations from 'libcpp.pair' */
+
+/* Module declarations from 'libcpp.set' */
+
+/* Module declarations from 'libcpp.vector' */
+
+/* Module declarations from 'osmnx_mdp.algorithms.dense_hash_map' */
 
 /* Module declarations from 'osmnx_mdp.algorithms.dstar_lite' */
 static PyTypeObject *__pyx_ptype_9osmnx_mdp_10algorithms_10dstar_lite_DStar_Lite = 0;
@@ -4795,11 +4816,11 @@ static int __Pyx_modinit_type_import_code(void) {
    if (!__pyx_ptype_9osmnx_mdp_10algorithms_4rtdp_RTDP) __PYX_ERR(3, 5, __pyx_L1_error)
   __pyx_vtabptr_9osmnx_mdp_10algorithms_4rtdp_RTDP = (struct __pyx_vtabstruct_9osmnx_mdp_10algorithms_4rtdp_RTDP*)__Pyx_GetVtable(__pyx_ptype_9osmnx_mdp_10algorithms_4rtdp_RTDP->tp_dict); if (unlikely(!__pyx_vtabptr_9osmnx_mdp_10algorithms_4rtdp_RTDP)) __PYX_ERR(3, 5, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = PyImport_ImportModule("osmnx_mdp.algorithms.dstar_lite"); if (unlikely(!__pyx_t_1)) __PYX_ERR(4, 12, __pyx_L1_error)
+  __pyx_t_1 = PyImport_ImportModule("osmnx_mdp.algorithms.dstar_lite"); if (unlikely(!__pyx_t_1)) __PYX_ERR(4, 39, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_ptype_9osmnx_mdp_10algorithms_10dstar_lite_DStar_Lite = __Pyx_ImportType(__pyx_t_1, "osmnx_mdp.algorithms.dstar_lite", "DStar_Lite", sizeof(struct __pyx_obj_9osmnx_mdp_10algorithms_10dstar_lite_DStar_Lite), __Pyx_ImportType_CheckSize_Warn);
-   if (!__pyx_ptype_9osmnx_mdp_10algorithms_10dstar_lite_DStar_Lite) __PYX_ERR(4, 12, __pyx_L1_error)
-  __pyx_vtabptr_9osmnx_mdp_10algorithms_10dstar_lite_DStar_Lite = (struct __pyx_vtabstruct_9osmnx_mdp_10algorithms_10dstar_lite_DStar_Lite*)__Pyx_GetVtable(__pyx_ptype_9osmnx_mdp_10algorithms_10dstar_lite_DStar_Lite->tp_dict); if (unlikely(!__pyx_vtabptr_9osmnx_mdp_10algorithms_10dstar_lite_DStar_Lite)) __PYX_ERR(4, 12, __pyx_L1_error)
+   if (!__pyx_ptype_9osmnx_mdp_10algorithms_10dstar_lite_DStar_Lite) __PYX_ERR(4, 39, __pyx_L1_error)
+  __pyx_vtabptr_9osmnx_mdp_10algorithms_10dstar_lite_DStar_Lite = (struct __pyx_vtabstruct_9osmnx_mdp_10algorithms_10dstar_lite_DStar_Lite*)__Pyx_GetVtable(__pyx_ptype_9osmnx_mdp_10algorithms_10dstar_lite_DStar_Lite->tp_dict); if (unlikely(!__pyx_vtabptr_9osmnx_mdp_10algorithms_10dstar_lite_DStar_Lite)) __PYX_ERR(4, 39, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __Pyx_RefNannyFinishContext();
   return 0;

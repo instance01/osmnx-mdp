@@ -26,3 +26,10 @@ Includes mdp_PYTHON_INTERACTION.html to show how much Python interaction mdp had
 It is vital to set the MDP type.
 See mdp_draw.pyx.
 
+When wrapping a c++ class, dont forget to implement the destructor in the cpp file, else you cant load the library with LD_PRELOAD.
+https://stackoverflow.com/questions/45655839/undefined-symbols-when-trying-to-use-cython-extensions
+
+Python objects that get initialized in a function and get passed to the C++ module get garbage collected after Python leaves the function.
+So after a short time for example maps that were passed to the D* Lite C++ module became garbage.
+These type of objects need to be declared in the pxd header file of the Python wrapper.
+

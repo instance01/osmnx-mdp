@@ -4,4 +4,6 @@ mdp2: after some minor performance fixes (see 'Performance improvements' commit 
 mdp3: after basic cythonizing
 mdp4: after moving solve_value_iteration into C++ module
 mdp5: after using googles dense_hash_map
+mdp6: after moving _get_normal_intersections to C++
+mdp7: moving another _get_normal_intersection call to C++
 

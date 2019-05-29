@@ -22,7 +22,7 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
     cdef make_goal_self_absorbing(self)
     cdef _get_coordinates(self, node)
     cdef _make_edge_uncertain(self, temp_P, edge, other_node)
-    cdef _get_normal_intersection(self, edge)
+    #cdef _get_normal_intersection(self, edge)
     cdef _get_normal_intersections(self)
     cdef make_close_intersections_uncertain(self, max_length=*)
     cdef make_low_angle_intersections_uncertain(self, max_angle=*)

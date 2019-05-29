@@ -1,0 +1,58 @@
+Mon May 27 19:40:39 2019    mdp1.profile
+
+         243315 function calls in 0.156 seconds
+
+   Ordered by: cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    0.156    0.156 {built-in method builtins.exec}
+        1    0.000    0.000    0.155    0.155 <string>:1(<module>)
+        1    0.096    0.096    0.155    0.155 {osmnx_mdp.mdp_profile.run}
+    32382    0.010    0.000    0.041    0.000 /usr/lib/python3.7/site-packages/networkx/classes/multidigraph.py:512(edges)
+    32382    0.010    0.000    0.031    0.000 /usr/lib/python3.7/site-packages/networkx/classes/reportviews.py:906(__init__)
+    32382    0.008    0.000    0.021    0.000 {built-in method builtins.hasattr}
+    32382    0.009    0.000    0.013    0.000 /usr/lib/python3.7/site-packages/networkx/classes/multidigraph.py:318(succ)
+    32382    0.009    0.000    0.009    0.000 /usr/lib/python3.7/site-packages/networkx/classes/reportviews.py:1105(__getitem__)
+    12253    0.004    0.000    0.005    0.000 /usr/lib/python3.7/site-packages/networkx/classes/digraph.py:769(successors)
+    12253    0.003    0.000    0.005    0.000 /usr/lib/python3.7/site-packages/networkx/classes/digraph.py:801(predecessors)
+    32382    0.003    0.000    0.003    0.000 /usr/lib/python3.7/site-packages/networkx/classes/coreviews.py:44(__init__)
+    24507    0.003    0.000    0.003    0.000 {built-in method builtins.iter}
+        1    0.000    0.000    0.000    0.000 /usr/lib/python3.7/site-packages/networkx/classes/reportviews.py:253(__iter__)
+        1    0.000    0.000    0.000    0.000 /usr/lib/python3.7/site-packages/networkx/classes/reportviews.py:194(data)
+        1    0.000    0.000    0.000    0.000 /usr/lib/python3.7/site-packages/networkx/classes/graph.py:646(nodes)
+        1    0.000    0.000    0.000    0.000 /usr/lib/python3.7/site-packages/networkx/classes/reportviews.py:167(__init__)
+        1    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+        1    0.000    0.000    0.000    0.000 /usr/lib/python3.7/site-packages/networkx/classes/reportviews.py:235(__init__)
+        1    0.000    0.000    0.000    0.000 {method 'items' of 'dict' objects}
+
+
+sort by total time (only the function itself not its childrens)
+Mon May 27 19:40:39 2019    mdp1.profile
+
+         243315 function calls in 0.156 seconds
+
+   Ordered by: internal time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.096    0.096    0.155    0.155 {osmnx_mdp.mdp_profile.run}
+    32382    0.010    0.000    0.031    0.000 /usr/lib/python3.7/site-packages/networkx/classes/reportviews.py:906(__init__)
+    32382    0.010    0.000    0.041    0.000 /usr/lib/python3.7/site-packages/networkx/classes/multidigraph.py:512(edges)
+    32382    0.009    0.000    0.013    0.000 /usr/lib/python3.7/site-packages/networkx/classes/multidigraph.py:318(succ)
+    32382    0.009    0.000    0.009    0.000 /usr/lib/python3.7/site-packages/networkx/classes/reportviews.py:1105(__getitem__)
+    32382    0.008    0.000    0.021    0.000 {built-in method builtins.hasattr}
+    12253    0.004    0.000    0.005    0.000 /usr/lib/python3.7/site-packages/networkx/classes/digraph.py:769(successors)
+    12253    0.003    0.000    0.005    0.000 /usr/lib/python3.7/site-packages/networkx/classes/digraph.py:801(predecessors)
+    32382    0.003    0.000    0.003    0.000 /usr/lib/python3.7/site-packages/networkx/classes/coreviews.py:44(__init__)
+    24507    0.003    0.000    0.003    0.000 {built-in method builtins.iter}
+        1    0.000    0.000    0.156    0.156 {built-in method builtins.exec}
+        1    0.000    0.000    0.000    0.000 /usr/lib/python3.7/site-packages/networkx/classes/reportviews.py:253(__iter__)
+        1    0.000    0.000    0.000    0.000 /usr/lib/python3.7/site-packages/networkx/classes/reportviews.py:194(data)
+        1    0.000    0.000    0.000    0.000 /usr/lib/python3.7/site-packages/networkx/classes/reportviews.py:167(__init__)
+        1    0.000    0.000    0.000    0.000 /usr/lib/python3.7/site-packages/networkx/classes/graph.py:646(nodes)
+        1    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+        1    0.000    0.000    0.155    0.155 <string>:1(<module>)
+        1    0.000    0.000    0.000    0.000 /usr/lib/python3.7/site-packages/networkx/classes/reportviews.py:235(__init__)
+        1    0.000    0.000    0.000    0.000 {method 'items' of 'dict' objects}
+
+
+
