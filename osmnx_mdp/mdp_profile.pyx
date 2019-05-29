@@ -39,12 +39,6 @@ def run():
     #col_nodes = list(dstar.drive({}, {}))
     #print(col_nodes)
 
-    #with open('model6.pickle', 'wb+') as f:
-    #    #pickle.dump([mdp, V, {}], f)
-    #    pickle.dump(mdp, f)
-    
-    #with open('model6.pickle', 'rb') as f:
-    #    mdp2 = pickle.load(f)
 
 cProfile.runctx("run()", globals(), locals(), PROFILE_FILE)
 

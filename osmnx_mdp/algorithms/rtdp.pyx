@@ -118,20 +118,3 @@ cdef class RTDP(osmnx_mdp.algorithms.algorithm.Algorithm):
             nodes.append(curr_node)
 
         return nodes
-
-
-if __name__ == '__main__':
-    with open('data/maxvorstadt.pickle', 'rb') as f:
-        G = pickle.load(f)
-
-    mdp = MDP(G)
-    mdp.setup(246878841, 372796487)
-
-    rtdp = RTDP(mdp)
-    rtdp.setup(246878841, 372796487)
-    path = rtdp.run_trials()
-
-    time_to_drive = get_time_to_drive(path, rtdp.G)  # Minutes
-    print('Minutes spent driving this route:', time_to_drive)
-
-    draw_value_graph(rtdp.G, path, rtdp.H)

@@ -27,13 +27,6 @@ cdef prepare_graph_for_drawing(MDP mdp, policy):
     return G2
 
 
-#def draw_mdp():
-#    with open('model6.pickle', 'rb') as f:
-#        mdp, V, Q = pickle.load(f)
-#
-#    draw_mdp(mdp, V, Q)
-
-
 # IT IS OF VITAL IMPORTANCE TO SET THE TYPE TO MDP
 # MDP mdp
 cdef draw_mdp(MDP mdp, V, Q):

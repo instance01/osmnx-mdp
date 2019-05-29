@@ -558,17 +558,3 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
     cdef solve(self):
         V, _ = self.solve_value_iteration()
         return self.get_policy(V)
-
-
-if __name__ == '__main__':
-    with open('../data/maxvorstadt.pickle', 'rb') as f:
-        G = pickle.load(f)
-
-    remove_dead_ends(G, 372796487)
-
-    mdp = MDP(G)
-    mdp.setup(246878841, 372796487)
-    V, Q = mdp.solve_value_iteration()
-
-    with open('model5.pickle', 'wb+') as f:
-        pickle.dump([mdp, V, Q], f)
