@@ -11,3 +11,6 @@ cereal/
 *.html
 *.bak
 *.c
+
+*.cpp
+!cpp*.cpp

@@ -1,11 +1,7 @@
 # cython: language_level=3
 # cython: profile=True
-#from libcpp.unordered_map cimport unordered_map as unordered_map2
 from libcpp.pair cimport pair
 from libcpp.vector cimport vector
-# cdef extern from "<algorithm>" namespace "std":
-#     #Iter find_if[Iter, Func](Iter first, Iter last, Func pred)
-#     iter min_element(iter first, iter last);
 
 from osmnx_mdp.algorithms.dense_hash_map cimport dense_hash_map
 
@@ -83,7 +79,7 @@ cdef extern from "<unordered_map>" namespace "std" nogil:
         size_t bucket_size(size_t)
         size_t bucket(const T&)
 
-cdef extern from "testthis.hpp":
+cdef extern from "cpp_mdp.hpp":
     struct pair_hash:
         long operator(pair[long, long])
     void solve(

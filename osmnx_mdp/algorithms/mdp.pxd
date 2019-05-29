@@ -1,8 +1,6 @@
 # cython: language_level=3
 cimport osmnx_mdp.algorithms.algorithm
 
-cdef int Xdf(float gamma, int state)  # Just test
-
 cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
     cdef G
     cdef S

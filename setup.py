@@ -16,8 +16,8 @@ setup(
     cmdclass={"build_ext": build_ext},
     ext_modules=cythonize([
         Extension(
-            "testthis",
-            ["osmnx_mdp/algorithms/testthis.cpp"],
+            "cpp_mdp",
+            ["osmnx_mdp/algorithms/cpp_mdp.cpp"],
             include_dirs=["osmnx_mdp/algorithms/"]
         ),
         Extension(
