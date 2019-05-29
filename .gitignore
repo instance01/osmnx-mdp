@@ -7,3 +7,7 @@ osmnx_mdp.egg-info/
 sparsepp/
 build/
 cereal/
+*.profile
+*.html
+*.bak
+*.c
