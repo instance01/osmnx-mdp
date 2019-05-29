@@ -10,11 +10,10 @@ Algorithms implemented right now:
 * Value iteration
 * RTDP
 * LPA*
-
-Algorithms planned:
-* LRTDP
 * BRTDP
 * D* Lite
+
+Algorithms planned:
 * ID* Lite ?
 * D* Lite improved with HOP ?
 
@@ -28,4 +27,4 @@ Technologies:
 
 Development:
 pip3 install -e .
-sparsehash package
+Install sparsehash package using your systems package manager
