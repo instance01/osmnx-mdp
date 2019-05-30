@@ -1,12 +1,15 @@
 
-mdp1: at the beginning
-mdp2: after some minor performance fixes (see 'Performance improvements' commit May 21)
-mdp3: after basic cythonizing
-mdp4: after moving solve_value_iteration into C++ module
-mdp5: after using googles dense_hash_map
-mdp6: after moving _get_normal_intersections to C++
-mdp7: moving another _get_normal_intersection call to C++
+mdp1: At the beginning
+mdp2: Some minor performance fixes (see 'Performance improvements' commit May 21)
+mdp3: Basic cythonizing
+mdp4: Moving solve_value_iteration into C++ module
+mdp5: Using Google's dense_hash_map
+mdp6: Moving _get_normal_intersections to C++
+mdp7: Moving another _get_normal_intersection call to C++
 
-dstar1: basic cythonization
+dstar1: Basic cythonization
 dstar2: C++ module
+
+hashmap1: unordered_map
+hashmap2: sparsepp (based on Google's sparsehash)
 

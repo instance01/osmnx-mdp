@@ -27,6 +27,19 @@ cdef extern from "cpp_mdp.hpp":
         dense_hash_map[long, vector[long]] &successors,
         dense_hash_map[long, pair[float, float]] &data
     )
+    void CPP_make_low_angle_intersections_uncertain(
+        vector[long] *angles,
+        dense_hash_map[
+            long,
+            dense_hash_map[
+                pair[long, long],
+                vector[pair[long, double]],
+                pair_hash
+            ]
+        ] *P,
+        dense_hash_map[long, vector[long]] &successors,
+        dense_hash_map[long, pair[float, float]] &data,
+        float max_angle)
 
 
 import time
@@ -299,15 +312,41 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
         """
         angle_nodes = []
 
-        #cdef dense_hash_map[long, vector[long]] successors
-        #cdef dense_hash_map[long, pair[float, float]] data
+        cdef dense_hash_map[long, vector[long]] successors
+        cdef dense_hash_map[long, pair[float, float]] data
 
-        #successors.set_empty_key(0)
-        #data.set_empty_key(0)
+        successors.set_empty_key(0)
+        data.set_empty_key(0)
 
-        #for node in self.G.nodes.data():
-        #    successors[node[0]] = list(self.G.successors(node[0]))
-        #    data[node[0]] = (node[1]['x'], node[1]['y'])
+        for node in self.G.nodes.data():
+            node_id = node[0]
+            successors[node_id] = list(self.G.successors(node_id))
+            data[node_id] = (node[1]['x'], node[1]['y'])
+
+        # TODO: Code duplication
+        # Move all these into pxd, init them at setup, reuse everywhere.
+        cdef dense_hash_map[long, dense_hash_map[pair[long, long], vector[pair[long, double]], pair_hash]] P
+        P.set_empty_key(0)
+        cdef dense_hash_map[pair[long, long], vector[pair[long, double]], pair_hash] curr
+        curr.set_empty_key((0, 0))
+        for k, v in self.P.items():
+            for k_, v_ in v.items():
+                curr[k_] = v_
+            P[k] = curr
+            curr.clear()
+
+        #cdef vector[long] cpp_angle_nodes
+        #CPP_make_low_angle_intersections_uncertain(&cpp_angle_nodes, &P, successors, data, max_angle)
+
+        ##for k, v in self.P.items():
+        ##    for k_, _ in v.items():
+        ##        print(P[k][k_])
+
+        #for k, v in self.P.items():
+        #    for k_, _ in v.items():
+        #        self.P[k][k_] = P[k][k_]
+        #return cpp_angle_nodes
+
 
         for edge in self.G.edges.data():
             p3 = self._get_coordinates(edge[0])
@@ -319,18 +358,9 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
 
             num_critical_nodes = 0
 
+            if origin_node == 11587557:
+                print(list(combinations(edges_out, 2)))
 
-            # TODO: How to model combinations in C++ ?!
-
-            from itertools import tee
-            def pairwise(iterable):
-                "s -> (s0,s1), (s1,s2), (s2, s3), ..."
-                a, b = tee(iterable)
-                next(b, None)
-                return zip(a, b)
-
-
-            #for (e1, e2) in combinations(edges_out, 2):
             for (e1, e2) in combinations(edges_out, 2):
                 # We can't reuse the edge that goes back as one of the
                 # out_edges.
@@ -341,7 +371,11 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
                 # We come from 1, and without the checks below we reuse
                 # edge (1, 2) and erroneously find a critical angle
                 # between (1, 2) and (2, 3).
-                if e1[:2] == edge[1::-1] or e2[:2] == edge[1::-1]:
+                if origin_node == 11587557:
+                    print('-')
+                    print(e1[:2], edge[1::-1])
+                    print(e2[:2], edge[1::-1])
+                if e1[:2] == edge[1::-1] or e2[:2] == edge[1::-1] or e1[:2] == e2[:2]:
                     continue
 
                 p1 = self._get_coordinates(e1[1])
@@ -363,6 +397,8 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
                 # It follows that the difference of both is 320 > 30 degrees.
                 # Thus it is not a critical intersection.
                 angle = get_angle(p1, p3, origin) - get_angle(p2, p3, origin)
+                if origin_node==11587557:
+                    print(angle)
                 if abs(angle) <= max_angle:
                     edge1 = e1[:2]
                     edge2 = e2[:2]
@@ -373,6 +409,7 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
                     num_critical_nodes += 1
 
             if num_critical_nodes > 0:
+                print(origin_node)
                 angle_nodes.append(origin_node)
 
             self.P[origin_node].update(temp_P)
@@ -423,6 +460,8 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
         for k, v in self.C.items():
             C[k] = v
 
+        # TODO: It is needed that this float is DOUBLE. Especially (B)RTDP
+        # needs precision. Who knows how bad the effect in VI is.
         cdef dense_hash_map[long, dense_hash_map[pair[long, long], vector[pair[long, float]], pair_hash]] P
         P.set_empty_key(0)
         cdef dense_hash_map[pair[long, long], vector[pair[long, float]], pair_hash] curr

@@ -1,9 +1,3 @@
-// #include "sparsepp/spp.h"
-#include "cereal/types/unordered_map.hpp"
-#include "cereal/types/vector.hpp"
-#include "cereal/types/utility.hpp"
-#include "cereal/types/memory.hpp"
-#include "cereal/archives/binary.hpp"
 #include "cpp_mdp.hpp"
 #include <fstream>
 #include <iostream> // cout
@@ -31,32 +25,11 @@ float get_angle(
     return 180 * angle / M_PI;
 }
 
-
-int main() {
-    google::dense_hash_map<long, float> V;
-    std::vector<long> S;
-    google::dense_hash_map<long, std::vector<std::pair<long, long>>> A;
-    google::dense_hash_map<std::pair<long, long>, float, pair_hash> C;
-    google::dense_hash_map<
-        long,
-        google::dense_hash_map<
-            std::pair<long, long>,
-            std::vector<std::pair<long, float>>,
-            pair_hash
-        >
-    > P;
-
-    // std::ifstream os("out.cereal", std::ios::binary);
-    // cereal::BinaryInputArchive load(os);
-    // load(V, S, A, C, P);
-
-    // solve(V, S, A, C, P, 1000);
-}
-
 int CPP_get_normal_intersections(
         google::dense_hash_map<std::pair<long, long>, CPP_Intersection, pair_hash> &out,
         google::dense_hash_map<long, std::vector<long>> &successors,
         google::dense_hash_map<long, std::pair<float, float>> &data) {
+    // TODO: Twisted code, improve
     out.set_empty_key(std::pair<long, long>(0, 0));
     for (auto &x : successors) {
         for (auto &succ : x.second) {
@@ -105,22 +78,124 @@ int CPP_get_normal_intersections(
 
 void combinations(
         std::vector<std::pair<std::pair<long, long>, std::pair<long, long>>> &out,
-        std::vector<std::pair<long, long>> edges) {
-    for (unsigned long i = 0; i < edges.size(); ++i) {
-        for (unsigned long j = 0; j < edges.size(); ++j) {
-            if (i == j)
+        long origin_node,
+        std::vector<long> successors) {
+    for (unsigned long i = 0; i < successors.size(); ++i) {
+        for (unsigned long j = 0; j < successors.size(); ++j) {
+            if (i >= j)
                 continue;
-            out.push_back(std::pair<std::pair<long, long>, std::pair<long, long>>(edges[i], edges[j]));
+            std::pair<long, long> edge1(origin_node, successors[i]);
+            std::pair<long, long> edge2(origin_node, successors[j]);
+            out.push_back(std::pair<std::pair<long, long>, std::pair<long, long>>(edge1, edge2));
         }
     }
 }
 
+void make_edge_uncertain(
+        google::dense_hash_map<std::pair<long, long>, std::vector<std::pair<long, double>>, pair_hash> &temp_P,
+        const std::pair<long, long> &edge,
+        const long &other_node) {
+    // TODO: Add docstring from python
+    long node_to = edge.second;
+
+    if (temp_P.find(edge) == temp_P.end()) {
+        temp_P[edge] = {{node_to, .9}, {other_node, .1}};
+    } else {
+        temp_P[edge].push_back({other_node, .1});
+        temp_P[edge][0] = {node_to, temp_P[edge][0].second - .1};
+    }
+}
 
 int CPP_make_low_angle_intersections_uncertain(
+        std::vector<long> *angle_nodes,
+        google::dense_hash_map<
+            long,
+            google::dense_hash_map<
+                std::pair<long, long>,
+                std::vector<std::pair<long, double>>,
+                pair_hash
+            >
+        > *P,
         google::dense_hash_map<long, std::vector<long>> &successors,
-        google::dense_hash_map<long, std::pair<float, float>> &data) {
+        google::dense_hash_map<long, std::pair<float, float>> &data,
+        float max_angle=30) {
+    // TODO: Twisted code. Works, but succs
+    // TODO: Add all docstrings/comments from python code
+    for (auto &x : data) {
+        for (auto &succ : successors[x.first]) {
+            std::pair<long, long> edge(x.first, succ);
+            long origin_node = edge.second;
 
-    // TODO
+            int n_critical_nodes = 0;
+
+            google::dense_hash_map<std::pair<long, long>, std::vector<std::pair<long, double>>, pair_hash> temp_P;
+            temp_P.set_empty_key({0, 0});
+
+            float x3 = data[edge.first].first;
+            float y3 = data[edge.first].second;
+
+            float origin_x = data[edge.second].first;
+            float origin_y = data[edge.second].second;
+
+            std::vector<std::pair<std::pair<long, long>, std::pair<long, long>>> combs;
+            combinations(combs, origin_node, successors[origin_node]);
+
+            for (auto &combination : combs) {
+                std::pair<long, long> edge1 = combination.first;
+                std::pair<long, long> edge2 = combination.second;
+
+                // We can't reuse the edge that goes back as one of the
+                // out_edges.
+                // 1   3
+                //  \  |
+                //   \ |
+                //     2
+                // We come from 1, and without the checks below we reuse
+                // edge (1, 2) and erroneously find a critical angle
+                // between (1, 2) and (2, 3).
+                if (
+                        (edge1.first == edge.second && edge1.second == edge.first) ||
+                        (edge2.first == edge.second && edge2.second == edge.first)) {
+                    continue;
+                }
+
+                float x1 = data[edge1.second].first;
+                float y1 = data[edge1.second].second;
+                float x2 = data[edge2.second].first;
+                float y2 = data[edge2.second].second;
+
+                // The following line solves the following scenario:
+                // 1   3   4
+                //  \  |  /
+                //   \ | /
+                //     2
+                // Let's say we come from node 3 and we're currently at node 2.
+                // We used to simply get the angle between the two edges (here
+                // (1, 2) and (4, 2)), which in this case is <30 degrees.
+                // But this is a T-shaped intersection, just sharper. This is
+                // not a critical intersection.
+                // So currently we get the angle between edge (4, 2) and (3, 2),
+                // which is e.g. 20 degrees, and the angle between (1, 2) and
+                // (3, 2), which is then 340 degrees.
+                // It follows that the difference of both is 320 > 30 degrees.
+                // Thus it is not a critical intersection.
+                float angle = get_angle(x1, y1, x3, y3, origin_x, origin_y) - get_angle(x2, y2, x3, y3, origin_x, origin_y);
+                if (abs(angle) <= max_angle) {
+                    make_edge_uncertain(temp_P, edge1, edge2.second);
+                    make_edge_uncertain(temp_P, edge2, edge1.second);
+
+                    n_critical_nodes += 1;
+                }
+            }
+
+            if (n_critical_nodes > 0)
+                angle_nodes->push_back(origin_node);
+
+            for (auto &kv : temp_P) {
+                (*P)[succ][kv.first] = kv.second;
+            }
+        }
+    }
     
     return 0;
 }
@@ -139,18 +214,10 @@ int solve(
             >
         > &P,
         int max_iter=10000) {
-    std::ofstream os("out.cereal", std::ios::binary);
-    cereal::BinaryOutputArchive archive(os);
-    archive(V, S, A, C, P);
-
-    //std::ifstream os("out.cereal", std::ios::binary);
-    //cereal::BinaryInputArchive load(os);
-    //load(V, S, A, C, P);
-
-    google::dense_hash_map<long, google::dense_hash_map<std::pair<long, long>, float, pair_hash>> Q = {};
+    google::dense_hash_map<long, google::dense_hash_map<std::pair<long, long>, float, pair_hash>> Q;
     Q.set_empty_key(0);
     for (auto &s : S) {
-        Q[s] = {};
+        Q[s] = google::dense_hash_map<std::pair<long, long>, float, pair_hash>();
         Q[s].set_empty_key(std::pair<long, long>(0, 0));
         for (auto &a : A[s]) {
             Q[s][a] = 0.;

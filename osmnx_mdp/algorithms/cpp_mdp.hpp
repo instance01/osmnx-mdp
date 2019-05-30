@@ -1,5 +1,4 @@
 #include <google/dense_hash_map>
-// #include "sparsepp/spp.h"
 #include <unordered_map>
 #include <vector>
 
@@ -78,3 +77,17 @@ int solve(
             >
         > &P,
         int max_iter);
+
+int CPP_make_low_angle_intersections_uncertain(
+        std::vector<long> *angle_nodes,
+        google::dense_hash_map<
+            long,
+            google::dense_hash_map<
+                std::pair<long, long>,
+                std::vector<std::pair<long, double>>,
+                pair_hash
+            >
+        > *P,
+        google::dense_hash_map<long, std::vector<long>> &successors,
+        google::dense_hash_map<long, std::pair<float, float>> &data,
+        float max_angle);
