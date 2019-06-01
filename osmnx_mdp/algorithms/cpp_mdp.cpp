@@ -2,9 +2,11 @@
 #include <fstream>
 #include <iostream> // cout
 #include <algorithm> // min_element
+#include <set>
 #include <math.h>
 
 
+// TODO: Move into cpp_lib.cpp
 float get_angle(
         float p1_x,
         float p1_y,
@@ -25,13 +27,111 @@ float get_angle(
     return 180 * angle / M_PI;
 }
 
-int CPP_get_normal_intersections(
-        google::dense_hash_map<std::pair<long, long>, CPP_Intersection, pair_hash> &out,
-        google::dense_hash_map<long, std::vector<long>> &successors,
-        google::dense_hash_map<long, std::pair<float, float>> &data) {
+void combinations(
+        std::vector<std::pair<std::pair<long, long>, std::pair<long, long>>> &out,
+        long origin_node,
+        std::vector<long> successors) {
+    for (unsigned long i = 0; i < successors.size(); ++i) {
+        for (unsigned long j = 0; j < successors.size(); ++j) {
+            if (i >= j)
+                continue;
+            std::pair<long, long> edge1(origin_node, successors[i]);
+            std::pair<long, long> edge2(origin_node, successors[j]);
+            out.push_back(std::pair<std::pair<long, long>, std::pair<long, long>>(edge1, edge2));
+        }
+    }
+}
+
+
+CPP_MDP::CPP_MDP() {}
+CPP_MDP::~CPP_MDP() {}
+
+
+int CPP_MDP::init(
+    std::vector<long> *S,
+    google::dense_hash_map<long, std::vector<std::pair<long, long>>> *A,
+    google::dense_hash_map<std::pair<long, long>, float, pair_hash> *C,
+    google::dense_hash_map<
+        long,
+        google::dense_hash_map<
+            std::pair<long, long>,
+            std::vector<std::pair<long, double>>,
+            pair_hash
+        >
+    > *P,
+    google::dense_hash_map<std::pair<long, long>, double, pair_hash> *edge_data,
+    google::dense_hash_map<long, std::pair<double, double>> *node_data,
+    google::dense_hash_map<long, std::vector<long>> *successors) {
+    this->S = S;
+    this->A = A;
+    this->C = C;
+    this->P = P;
+    this->edge_data = edge_data;
+    this->node_data = node_data;
+    this->successors = successors;
+
+    return 0;
+}
+
+int CPP_MDP::setup(long start, long goal) {
+    this->start = start;
+    this->goal = goal;
+
+    this->make_goal_self_absorbing();
+    this->make_low_angle_intersections_uncertain();
+    this->make_close_intersections_uncertain();
+ 
+    int total_uncertain_nodes = this->angle_nodes.size() + this->close_intersections.size();
+    float uncertainty_percent = float(total_uncertain_nodes) / (*this->S).size();//13970.;//this->G.number_of_nodes() * 100;
+    std::cout << uncertainty_percent * 100 << "\% of nodes are uncertain." << std::endl;
+    return 0;
+}
+
+int CPP_MDP::make_goal_self_absorbing() {
+    // Add a zero-cost loop at the goal to absorb cost.
+    std::pair<long, long> edge(this->goal, this->goal);
+    (*this->A)[this->goal].push_back(edge);
+    (*this->C)[edge] = 0;
+    (*this->P)[this->goal][edge] = {{this->goal, 1.0}};
+
+    return 0;
+}
+
+int CPP_MDP::make_edge_uncertain(
+        google::dense_hash_map<std::pair<long, long>, std::vector<std::pair<long, double>>, pair_hash> &temp_P,
+        const std::pair<long, long> &edge,
+        const long &other_node) {
+    // Make taking the action of following given edge probabilistic,
+    // i.e. end up in the expected edge only 90% of the time and end
+    // up in other_node 10% of the time.
+    // If the edge is already probabilistic, decrease its chance (e.g.
+    // from 90% to 80% and so on).
+    // Modifies temp_P inplace.
+    long node_to = edge.second;
+
+    if (temp_P.find(edge) == temp_P.end()) {
+        temp_P[edge] = {{node_to, .9}, {other_node, .1}};
+    } else {
+        temp_P[edge].push_back({other_node, .1});
+        temp_P[edge][0] = {node_to, temp_P[edge][0].second - .1};
+    }
+
+    return 0;
+}
+
+int CPP_MDP::get_normal_intersections(
+        google::dense_hash_map<std::pair<long, long>, CPP_Intersection, pair_hash> &out) {
+    // Scan graph for intersections satisfying the following condition:
+    // 
+    // A node with >= 2 outgoing edges is needed with the following
+    // angles:
+    //     * 180
+    //     * 90 or 270
+    // 
+    // Returns a list of nodes that satisfy the condition.
     // TODO: Twisted code, improve
     out.set_empty_key(std::pair<long, long>(0, 0));
-    for (auto &x : successors) {
+    for (auto &x : *this->successors) {
         for (auto &succ : x.second) {
             long origin_node = succ;
 
@@ -39,12 +139,12 @@ int CPP_get_normal_intersections(
             long left_node = 0;
             long right_node = 0;
 
-            for (auto &succsucc : successors[succ]) {
-                float p1_x, p1_y, p2_x, p2_y, origin_x, origin_y;
+            for (auto &succsucc : (*this->successors)[succ]) {
+                double p1_x, p1_y, p2_x, p2_y, origin_x, origin_y;
 
-                std::tie(p1_x, p1_y) = data[x.first];
-                std::tie(p2_x, p2_y) = data[succsucc];
-                std::tie(origin_x, origin_y) = data[origin_node];
+                std::tie(p1_x, p1_y) = (*this->node_data)[x.first];
+                std::tie(p2_x, p2_y) = (*this->node_data)[succsucc];
+                std::tie(origin_x, origin_y) = (*this->node_data)[origin_node];
 
                 float angle = get_angle(p1_x, p1_y, p2_x, p2_y, origin_x, origin_y);
 
@@ -76,53 +176,91 @@ int CPP_get_normal_intersections(
     return 0;
 }
 
-void combinations(
-        std::vector<std::pair<std::pair<long, long>, std::pair<long, long>>> &out,
-        long origin_node,
-        std::vector<long> successors) {
-    for (unsigned long i = 0; i < successors.size(); ++i) {
-        for (unsigned long j = 0; j < successors.size(); ++j) {
-            if (i >= j)
-                continue;
-            std::pair<long, long> edge1(origin_node, successors[i]);
-            std::pair<long, long> edge2(origin_node, successors[j]);
-            out.push_back(std::pair<std::pair<long, long>, std::pair<long, long>>(edge1, edge2));
+int CPP_MDP::make_close_intersections_uncertain(float max_length) {
+    // Scan graph for intersections that follow very closely.
+    // 
+    // Use cases:
+    //     - When you're supposed to go to the right or left, but go straight
+    //       on because you've missed the intersection as it's very close.
+    //     - When you're supposed to go straight on so that you can turn right
+    //       or left on the next intersection, but you do so on the current
+    //       one, which is too early.
+    google::dense_hash_map<std::pair<long, long>, CPP_Intersection, pair_hash> intersections;
+    intersections.set_empty_key({0, 0});
+
+    this->get_normal_intersections(intersections);
+
+    for (auto &intersection : intersections) {
+        std::pair<long, long> next_edge = std::pair<long, long>(intersection.second.origin_edge.second, intersection.second.straight_on_node);
+
+        CPP_Intersection next_intersection;
+
+        if (intersections.find(next_edge) != intersections.end()) {
+            next_intersection = intersections[next_edge];
+        } else {
+            continue;
         }
+
+        std::pair<long, long> origin_edge = std::pair<long, long>(intersection.second.origin_edge.first, intersection.second.origin_edge.second);
+        double origin_edge_length = (*this->edge_data)[origin_edge];
+        double next_edge_length = (*this->edge_data)[next_edge];
+        // TODO: Consider ox.clean_intersections, then that <20 check isn't
+        // needed anymore.
+        if (next_edge_length > max_length || origin_edge_length < 20)
+            continue;
+
+        long origin_node = origin_edge.second;
+
+        if (intersection.second.left_node != 0 && next_intersection.left_node != 0) {
+            this->close_intersections.push_back(intersection.second);
+            this->make_edge_uncertain(
+                    (*this->P)[origin_node],
+                    next_edge,
+                    intersection.second.left_node);
+            this->make_edge_uncertain(
+                    (*this->P)[origin_node],
+                    std::pair<long, long>(origin_node, intersection.second.left_node),
+                    intersection.second.straight_on_node);
+        }
+
+        if (intersection.second.right_node != 0 && next_intersection.right_node != 0) {
+            // TODO: Improve code
+            if (std::find(
+                        this->close_intersections.begin(),
+                        this->close_intersections.end(),
+                        intersection.second) == this->close_intersections.end()) {
+                this->close_intersections.push_back(intersection.second);
+            }
+            this->make_edge_uncertain(
+                    (*this->P)[origin_node],
+                    next_edge,
+                    intersection.second.right_node);
+            this->make_edge_uncertain(
+                    (*this->P)[origin_node],
+                    std::pair<long, long>(origin_node, intersection.second.right_node),
+                    intersection.second.straight_on_node);
+        }
+
     }
+
+    return 0;
 }
 
-void make_edge_uncertain(
-        google::dense_hash_map<std::pair<long, long>, std::vector<std::pair<long, double>>, pair_hash> &temp_P,
-        const std::pair<long, long> &edge,
-        const long &other_node) {
-    // TODO: Add docstring from python
-    long node_to = edge.second;
+int CPP_MDP::make_low_angle_intersections_uncertain(float max_angle) {
+    //  (2)   (3)
+    //   *     *
+    //    \   /
+    //     \ /
+    //      * (1)
+    // 
+    // If angle between edges (1, 2) and (1, 3) is small enough,
+    // make those edges uncertain, i.e. add a 10% chance end up
+    // in the other node and not the expected one.
 
-    if (temp_P.find(edge) == temp_P.end()) {
-        temp_P[edge] = {{node_to, .9}, {other_node, .1}};
-    } else {
-        temp_P[edge].push_back({other_node, .1});
-        temp_P[edge][0] = {node_to, temp_P[edge][0].second - .1};
-    }
-}
-
-int CPP_make_low_angle_intersections_uncertain(
-        std::vector<long> *angle_nodes,
-        google::dense_hash_map<
-            long,
-            google::dense_hash_map<
-                std::pair<long, long>,
-                std::vector<std::pair<long, double>>,
-                pair_hash
-            >
-        > *P,
-        google::dense_hash_map<long, std::vector<long>> &successors,
-        google::dense_hash_map<long, std::pair<float, float>> &data,
-        float max_angle=30) {
     // TODO: Twisted code. Works, but succs
     // TODO: Add all docstrings/comments from python code
-    for (auto &x : data) {
-        for (auto &succ : successors[x.first]) {
+    for (auto &x : *this->node_data) {
+        for (auto &succ : (*this->successors)[x.first]) {
             std::pair<long, long> edge(x.first, succ);
             long origin_node = edge.second;
 
@@ -131,14 +269,14 @@ int CPP_make_low_angle_intersections_uncertain(
             google::dense_hash_map<std::pair<long, long>, std::vector<std::pair<long, double>>, pair_hash> temp_P;
             temp_P.set_empty_key({0, 0});
 
-            float x3 = data[edge.first].first;
-            float y3 = data[edge.first].second;
+            float x3 = (*this->node_data)[edge.first].first;
+            float y3 = (*this->node_data)[edge.first].second;
 
-            float origin_x = data[edge.second].first;
-            float origin_y = data[edge.second].second;
+            float origin_x = (*this->node_data)[edge.second].first;
+            float origin_y = (*this->node_data)[edge.second].second;
 
             std::vector<std::pair<std::pair<long, long>, std::pair<long, long>>> combs;
-            combinations(combs, origin_node, successors[origin_node]);
+            combinations(combs, origin_node, (*this->successors)[origin_node]);
 
             for (auto &combination : combs) {
                 std::pair<long, long> edge1 = combination.first;
@@ -159,10 +297,10 @@ int CPP_make_low_angle_intersections_uncertain(
                     continue;
                 }
 
-                float x1 = data[edge1.second].first;
-                float y1 = data[edge1.second].second;
-                float x2 = data[edge2.second].first;
-                float y2 = data[edge2.second].second;
+                float x1 = (*this->node_data)[edge1.second].first;
+                float y1 = (*this->node_data)[edge1.second].second;
+                float x2 = (*this->node_data)[edge2.second].first;
+                float y2 = (*this->node_data)[edge2.second].second;
 
                 // The following line solves the following scenario:
                 // 1   3   4
@@ -189,7 +327,7 @@ int CPP_make_low_angle_intersections_uncertain(
             }
 
             if (n_critical_nodes > 0)
-                angle_nodes->push_back(origin_node);
+                this->angle_nodes.push_back(origin_node);
 
             for (auto &kv : temp_P) {
                 (*P)[succ][kv.first] = kv.second;
@@ -200,26 +338,14 @@ int CPP_make_low_angle_intersections_uncertain(
     return 0;
 }
 
-int solve(
-        google::dense_hash_map<long, float> &V,
-        std::vector<long> &S,
-        google::dense_hash_map<long, std::vector<std::pair<long, long>>> &A,
-        google::dense_hash_map<std::pair<long, long>, float, pair_hash> &C,
-        google::dense_hash_map<
-            long,
-            google::dense_hash_map<
-                std::pair<long, long>,
-                std::vector<std::pair<long, float>>,
-                pair_hash
-            >
-        > &P,
-        int max_iter=10000) {
+int CPP_MDP::solve(int max_iter) {
+    V.set_empty_key(0);
     google::dense_hash_map<long, google::dense_hash_map<std::pair<long, long>, float, pair_hash>> Q;
     Q.set_empty_key(0);
-    for (auto &s : S) {
+    for (auto &s : *this->S) {
         Q[s] = google::dense_hash_map<std::pair<long, long>, float, pair_hash>();
         Q[s].set_empty_key(std::pair<long, long>(0, 0));
-        for (auto &a : A[s]) {
+        for (auto &a : (*this->A)[s]) {
             Q[s][a] = 0.;
         }
         V[s] = 0.;
@@ -229,21 +355,15 @@ int solve(
     for (int i = 0; i < max_iter; ++i) {
         google::dense_hash_map<long, float> prev_V = V;
 
-        for (auto &s : S) {
-            for (auto &a : A[s]) {
-                float immediate_cost = C[a];
+        for (auto &s : *this->S) {
+            for (auto &a : (*this->A)[s]) {
+                float immediate_cost = (*this->C)[a];
                 float future_cost = 0;
-                for (auto &outcome : P[s][a]) {
+                for (auto &outcome : (*this->P)[s][a]) {
                     future_cost += outcome.second * gamma * prev_V[outcome.first];
                 }
                 Q[s][a] = immediate_cost + future_cost;
             }
-
-            //if (Q[s].empty())
-            //if (Q.find(s) == Q.end()) {
-            //    std::cout << A[s].empty() << std::endl;
-            //    continue;
-            //}
 
             std::pair<const std::pair<long, long>, float> best_action = *min_element(
                     Q[s].begin(),
@@ -252,7 +372,6 @@ int solve(
 
             V[s] = best_action.second;
         }
-
 
         if (i % 100 == 0) {
             float c = 0;
@@ -271,4 +390,62 @@ int solve(
 
     // Cython needs an integer return.
     return 0;
+}
+
+int CPP_MDP::get_policy() {
+    policy.set_empty_key(0);
+    for (auto &s : *this->S) {
+        double curr_min = INFINITY;
+        std::pair<long, long> curr_min_action;
+        for (auto &a : (*this->A)[s]) {
+            double cost = 0;
+            for (auto &outcome : (*this->P)[s][a]) {
+                cost += outcome.second * ((*this->C)[a] + V[outcome.first]);
+            }
+            if (cost < curr_min) {
+                curr_min = cost;
+                curr_min_action = a;
+            }
+        }
+
+        policy[s] = curr_min_action;
+    }
+
+    return 0;
+}
+
+std::vector<long> CPP_MDP::drive(google::dense_hash_map<long, long> &diverge_policy) {
+    // Make sure we don't loop indefinitely due to diverge policy
+    std::set<long> visited;
+
+    std::vector<long> nodes = {this->start};
+    std::set<long> nodes_lookup(nodes.begin(), nodes.end());
+    long curr_node = this->start;
+
+    int i = 0;
+
+    while (curr_node != this->goal) {
+        if (policy.find(curr_node) == policy.end())
+            break;
+
+        i += 1;
+        if (i > 1000) {
+            break;
+        }
+
+        long diverged_node = 0;
+        if (diverge_policy.find(curr_node) != diverge_policy.end())
+            diverged_node = diverge_policy[curr_node];
+
+        if (diverged_node == 0 || visited.find(diverged_node) != visited.end()) {
+            curr_node = policy[curr_node].second;
+        } else {
+            curr_node = diverged_node;
+            visited.insert(diverged_node);
+        }
+
+        nodes.push_back(curr_node);
+    }
+
+    return nodes;
 }

@@ -1,15 +1,8 @@
 #include <google/dense_hash_map>
 #include <set>
 #include <vector>
+#include "cpp_lib.hpp"
 
-// TODO: Copied from testthis.cpp
-struct pair_hash {
-    long long operator () (const std::pair<long, long> &p) const {
-        long long ret = p.first;
-        ret <<= 32;
-        return ret + p.second;
-    }
-};
 
 class cpp_DStar_Lite {
     public:

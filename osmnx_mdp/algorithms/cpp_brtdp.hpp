@@ -1,16 +1,7 @@
 #include <google/dense_hash_map>
 #include <random>
 #include <vector>
-
-
-// TODO: Copied from dstar lite
-struct pair_hash {
-    long long operator () (const std::pair<long, long> &p) const {
-        long long ret = p.first;
-        ret <<= 32;
-        return ret + p.second;
-    }
-};
+#include "cpp_lib.hpp"
 
 
 class CPP_BRTDP {
@@ -30,6 +21,8 @@ class CPP_BRTDP {
         std::vector<long> *S;
         google::dense_hash_map<long, std::vector<std::pair<long, long>>> *A;
         google::dense_hash_map<std::pair<long, long>, float, pair_hash> *C;
+        // It is needed that this is DOUBLE. Especially (B)RTDP
+        // needs precision. Who knows how bad the effect in VI is.
         google::dense_hash_map<
             long,
             google::dense_hash_map<
