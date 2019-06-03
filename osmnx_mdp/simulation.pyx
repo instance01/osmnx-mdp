@@ -6,24 +6,55 @@ from timeit import default_timer as timer
 import numpy as np
 import osmnx as ox
 
-from osmnx_mdp.lib import remove_dead_ends
+from osmnx_mdp.lib cimport remove_dead_ends
 from osmnx_mdp.lib cimport draw_value_graph
 from osmnx_mdp.lib cimport remove_dead_ends
 from osmnx_mdp.lib cimport remove_zero_cost_loops
+from osmnx_mdp.lib cimport get_time_to_drive
 from osmnx_mdp.algorithms.mdp cimport MDP
 from osmnx_mdp.algorithms.rtdp cimport RTDP
+from osmnx_mdp.algorithms.brtdp cimport BRTDP
 from osmnx_mdp.algorithms.dstar_lite cimport DStar_Lite
 from osmnx_mdp.algorithms.algorithm cimport Algorithm
 
 
 MAPS = {
     'Maxvorstadt': {
+        'type': 'place',
         'file': 'data/maxvorstadt.pickle',
         'place': 'Maxvorstadt, Munich, Germany'
     },
     'Munich': {
+        'type': 'place',
         'file': 'data/munich.pickle',
         'place': 'Munich, Germany'
+    },
+    'Berlin': {
+        'type': 'place',
+        'file': 'data/berlin.pickle',
+        'place': 'Berlin, Germany',
+        'which_result': 2
+    },
+    'Köln': {
+        'type': 'place',
+        'file': 'data/koeln.pickle',
+        'place': 'Köln, Germany'
+    },
+    #'Munich_Environment': {
+    #    'type': 'bbox',
+    #    'file': 'data/munich_environment.pickle',
+    #    'north': '48.332197',
+    #    'west': '11.361083',
+    #    'south': '48.003655',
+    #    'east': '11.764612'
+    #},
+    'Starnberg_Environment': {
+        'type': 'bbox',
+        'file': 'data/starnberg_environment.pickle',
+        'north': '48.032605',
+        'west': '11.247803',
+        'south': '47.809321',
+        'east': '11.502211'
     }
 }
 
@@ -48,13 +79,73 @@ LOCATIONS = {
                 'info': 'Aubing to Riem through Munich',
             }
         }
+    ],
+    'Berlin': [
+        {
+            'start': (52.4172733, 13.1389813),
+            'goal': (52.5667931, 13.5228932),
+            'metadata': {
+                'id': 'BERLINLONG',
+                'info': ''
+            }
+        }, {
+            'start': (52.5878025, 13.2854392),
+            'goal': (52.469358, 13.5531717),
+            'metadata': {
+                'id': 'BERLINSUPERLONG',
+                'info': ''
+            }
+        }, {
+            'start': (52.5890102, 13.2817751),
+            'goal': (52.4260165, 13.5340521),
+            'metadata': {
+                'id': 'BERLINSUPERLONG2',
+                'info': ''
+            }
+        }
+    ],
+    'Köln': [
+        {
+            'start': (50.9384349, 6.826471),
+            'goal': (50.9313467, 6.9764982),
+            'metadata': {
+                'id': 'KOELNLONG',
+                'info': ''
+            }
+        }
+    ],
+    'Munich_Environment': [
+        # TODO
+    ],
+    'Starnberg_Environment': [
+        {
+            'start': (47.9427064, 11.2579095),
+            'goal': (47.9648109, 11.4076497),
+            'metadata': {
+                'id': 'StarnbergLONG',
+                'info': ''
+            }
+        }
     ]
 }
 
 
-def load_map_from_osm(place):
+def load_map_from_osm(map_metadata):
     ox.config(use_cache=True)
-    G = ox.graph_from_place(place, network_type='drive', simplify=True)
+    if map_metadata['type'] == 'place':
+        G = ox.graph_from_place(
+                map_metadata['place'],
+                network_type='drive',
+                which_result=map_metadata.get('which_result', 1),
+                simplify=True)
+    else:
+        G = ox.graph_from_bbox(
+                float(map_metadata['north']),
+                float(map_metadata['south']),
+                float(map_metadata['east']),
+                float(map_metadata['west']),
+                network_type='drive',
+                simplify=True)
     G = ox.add_edge_lengths(G)
     return G
 
@@ -67,7 +158,7 @@ def load_maps():
         except Exception as ex:
             print('Failed loading map pickle for %s.' % map_id, ex)
             print('Loading fresh map from OSM.')
-            G = load_map_from_osm(map_metadata['place'])
+            G = load_map_from_osm(map_metadata)
 
             locs = []
             for i, location in enumerate(LOCATIONS[map_id]):
@@ -76,11 +167,6 @@ def load_maps():
                 LOCATIONS[map_id][i]['start'] = ox.utils.get_nearest_node(G, location['start'])
                 LOCATIONS[map_id][i]['goal'] = ox.utils.get_nearest_node(G, location['goal'])
             locs = LOCATIONS[map_id]
-
-            # TODO: we want to project, so the only way to do this is to calculate nearest nodes
-            # here too and save them in the pickle.
-            # So save a list of locations and their start, stop on load, just do dict.update ?
-            # TODO: Btw, update vimrc to to pyx syntax too
 
             print('Projecting graph. This might take a while..')
             G = ox.project_graph(G)
@@ -92,7 +178,14 @@ def load_maps():
         LOCATIONS[map_id] = locs
 
 
-def run_simulation(Algorithm algorithm, map_id, start, goal, diverge_policy, debug=False):
+def run_simulation(
+        Algorithm algorithm,
+        map_id,
+        location_id,
+        start,
+        goal,
+        diverge_policy,
+        debug=False):
     """Run a simulation on a map using a specific algorithm.
 
     Algorithm shall be an algorithm class such as RTDP or D* Lite that
@@ -105,7 +198,7 @@ def run_simulation(Algorithm algorithm, map_id, start, goal, diverge_policy, deb
     diverge_policy shall be a function in the form diverge_policy(G, node)
     and return for a given node and its options (successors) the next node.
     """
-    print("Running %s." % algorithm.__class__)
+    print("Running %s." % algorithm.__class__.__name__)
     start_time = timer()
 
     algorithm.setup(start, goal)
@@ -114,12 +207,25 @@ def run_simulation(Algorithm algorithm, map_id, start, goal, diverge_policy, deb
 
     end_time = timer()
 
+    total_time = end_time - start_time
+    drive_time = get_time_to_drive(path, MAPS[map_id]['map'])
+
     if debug:
-        #draw_value_graph(algorithm.G, path)
         draw_value_graph(MAPS[map_id]['map'], path)
 
-    print("Seconds for calculation:", end_time - start_time)
-    return path
+    #print(path)
+
+    result = {
+        'algorithm': algorithm.__class__.__name__,
+        'id': location_id,
+        'calculation_time': total_time,
+        'drive_time': drive_time,
+        'n_nodes': MAPS[map_id]['map'].number_of_nodes(),
+        'path': path
+    }
+
+    print("Seconds for calculation:", total_time)
+    return result
 
 
 def generate_diverge_policy(G, density=.5):
@@ -140,32 +246,47 @@ def generate_diverge_policy(G, density=.5):
     return policy
 
 
-def run_simulations():
+cdef run_simulations():
+    start_time = timer()
+
     load_maps()
+    
+    results = []
 
     for map_id in MAPS.keys():
         print(LOCATIONS[map_id])
         for location in LOCATIONS[map_id]:
+            location_id = location['metadata']['id']
+
             G = MAPS[map_id]['map']
             start = location['start']
             goal = location['goal']
 
-            # Preprocess graph
+            print('Preprocessing graph..')
             remove_zero_cost_loops(G)
             remove_dead_ends(G, goal)
+
+            print('filtered n_nodes/goal:', G.number_of_nodes(), goal)
 
             diverge_policy = generate_diverge_policy(G, .2)
 
             mdp = MDP(G)
-            run_simulation(mdp, map_id, start, goal, diverge_policy)
+            results.append(run_simulation(mdp, map_id, location_id, start, goal, diverge_policy))
 
             mdp = MDP(G)
             mdp.setup(start, goal)
-            rtdp = RTDP(mdp)
-            run_simulation(rtdp, map_id, start, goal, diverge_policy)
+            brtdp = BRTDP(mdp)
+            results.append(run_simulation(brtdp, map_id, location_id, start, goal, diverge_policy))
 
             dstar = DStar_Lite(G)
-            run_simulation(dstar, map_id, start, goal, diverge_policy)
+            results.append(run_simulation(dstar, map_id, location_id, start, goal, diverge_policy))
+
+    print(results)
+    print('Saving results to simulation.pickle..')
+    with open('simulation.pickle', 'wb+') as f:
+        pickle.dump(results, f)
+
+    print('Total time for simulation:', timer() - start_time)
 
 
 if __name__ == '__main__':

@@ -1,7 +1,8 @@
 #include <google/dense_hash_map>
 #include <random>
 #include <vector>
-#include "cpp_lib.hpp"
+
+#include "../cpp_lib.hpp"
 
 
 class CPP_BRTDP {
@@ -21,7 +22,7 @@ class CPP_BRTDP {
         std::vector<long> *S;
         google::dense_hash_map<long, std::vector<std::pair<long, long>>> *A;
         google::dense_hash_map<std::pair<long, long>, float, pair_hash> *C;
-        // It is needed that this is DOUBLE. Especially (B)RTDP
+        // TODO It is needed that this is DOUBLE. Especially (B)RTDP
         // needs precision. Who knows how bad the effect in VI is.
         google::dense_hash_map<
             long,
@@ -37,7 +38,7 @@ class CPP_BRTDP {
                 google::dense_hash_map<long, double> &v,
                 const long &s,
                 const std::pair<long, long> &a);
-        std::pair<long, long> update(google::dense_hash_map<long, double> &v, const long &x);
+        std::pair<long, long> update_v(google::dense_hash_map<long, double> &v, const long &x);
         int init(
             std::vector<long> *S,
             google::dense_hash_map<long, std::vector<std::pair<long, long>>> *A,
@@ -54,5 +55,5 @@ class CPP_BRTDP {
         int setup(long start, long goal);
         int run_trial(double t);
         int run_trials(double alpha=1e-10, double t=10);
-        std::vector<long> get_path();
+        std::vector<long> get_path(google::dense_hash_map<long, long> diverge_policy);
 };

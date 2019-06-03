@@ -27,7 +27,7 @@ setup(
         ),
         Extension(
             "lib",
-            ["osmnx_mdp/lib.cpp"],
+            ["osmnx_mdp/cpp_lib.cpp"],
             libraries=["m"]
         ),
         "osmnx_mdp/algorithms/*.pyx",

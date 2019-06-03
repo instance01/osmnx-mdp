@@ -34,8 +34,8 @@ cdef class RTDP(osmnx_mdp.algorithms.algorithm.Algorithm):
         """Select next state probabilistically.
         """
         outcomes = self.mdp.P[state][action]
-        a = [outcome[0] for outcome in outcomes]
-        p = [outcome[1] for outcome in outcomes]
+        a = [outcome.first for outcome in outcomes]
+        p = [outcome.second for outcome in outcomes]
         return np.random.choice(a, 1, p)[0]
 
     cdef _run_trial(self):
@@ -45,11 +45,11 @@ cdef class RTDP(osmnx_mdp.algorithms.algorithm.Algorithm):
 
         while state != self.goal:
             for action in self.mdp.A[state]:
-                node_to = action[1]
+                node_to = action.second
                 cost = self.mdp.C[(state, node_to)]
                 future_cost = sum([
                         #x[1] * self.H.get(x[0], self.h[x[0]])
-                        x[1] * self.H.get(x[0])
+                        x.second * self.H.get(x.first)
                         for x in self.mdp.P[state][action]])
                 self.Q[state][action] = cost + future_cost
 

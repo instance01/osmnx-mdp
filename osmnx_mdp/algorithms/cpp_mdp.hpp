@@ -1,7 +1,7 @@
 #include <google/dense_hash_map>
-#include <unordered_map>
 #include <vector>
-#include "cpp_lib.hpp"
+
+#include "../cpp_lib.hpp"
 
 
 // TODO Rename CPP_* things
@@ -73,15 +73,26 @@ class CPP_MDP {
             google::dense_hash_map<long, std::vector<long>> *successors);
         int setup(long start, long goal);
         int make_goal_self_absorbing();
+
+        // Make taking the action of following given edge probabilistic,
+        // i.e. end up in the expected edge only 90% of the time and end
+        // up in other_node 10% of the time.
+        // If the edge is already probabilistic, decrease its chance (e.g.
+        // from 90% to 80% and so on).
+        // Modifies temp_P inplace.
         int make_edge_uncertain(
-            google::dense_hash_map<std::pair<long, long>, std::vector<std::pair<long, double>>, pair_hash> &temp_P,
+            google::dense_hash_map<
+                std::pair<long, long>,
+                std::vector<std::pair<long, double>>,
+                pair_hash
+            > &temp_P,
             const std::pair<long, long> &edge,
             const long &other_node);
         int get_normal_intersections(
                 google::dense_hash_map<std::pair<long, long>, CPP_Intersection, pair_hash> &out);
         int make_close_intersections_uncertain(float max_length=100);
         int make_low_angle_intersections_uncertain(float max_angle=30);
-        int solve(int max_iter=10000);
+        int solve(int max_iter=20000, double eps=1e-20);
         int get_policy();
         std::vector<long> drive(google::dense_hash_map<long, long> &diverge_policy);
 };

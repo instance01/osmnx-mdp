@@ -17,7 +17,7 @@ from osmnx_mdp.lib cimport get_node_properties
 PROFILE_FILE = 'mdp1.profile'
 
 
-with open('data/maxvorstadt.pickle', 'rb') as f:
+with open('data/munich.pickle', 'rb') as f:
     locs, G = pickle.load(f)
 
 

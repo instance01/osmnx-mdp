@@ -67,14 +67,14 @@ cdef extern from "cpp_mdp.hpp":
                 dense_hash_map[pair[long, long], CPP_Intersection, pair_hash] &out)
         int make_close_intersections_uncertain(float max_length=100)
         int make_low_angle_intersections_uncertain(float max_angle=30)
-        int solve(int max_iter)
+        int solve(int max_iter, double eps)
         int get_policy()
         vector[long] drive(dense_hash_map[long, long] &diverge_policy)
 
 cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
-    cdef vector[long] S_
-    cdef dense_hash_map[long, vector[pair[long, long]]] A_
-    cdef dense_hash_map[pair[long, long], float, pair_hash] C_
+    cdef vector[long] S
+    cdef dense_hash_map[long, vector[pair[long, long]]] A
+    cdef dense_hash_map[pair[long, long], float, pair_hash] C
     cdef dense_hash_map[
         long,
         dense_hash_map[
@@ -82,7 +82,7 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
             vector[pair[long, double]],
             pair_hash
         ]
-    ] P_
+    ] P
 
     cdef dense_hash_map[pair[long, long], double, pair_hash] edge_data
     cdef dense_hash_map[long, pair[double, double]] node_data
@@ -93,10 +93,6 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
     cdef _setup_cpp(self)
 
     cdef G
-    cdef S
-    cdef A
-    cdef P
-    cdef C
 
     cdef long start
     cdef long goal
@@ -105,7 +101,7 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
     cdef angle_nodes
 
     cdef setup(self, long start, long goal)
-    cdef solve_value_iteration(self, float gamma=*, int max_iter=*, float eps=*, bint verbose=*)
+    cdef solve_value_iteration(self, float gamma=*, int max_iter=*, double eps=*, bint verbose=*)
     cdef get_policy(self, V)
     cdef drive(self, policy, diverge_policy)
     cdef solve(self)

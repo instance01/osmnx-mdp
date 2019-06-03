@@ -1,11 +1,7 @@
 #include "cpp_brtdp.hpp"
-#include <cmath>
 #include <stack>
 #include <unordered_set>
 
-#include <iostream>
-
-// TODO: Rename t to tau
 
 CPP_BRTDP::CPP_BRTDP() {};
 CPP_BRTDP::~CPP_BRTDP() {};
@@ -20,16 +16,6 @@ double CPP_BRTDP::get_Q_value(
         future_cost += outcome.second * v[outcome.first];
     }
     return immediate_cost + future_cost;
-}
-
-// TODO: COPIED from cpp_dstar_lite.cpp
-double aerial_dist(double lat1, double lon1, double lat2, double lon2, double R=6356.8) {
-    lon1 *= M_PI / 180.0;
-    lon2 *= M_PI / 180.0;
-    lat1 *= M_PI / 180.0;
-    lat2 *= M_PI / 180.0;
-    double d = pow(sin((lat2 - lat1) / 2), 2) + cos(lat1) * cos(lat2) * pow(sin((lon2 - lon1) / 2), 2);
-    return R * 2 * asin(pow(d, .5));
 }
 
 int CPP_BRTDP::init(
@@ -72,6 +58,7 @@ int CPP_BRTDP::setup(long start, long goal) {
         double lat1 = x.second.first;
         double lon1 = x.second.second;
 
+        // TODO is this best choice ? 50 and 10 ?
         this->vl[x.first] = aerial_dist(lat1, lon1, lat2, lon2) / 50;
         this->vu[x.first] = aerial_dist(lat1, lon1, lat2, lon2) / 10;
     }
@@ -80,7 +67,7 @@ int CPP_BRTDP::setup(long start, long goal) {
 }
 
 // TODO RENAME
-std::pair<long, long> CPP_BRTDP::update(google::dense_hash_map<long, double> &v, const long &x) {
+std::pair<long, long> CPP_BRTDP::update_v(google::dense_hash_map<long, double> &v, const long &x) {
     std::pair<long, long> curr_min_action;
     double curr_min = INFINITY;
     for (auto &a : (*this->A)[x]) {
@@ -95,17 +82,16 @@ std::pair<long, long> CPP_BRTDP::update(google::dense_hash_map<long, double> &v,
 }
 
 // TODO See header for default values alpha=0.001, t=10
-int CPP_BRTDP::run_trials(double alpha, double t) {
+int CPP_BRTDP::run_trials(double alpha, double tau) {
     int i = 0;
     while (this->vu[this->start] - this->vl[this->start] > alpha) {
-        this->run_trial(t);
+        this->run_trial(tau);
         i += 1;
     }
-    std::cout << "CONVERGED " << i << std::endl;
     return 0;
 }
 
-int CPP_BRTDP::run_trial(double t) {
+int CPP_BRTDP::run_trial(double tau) {
     long x = this->start;
 
     std::stack<long> traj;
@@ -116,8 +102,8 @@ int CPP_BRTDP::run_trial(double t) {
 
         traj.push(x);
 
-        this->update(this->vu, x);
-        std::pair<long, long> curr_min_action = this->update(this->vl, x);
+        this->update_v(this->vu, x);
+        std::pair<long, long> curr_min_action = this->update_v(this->vl, x);
 
         std::vector<float> distribution_param;
         double B = 0;
@@ -127,7 +113,7 @@ int CPP_BRTDP::run_trial(double t) {
             B += cost;
         }
         
-        if (B < ((this->vu[this->start] - this->vl[this->start]) / t))
+        if (B < ((this->vu[this->start] - this->vl[this->start]) / tau))
             break;
 
         std::discrete_distribution<int> distribution(distribution_param.begin(), distribution_param.end());
@@ -138,22 +124,32 @@ int CPP_BRTDP::run_trial(double t) {
     while (!traj.empty()) {
         long x = traj.top();
         traj.pop();
-        this->update(this->vu, x);
-        this->update(this->vl, x);
+        this->update_v(this->vu, x);
+        this->update_v(this->vl, x);
     }
 
     return 0;
 }
 
-std::vector<long> CPP_BRTDP::get_path() {
+std::vector<long> CPP_BRTDP::get_path(google::dense_hash_map<long, long> diverge_policy) {
     std::vector<long> path;
+
+    std::unordered_set<long> visited;
+    visited.insert(this->start);
 
     long curr_node = this->start;
     while (curr_node != this->goal) {
         path.push_back(curr_node);
 
-        std::pair<long, long> curr_min_action = this->update(this->vl, curr_node);
-        curr_node = (*this->P)[curr_node][curr_min_action][0].first;
+        long diverged_node = diverge_policy[curr_node];
+        if (diverged_node == 0 || visited.find(diverged_node) != visited.end()) {
+            std::pair<long, long> curr_min_action = this->update_v(this->vl, curr_node);
+            curr_node = (*this->P)[curr_node][curr_min_action][0].first;
+        } else {
+            curr_node = diverged_node;
+        }
+
+        visited.insert(curr_node);
     }
 
     return path;

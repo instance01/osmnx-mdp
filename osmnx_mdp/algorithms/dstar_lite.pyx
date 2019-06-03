@@ -1,26 +1,10 @@
 # cython: language_level=3
-from libc.math cimport INFINITY
-from libcpp.pair cimport pair
-from libcpp.set cimport set as cset
-from libcpp.vector cimport vector
-
-import pickle
-
-import matplotlib.pyplot as plt
-import osmnx as ox
-import networkx as nx
-
-from osmnx_mdp.lib cimport aerial_dist
-from osmnx_mdp.lib cimport get_node_properties
 from osmnx_mdp.lib cimport get_edge_cost
-
-cimport osmnx_mdp.algorithms.algorithm
 
 from osmnx_mdp.algorithms.dense_hash_map cimport dense_hash_map
 
 
 # TODO: unittests
-# This is a wrapper for the C++ module.
 
 
 cdef class DStar_Lite(osmnx_mdp.algorithms.algorithm.Algorithm):
@@ -47,11 +31,12 @@ cdef class DStar_Lite(osmnx_mdp.algorithms.algorithm.Algorithm):
                 self.cost[(node_id, succ)] = get_edge_cost(self.G, node_id, succ)
 
         self.cpp = cpp_DStar_Lite()
-        self.cpp.init(&self.cost, &self.data, &self.predecessors, &self.successors)
+        self.cpp.init(&self.predecessors, &self.successors, &self.cost, &self.data)
         self.cpp.setup(start, goal)
 
+    # TODO Rename heuristic_func to heuristic
     cdef heuristic_func(self, node):
-        return self.cpp.heuristic_func(node)
+        return self.cpp.heuristic(node)
 
     cdef calculate_key(self, node):
         return self.cpp.calculate_key(node)
@@ -68,9 +53,13 @@ cdef class DStar_Lite(osmnx_mdp.algorithms.algorithm.Algorithm):
     cdef drive(self, policy, diverge_policy):
         cdef dense_hash_map[long, long] diverge_policy_cpp
         diverge_policy_cpp.set_empty_key(0)
-        for k, v in diverge_policy:
+
+        # TODO: Copied from BRTDP
+        # Manually convert Python object to Cython object.
+        # Unfortunately, there is no other way other than to be explicit.
+        for k, v in diverge_policy.items():
             diverge_policy_cpp[k] = v
 
-        cdef cset[long] path
+        cdef vector[long] path
         self.cpp.drive(path, diverge_policy_cpp)
         return path

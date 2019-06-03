@@ -1,0 +1,64 @@
+18.2486% of nodes are uncertain.
+sort by cumulative (the function itself plus all child functions called inside)
+Mon Jun  3 20:11:31 2019    mdp1.profile
+
+         701046 function calls in 7.803 seconds
+
+   Ordered by: cumulative time
+   List reduced from 33 to 20 due to restriction <20>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    7.803    7.803 {built-in method builtins.exec}
+        1    0.000    0.000    7.803    7.803 <string>:1(<module>)
+        1    0.006    0.006    7.803    7.803 {osmnx_mdp.mdp_profile.run}
+        1    7.467    7.467    7.469    7.469 osmnx_mdp/algorithms/mdp.pyx:69(solve_value_iteration)
+        1    0.033    0.033    0.328    0.328 osmnx_mdp/algorithms/mdp.pyx:57(setup)
+        1    0.145    0.145    0.295    0.295 osmnx_mdp/algorithms/mdp.pyx:16(_setup_cpp)
+    32382    0.012    0.000    0.049    0.000 /usr/lib/python3.7/site-packages/networkx/classes/multidigraph.py:512(edges)
+    32382    0.016    0.000    0.045    0.000 /usr/lib/python3.7/site-packages/networkx/classes/graph.py:434(__getitem__)
+    32382    0.012    0.000    0.037    0.000 /usr/lib/python3.7/site-packages/networkx/classes/reportviews.py:906(__init__)
+    32382    0.010    0.000    0.025    0.000 {built-in method builtins.hasattr}
+    32382    0.011    0.000    0.015    0.000 /usr/lib/python3.7/site-packages/networkx/classes/multidigraph.py:318(succ)
+    32382    0.012    0.000    0.015    0.000 /usr/lib/python3.7/site-packages/networkx/classes/coreviews.py:101(__getitem__)
+    32382    0.011    0.000    0.015    0.000 /usr/lib/python3.7/site-packages/networkx/classes/multidigraph.py:299(adj)
+    32382    0.011    0.000    0.014    0.000 /usr/lib/python3.7/site-packages/networkx/classes/coreviews.py:80(__getitem__)
+   129528    0.013    0.000    0.013    0.000 /usr/lib/python3.7/site-packages/networkx/classes/coreviews.py:44(__init__)
+    32382    0.011    0.000    0.011    0.000 /usr/lib/python3.7/site-packages/networkx/classes/reportviews.py:1105(__getitem__)
+   141783    0.008    0.000    0.008    0.000 stringsource:145(__pyx_convert_pair_from_py_long__and_long)
+    12253    0.006    0.000    0.008    0.000 stringsource:45(__pyx_convert_vector_from_py_std_3a__3a_pair_3c_long_2c_long_3e___)
+    12253    0.005    0.000    0.007    0.000 /usr/lib/python3.7/site-packages/networkx/classes/digraph.py:769(successors)
+    32382    0.004    0.000    0.004    0.000 /usr/lib/python3.7/site-packages/networkx/classes/coreviews.py:53(__getitem__)
+
+
+sort by total time (only the function itself not its childrens)
+Mon Jun  3 20:11:31 2019    mdp1.profile
+
+         701046 function calls in 7.803 seconds
+
+   Ordered by: internal time
+   List reduced from 33 to 20 due to restriction <20>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    7.467    7.467    7.469    7.469 osmnx_mdp/algorithms/mdp.pyx:69(solve_value_iteration)
+        1    0.145    0.145    0.295    0.295 osmnx_mdp/algorithms/mdp.pyx:16(_setup_cpp)
+        1    0.033    0.033    0.328    0.328 osmnx_mdp/algorithms/mdp.pyx:57(setup)
+    32382    0.016    0.000    0.045    0.000 /usr/lib/python3.7/site-packages/networkx/classes/graph.py:434(__getitem__)
+   129528    0.013    0.000    0.013    0.000 /usr/lib/python3.7/site-packages/networkx/classes/coreviews.py:44(__init__)
+    32382    0.012    0.000    0.037    0.000 /usr/lib/python3.7/site-packages/networkx/classes/reportviews.py:906(__init__)
+    32382    0.012    0.000    0.049    0.000 /usr/lib/python3.7/site-packages/networkx/classes/multidigraph.py:512(edges)
+    32382    0.012    0.000    0.015    0.000 /usr/lib/python3.7/site-packages/networkx/classes/coreviews.py:101(__getitem__)
+    32382    0.011    0.000    0.015    0.000 /usr/lib/python3.7/site-packages/networkx/classes/multidigraph.py:318(succ)
+    32382    0.011    0.000    0.015    0.000 /usr/lib/python3.7/site-packages/networkx/classes/multidigraph.py:299(adj)
+    32382    0.011    0.000    0.011    0.000 /usr/lib/python3.7/site-packages/networkx/classes/reportviews.py:1105(__getitem__)
+    32382    0.011    0.000    0.014    0.000 /usr/lib/python3.7/site-packages/networkx/classes/coreviews.py:80(__getitem__)
+    32382    0.010    0.000    0.025    0.000 {built-in method builtins.hasattr}
+   141783    0.008    0.000    0.008    0.000 stringsource:145(__pyx_convert_pair_from_py_long__and_long)
+        1    0.006    0.006    7.803    7.803 {osmnx_mdp.mdp_profile.run}
+    12253    0.006    0.000    0.008    0.000 stringsource:45(__pyx_convert_vector_from_py_std_3a__3a_pair_3c_long_2c_long_3e___)
+    12253    0.005    0.000    0.007    0.000 /usr/lib/python3.7/site-packages/networkx/classes/digraph.py:769(successors)
+    32382    0.004    0.000    0.004    0.000 /usr/lib/python3.7/site-packages/networkx/classes/coreviews.py:53(__getitem__)
+    12253    0.004    0.000    0.004    0.000 stringsource:45(__pyx_convert_vector_from_py_long)
+    32382    0.002    0.000    0.002    0.000 stringsource:145(__pyx_convert_pair_from_py_long__and_double)
+
+
+

@@ -6,6 +6,7 @@ mdp4: Moving solve_value_iteration into C++ module
 mdp5: Using Google's dense_hash_map
 mdp6: Moving _get_normal_intersections to C++
 mdp7: Moving another _get_normal_intersection call to C++
+mdp8: MDP is completely as C++ module
 
 dstar1: Basic cythonization
 dstar2: C++ module

@@ -1,31 +1,10 @@
-#include "cpp_mdp.hpp"
-#include <fstream>
 #include <iostream> // cout
 #include <algorithm> // min_element
 #include <set>
 #include <math.h>
 
+#include "cpp_mdp.hpp"
 
-// TODO: Move into cpp_lib.cpp
-float get_angle(
-        float p1_x,
-        float p1_y,
-        float p2_x,
-        float p2_y,
-        float origin_x,
-        float origin_y) {
-    p1_x -= origin_x;
-    p1_y -= origin_y;
-    p2_x -= origin_x;
-    p2_y -= origin_y;
-
-    // arctan2 gives us the angle between the ray from the origin to the point
-    // and the x axis.
-    // Thus, to get the angle between two points, simply get the difference
-    // between their two angles to the x axis.
-    float angle = atan2(p2_x, p2_y) - atan2(p1_x, p1_y);
-    return 180 * angle / M_PI;
-}
 
 void combinations(
         std::vector<std::pair<std::pair<long, long>, std::pair<long, long>>> &out,
@@ -98,15 +77,13 @@ int CPP_MDP::make_goal_self_absorbing() {
 }
 
 int CPP_MDP::make_edge_uncertain(
-        google::dense_hash_map<std::pair<long, long>, std::vector<std::pair<long, double>>, pair_hash> &temp_P,
+        google::dense_hash_map<
+            std::pair<long, long>,
+            std::vector<std::pair<long, double>>,
+            pair_hash
+        > &temp_P,
         const std::pair<long, long> &edge,
         const long &other_node) {
-    // Make taking the action of following given edge probabilistic,
-    // i.e. end up in the expected edge only 90% of the time and end
-    // up in other_node 10% of the time.
-    // If the edge is already probabilistic, decrease its chance (e.g.
-    // from 90% to 80% and so on).
-    // Modifies temp_P inplace.
     long node_to = edge.second;
 
     if (temp_P.find(edge) == temp_P.end()) {
@@ -338,7 +315,8 @@ int CPP_MDP::make_low_angle_intersections_uncertain(float max_angle) {
     return 0;
 }
 
-int CPP_MDP::solve(int max_iter) {
+// TODO Everything needs to be double, not float.
+int CPP_MDP::solve(int max_iter, double eps) {
     V.set_empty_key(0);
     google::dense_hash_map<long, google::dense_hash_map<std::pair<long, long>, float, pair_hash>> Q;
     Q.set_empty_key(0);
@@ -351,7 +329,6 @@ int CPP_MDP::solve(int max_iter) {
         V[s] = 0.;
     }
 
-    float gamma = 1.;
     for (int i = 0; i < max_iter; ++i) {
         google::dense_hash_map<long, float> prev_V = V;
 
@@ -360,7 +337,7 @@ int CPP_MDP::solve(int max_iter) {
                 float immediate_cost = (*this->C)[a];
                 float future_cost = 0;
                 for (auto &outcome : (*this->P)[s][a]) {
-                    future_cost += outcome.second * gamma * prev_V[outcome.first];
+                    future_cost += outcome.second * prev_V[outcome.first];
                 }
                 Q[s][a] = immediate_cost + future_cost;
             }
@@ -373,17 +350,20 @@ int CPP_MDP::solve(int max_iter) {
             V[s] = best_action.second;
         }
 
+        // Only check for convergence every 100 runs.
+        // TODO: Does this actually improve performance?
         if (i % 100 == 0) {
-            float c = 0;
+            double c = 0;
             auto V_iter = V.begin();
             auto prev_V_iter = prev_V.begin();
+
             while (V_iter != V.end() || prev_V_iter != prev_V.end()) {
                 c += (*V_iter).second - (*prev_V_iter).second;
                 ++V_iter;
                 ++prev_V_iter;
             }
-            std::cout << c << std::endl;
-            if (c < 1e-30)
+
+            if (c < eps)
                 break;
         }
     }
@@ -397,11 +377,13 @@ int CPP_MDP::get_policy() {
     for (auto &s : *this->S) {
         double curr_min = INFINITY;
         std::pair<long, long> curr_min_action;
+
         for (auto &a : (*this->A)[s]) {
             double cost = 0;
             for (auto &outcome : (*this->P)[s][a]) {
                 cost += outcome.second * ((*this->C)[a] + V[outcome.first]);
             }
+
             if (cost < curr_min) {
                 curr_min = cost;
                 curr_min_action = a;
@@ -422,16 +404,9 @@ std::vector<long> CPP_MDP::drive(google::dense_hash_map<long, long> &diverge_pol
     std::set<long> nodes_lookup(nodes.begin(), nodes.end());
     long curr_node = this->start;
 
-    int i = 0;
-
     while (curr_node != this->goal) {
         if (policy.find(curr_node) == policy.end())
             break;
-
-        i += 1;
-        if (i > 1000) {
-            break;
-        }
 
         long diverged_node = 0;
         if (diverge_policy.find(curr_node) != diverge_policy.end())

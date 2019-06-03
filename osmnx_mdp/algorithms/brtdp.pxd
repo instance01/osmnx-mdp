@@ -3,6 +3,7 @@ from libcpp.vector cimport vector
 from libcpp.pair cimport pair
 from osmnx_mdp.algorithms.dense_hash_map cimport dense_hash_map
 from osmnx_mdp.algorithms.mdp cimport MDP
+cimport osmnx_mdp.algorithms.algorithm
 
 
 cdef extern from "cpp_brtdp.cpp":
@@ -24,16 +25,11 @@ cdef extern from "cpp_brtdp.cpp":
         int setup(long start, long goal)
         int run_sample_trial()
         int run_trials()
-        vector[long] get_path()
+        vector[long] get_path(dense_hash_map[long, long] diverge_policy)
 
 
-cdef class BRTDP:
+cdef class BRTDP(osmnx_mdp.algorithms.algorithm.Algorithm):
     cdef dense_hash_map[long, pair[float, float]] data
-    cdef vector[long] S
-    cdef dense_hash_map[long, vector[pair[long, long]]] A
-    cdef dense_hash_map[pair[long, long], float, pair_hash] C
-    cdef dense_hash_map[long, dense_hash_map[pair[long, long], vector[pair[long, double]], pair_hash]] P
-
     cdef dense_hash_map[long, double] vl
 
     cdef MDP mdp
@@ -41,4 +37,6 @@ cdef class BRTDP:
 
     cdef setup(self, long start, long goal)
     cdef run_trials(self)
-    cdef get_path(self)
+    cdef get_path(self, diverge_policy)
+    cdef solve(self)
+    cdef drive(self, policy, diverge_policy)

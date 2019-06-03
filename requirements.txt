@@ -1,3 +1,4 @@
 osmnx
 numpy
 networkx
+cython

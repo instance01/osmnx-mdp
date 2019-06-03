@@ -1,5 +1,5 @@
 # cython: language_level=3
-cimport osmnx_mdp.mdp_draw
+cimport osmnx_mdp.simulation
 
 
-osmnx_mdp.mdp_draw.run()
+osmnx_mdp.simulation.run_simulations()

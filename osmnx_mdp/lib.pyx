@@ -26,7 +26,10 @@ cdef get_edge_cost(G, node_from, node_to):
     elif isinstance(maxspeed, list):
         maxspeed = 30
     else:
-        maxspeed = int(maxspeed)
+        try:
+            maxspeed = int(maxspeed)
+        except ValueError:
+            maxspeed = 30
 
     length = edge_data['length'] / 1000.  # km
     return length / maxspeed
@@ -155,8 +158,6 @@ cdef remove_dead_ends(G, goal):
     and don't have to resort to other models such as fSSPUDE etc. TODO
     Paper: Kolobov, Stochastic Shortest Path MDPs with Dead Ends
     """
-    # TODO: REMOVE THIS PRINT
-    print(len(list(G.nodes())))
     while True:
         # TODO: This possibly doesn't have to be a set.
         todel = set()

@@ -7,6 +7,7 @@ import networkx as nx
 from osmnx_mdp.algorithms.mdp cimport MDP
 from osmnx_mdp.lib cimport get_time_to_drive
 from osmnx_mdp.lib cimport get_node_properties
+from osmnx_mdp.lib cimport get_time_to_drive
 
 
 # IT IS OF VITAL IMPORTANCE TO SET THE TYPE TO MDP
@@ -33,6 +34,8 @@ cdef draw_mdp(MDP mdp, V, Q):
     policy = mdp.get_policy(V)
     path = mdp.drive(policy, {})
 
+    print('TIME', get_time_to_drive(path, mdp.G))
+
     #print(policy)
     #print(path)
     #print('Minutes spent driving this route:', get_time_to_drive(path, mdp.G))
@@ -41,8 +44,8 @@ cdef draw_mdp(MDP mdp, V, Q):
 
     #extra = mdp.close_nodes
     #extra = [102755936, 224397004]
-    extra = [25670912, 331935048, 102755936, 224397004]
-    extra = [21522300]
+    #extra = [25670912, 331935048, 102755936, 224397004]
+    #extra = [21522300]
     #extra = [246878841,
     #    246878840,
     #    345553456,
@@ -56,7 +59,7 @@ cdef draw_mdp(MDP mdp, V, Q):
     #    1954419,
     #    27270924
     #]
-    nc, ns = get_node_properties(G2, path, V, extra=extra)
+    nc, ns = get_node_properties(G2, path, V)
     nx.draw_networkx(
             G2,
             nx.get_node_attributes(G2, 'pos'),
@@ -85,11 +88,11 @@ from osmnx_mdp.lib cimport remove_zero_cost_loops
 
 
 cdef run():
-    with open('data/munich.pickle', 'rb') as f:
+    with open('data/berlin.pickle', 'rb') as f:
         locs, G = pickle.load(f)
 
-    start = locs[0]['start']
-    goal = locs[0]['goal']
+    start = locs[2]['start']
+    goal = locs[2]['goal']
 
     remove_zero_cost_loops(G)
     remove_dead_ends(G, goal)
@@ -97,7 +100,7 @@ cdef run():
     mdp = MDP(G)
     mdp.setup(start, goal)
     # TODO: Lol max_iter is not getting passed to the C++ function..
-    V, _ = mdp.solve_value_iteration(gamma=1., max_iter=10000)
+    V, _ = mdp.solve_value_iteration(gamma=1., max_iter=30000)
 
     draw_mdp(mdp, V, {})
 

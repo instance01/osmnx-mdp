@@ -1,9 +1,9 @@
-#include "cpp_dstar_lite.hpp"
 #include <cmath> // sin, asin, cos, pow, M_PI
-#include <algorithm> // min
+#include <algorithm> // min_element
 #include <stdexcept> // runtime_error
+#include <unordered_set>
 
-#include <iostream> // TODO REMOVE
+#include "cpp_dstar_lite.hpp"
 
 // TODO Explanations.
 /*
@@ -17,18 +17,15 @@ Thus rhs will mostly be a bit ahead of g.
 
 // TODO For U consider using some kind of queue?
 
-cpp_DStar_Lite::cpp_DStar_Lite () {
-}
+cpp_DStar_Lite::cpp_DStar_Lite () { }
 
-cpp_DStar_Lite::~cpp_DStar_Lite () {
-}
+cpp_DStar_Lite::~cpp_DStar_Lite () { }
 
-// TODO Lmao reorder args
 int cpp_DStar_Lite::init(
-        google::dense_hash_map<std::pair<long, long>, float, pair_hash> *cost,
-        google::dense_hash_map<long, std::pair<float, float>> *data,
         google::dense_hash_map<long, std::vector<long>> *predecessors,
-        google::dense_hash_map<long, std::vector<long>> *successors) {
+        google::dense_hash_map<long, std::vector<long>> *successors,
+        google::dense_hash_map<std::pair<long, long>, float, pair_hash> *cost,
+        google::dense_hash_map<long, std::pair<float, float>> *data) {
     for (auto &x : *successors) {
         this->nodes.push_back(x.first);
     }
@@ -63,85 +60,96 @@ int cpp_DStar_Lite::setup(long start, long goal) {
     return 0;
 }
 
-// TODO Move into lib.cpp
-float aerial_dist(float lat1, float lon1, float lat2, float lon2, float R=6356.8) {
-    lon1 *= M_PI / 180.0;
-    lon2 *= M_PI / 180.0;
-    lat1 *= M_PI / 180.0;
-    lat2 *= M_PI / 180.0;
-    float d = pow(sin((lat2 - lat1) / 2), 2) + cos(lat1) * cos(lat2) * pow(sin((lon2 - lon1) / 2), 2);
-    return R * 2 * asin(pow(d, .5));
+std::pair<long, float> cpp_DStar_Lite::get_min_successor(long node) {
+    float min_cost = INFINITY;
+    long min_node = 0;
+
+    // Manually find minimum. An alternative would be to use min_element,
+    // however it is actually less readable in this case.
+    for (auto &succ : (*this->successors)[node]) {
+        float edge_cost = (*this->cost)[std::pair<long, long>(node, succ)];
+        float cost = this->g[succ] + edge_cost;
+
+        if (cost <= min_cost) {
+            min_cost = cost;
+            min_node = succ;
+        }
+    }
+
+    return std::pair<long, float> (min_node, min_cost);
 }
 
-float cpp_DStar_Lite::heuristic_func(long node) {
+// TODO Rename cpp_DStar_Lite
+float cpp_DStar_Lite::heuristic(long node) {
     float lat1, lon1, lat2, lon2;
-    lat1 = (*this->data)[node].first;
-    lon1 = (*this->data)[node].second;
     std::tie(lat1, lon1) = (*this->data)[node];
     std::tie(lat2, lon2) = (*this->data)[this->start];
     // Divide by 50 since we need an admissible heuristic that doesn't
     // over-estimate, and 50 is optimistic (since in most of the city
     // we have 30 and 50 maxspeed).
     // TODO: However on highways this is not optimistic anymore.
-    return aerial_dist(lat1, lon1, lat2, lon2) / 50; // Hours
+    // TODO: It seems this wasn't working with 50. 160 on the other hand works quite nicely.
+    return aerial_dist(lat1, lon1, lat2, lon2) / 160; // Hours
 }
 
 std::pair<float, float> cpp_DStar_Lite::calculate_key(long node) {
     float key = std::min(this->g[node], this->rhs[node]);
-    return std::pair<float, float>(key + this->heuristic_func(node) + this->k, key);
+    return std::pair<float, float>(key + this->heuristic(node) + this->k, key);
 }
 
-int cpp_DStar_Lite::update_vertex(long u) {
-    if (u != this->goal) {
-        // TODO: Too manual, improve
-        float curr_min = INFINITY;
-        for (auto &succ : (*this->successors)[u]) {
-            float cost = this->g[succ] + (*this->cost)[std::pair<long, long>(u, succ)];
-            curr_min = std::min(cost, curr_min);
-        }
-        this->rhs[u] = curr_min;
-    }
+int cpp_DStar_Lite::update_vertex(long node) {
+    if (node != this->goal)
+        this->rhs[node] = this->get_min_successor(node).second;
 
-    this->U.erase(u);
+    this->U.erase(node);
 
-    if (this->g[u] != this->rhs[u]) {
-        this->U[u] = this->calculate_key(u);
-    }
+    if (this->g[node] != this->rhs[node])
+        this->U[node] = this->calculate_key(node);
 
     return 0;
 }
 
 int cpp_DStar_Lite::compute_shortest_path() {
-    while (!this->U.empty() &&
-            ((*std::min_element(this->U.begin(), this->U.end(), [](auto& a, auto& b) { return a.second < b.second; })).second < this->calculate_key(this->start) ||
-             this->rhs[this->start] != this->g[this->start])) {
-        long u = (*std::min_element(this->U.begin(), this->U.end(), [](auto& a, auto& b) { return a.second < b.second; })).first;
-        std::pair<float, float> k_old = this->U[u];
-        this->U.erase(u);
+    while (!this->U.empty()) {
+        auto candidate = *std::min_element(
+                this->U.begin(),
+                this->U.end(),
+                [](auto& a, auto& b) { return a.second < b.second; });
 
-        std::pair<float, float> key = this->calculate_key(u);
+        bool reached_start = candidate.second >= this->calculate_key(this->start);
+        bool start_consistent = this->rhs[this->start] == this->g[this->start];
+        if (reached_start && start_consistent)
+            break;
+
+        long node = candidate.first;
+
+        std::pair<float, float> k_old = candidate.second;
+
+        this->U.erase(node);
+        std::pair<float, float> key = this->calculate_key(node);
+
         if (k_old < key) {
-            this->U[u] = key;
-        } else if (this->g[u] > this->rhs[u]) {
-            this->g[u] = this->rhs[u];
+            this->U[node] = key;
+        } else if (this->g[node] > this->rhs[node]) {
+            this->g[node] = this->rhs[node];
         } else {
-            this->g[u] = INFINITY;
-            this->update_vertex(u);
-        }
-
-        for (auto &node : (*this->predecessors)[u]) {
+            this->g[node] = INFINITY;
             this->update_vertex(node);
         }
+
+        for (auto &pred : (*this->predecessors)[node]) {
+            this->update_vertex(pred);
+        }
     }
+
     return 0;
 }
 
-// TODO Rename visited to old
-// TODO: Pass diverge_policy by reference
-int cpp_DStar_Lite::drive(std::set<long> &visited, google::dense_hash_map<long, long> diverge_policy) {
+int cpp_DStar_Lite::drive(std::vector<long> &out, google::dense_hash_map<long, long> &diverge_policy) {
     long last_start = this->start;
 
-    visited.insert(this->start);
+    std::unordered_set<long> visited = {this->start};
+    out.push_back(this->start);
 
     while (this->start != this->goal) {
         if (this->g[this->start] == INFINITY)
@@ -149,18 +157,8 @@ int cpp_DStar_Lite::drive(std::set<long> &visited, google::dense_hash_map<long, 
 
         long diverged_node = diverge_policy[this->start];
         if (diverged_node == 0 || visited.find(diverged_node) != visited.end()) {
-            this->start = *std::min_element(
-                    (*this->successors)[this->start].begin(),
-                    (*this->successors)[this->start].end(),
-            [this](auto& a, auto& b) {
-                float a_cost = this->g[a] + (*this->cost)[std::pair<long, long>(this->start, a)];
-                float b_cost = this->g[b] + (*this->cost)[std::pair<long, long>(this->start, b)];
-                return a_cost < b_cost;
-            });
-
-            visited.insert(this->start);
+            this->start = this->get_min_successor(this->start).first;
         } else {
-            visited.insert(diverged_node);
             this->start = diverged_node;
 
             float lat1, lon1, lat2, lon2;
@@ -171,6 +169,9 @@ int cpp_DStar_Lite::drive(std::set<long> &visited, google::dense_hash_map<long, 
             last_start = this->start;
             this->compute_shortest_path();
         }
+
+        visited.insert(this->start);
+        out.push_back(this->start);
     }
 
     return 0;
