@@ -3,6 +3,10 @@
 #include <unordered_set>
 
 
+// TODO REMOVE
+#include <iostream>
+
+
 CPP_BRTDP::CPP_BRTDP() {};
 CPP_BRTDP::~CPP_BRTDP() {};
 
@@ -59,7 +63,7 @@ int CPP_BRTDP::setup(long start, long goal) {
         double lon1 = x.second.second;
 
         // TODO is this best choice ? 50 and 10 ?
-        this->vl[x.first] = aerial_dist(lat1, lon1, lat2, lon2) / 50;
+        this->vl[x.first] = aerial_dist(lat1, lon1, lat2, lon2) / 100;
         this->vu[x.first] = aerial_dist(lat1, lon1, lat2, lon2) / 10;
     }
 
@@ -137,14 +141,42 @@ std::vector<long> CPP_BRTDP::get_path(google::dense_hash_map<long, long> diverge
     std::unordered_set<long> visited;
     visited.insert(this->start);
 
+    // TODO: Rename
+    std::unordered_set<long> visited2;
+
     long curr_node = this->start;
     while (curr_node != this->goal) {
         path.push_back(curr_node);
 
         long diverged_node = diverge_policy[curr_node];
         if (diverged_node == 0 || visited.find(diverged_node) != visited.end()) {
-            std::pair<long, long> curr_min_action = this->update_v(this->vl, curr_node);
-            curr_node = (*this->P)[curr_node][curr_min_action][0].first;
+            // TODO: Updating the value here seems incorrect.
+            //std::pair<long, long> curr_min_action = this->update_v(this->vl, curr_node);
+
+            // TODO: REFACTOR
+            std::pair<long, long> curr_min_action;
+            double curr_min = INFINITY;
+            for (auto &a : (*this->A)[curr_node]) {
+                double q_val = get_Q_value(this->vl, curr_node, a);
+                if (q_val < curr_min) {
+                    curr_min = q_val;
+                    curr_min_action = a;
+                }
+            }
+
+            long last_node = curr_node;
+
+            curr_node = curr_min_action.second;
+            if (visited2.find(curr_node) != visited2.end()) {
+                // If we're looping, fix this by updating the value of the node.
+                // This is most likely because we diverged too far and BRTDP
+                // wasn't here before.
+
+                // std::cout << curr_node << std::endl;
+                std::pair<long, long> curr_min_action = this->update_v(this->vl, last_node);
+                curr_node = curr_min_action.second;
+            }
+            visited2.insert(curr_node);
         } else {
             curr_node = diverged_node;
         }
