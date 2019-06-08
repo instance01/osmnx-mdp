@@ -29,12 +29,12 @@ MAPS = {
         'file': 'data/munich.pickle',
         'place': 'Munich, Germany'
     },
-    'Berlin': {
-        'type': 'place',
-        'file': 'data/berlin.pickle',
-        'place': 'Berlin, Germany',
-        'which_result': 2
-    },
+    #'Berlin': {
+    #    'type': 'place',
+    #    'file': 'data/berlin.pickle',
+    #    'place': 'Berlin, Germany',
+    #    'which_result': 2
+    #},
     'Köln': {
         'type': 'place',
         'file': 'data/koeln.pickle',
@@ -221,7 +221,8 @@ def run_simulation(
         'calculation_time': total_time,
         'drive_time': drive_time,
         'n_nodes': MAPS[map_id]['map'].number_of_nodes(),
-        'path': path
+        'path': path,
+        'diverge_policy': diverge_policy
     }
 
     print("Seconds for calculation:", total_time)
@@ -246,40 +247,46 @@ def generate_diverge_policy(G, density=.5):
     return policy
 
 
-cdef run_simulations():
+cdef run_simulations(iterations=1):
     start_time = timer()
 
     load_maps()
     
     results = []
 
-    for map_id in MAPS.keys():
-        print(LOCATIONS[map_id])
-        for location in LOCATIONS[map_id]:
-            location_id = location['metadata']['id']
+    for _ in range(iterations):
+        curr_result = []
+        for map_id in MAPS.keys():
+            print(LOCATIONS[map_id])
 
             G = MAPS[map_id]['map']
-            start = location['start']
-            goal = location['goal']
 
-            print('Preprocessing graph..')
-            remove_zero_cost_loops(G)
-            remove_dead_ends(G, goal)
+            for location in LOCATIONS[map_id]:
+                location_id = location['metadata']['id']
 
-            print('filtered n_nodes/goal:', G.number_of_nodes(), goal)
+                start = location['start']
+                goal = location['goal']
 
-            diverge_policy = generate_diverge_policy(G, .2)
+                print('Preprocessing graph..')
+                remove_zero_cost_loops(G)
+                remove_dead_ends(G, goal)
 
-            mdp = MDP(G)
-            results.append(run_simulation(mdp, map_id, location_id, start, goal, diverge_policy))
+                print('filtered n_nodes/goal:', G.number_of_nodes(), goal)
 
-            mdp = MDP(G)
-            mdp.setup(start, goal)
-            brtdp = BRTDP(mdp)
-            results.append(run_simulation(brtdp, map_id, location_id, start, goal, diverge_policy))
+                diverge_policy = generate_diverge_policy(G, .2)
 
-            dstar = DStar_Lite(G)
-            results.append(run_simulation(dstar, map_id, location_id, start, goal, diverge_policy))
+                mdp = MDP(G)
+                curr_result.append(run_simulation(mdp, map_id, location_id, start, goal, diverge_policy))
+
+                mdp = MDP(G)
+                mdp.setup(start, goal)
+                brtdp = BRTDP(mdp)
+                curr_result.append(run_simulation(brtdp, map_id, location_id, start, goal, diverge_policy))
+
+                dstar = DStar_Lite(G)
+                curr_result.append(run_simulation(dstar, map_id, location_id, start, goal, diverge_policy))
+
+        results.append(curr_result)
 
     print(results)
     print('Saving results to simulation.pickle..')

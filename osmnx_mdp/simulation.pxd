@@ -1,3 +1,3 @@
 # cython: language_level=3
 
-cdef run_simulations()
+cdef run_simulations(iterations=*)

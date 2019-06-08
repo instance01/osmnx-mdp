@@ -10,32 +10,44 @@ with open('simulation.pickle', 'rb') as f:
     results = pickle.load(f)
 
 
-x = [list(result.values()) for result in results]
-x = np.rec.array(x, dtype=[
-    ('algorithm', object),
-    ('id', object),
-    ('calculation_time', float),
-    ('drive_time', float),
-    ('n_nodes', int),
-    ('path', list)])
+data = []
+for results_ in results:
+    x = [list(result.values()) for result in results_]
+    x = np.rec.array(x, dtype=[
+        ('algorithm', object),
+        ('id', object),
+        ('calculation_time', float),
+        ('drive_time', float),
+        ('n_nodes', int),
+        ('path', list),
+        ('diverge_policy', list)])
+
+    data.append(x)
 
 
-mdp = x[np.where(x['algorithm'] == 'MDP')]
-brtdp = x[np.where(x['algorithm'] == 'BRTDP')]
-dstar = x[np.where(x['algorithm'] == 'DStar_Lite')]
+data = np.array(data)
+
+
+mdp = data[:, np.where(data[0]['algorithm'] == 'MDP')]
+brtdp = data[:, np.where(data[0]['algorithm'] == 'BRTDP')]
+dstar = data[:, np.where(data[0]['algorithm'] == 'DStar_Lite')]
 
 
 def draw(algorithm, arr, col, ax, ax2):
-    arr.sort(order='n_nodes')
-    X = arr['id'] + ' (' + arr['n_nodes'].astype('U') + ')'
+    arr = np.sort(arr, order='n_nodes')
+    calc_time = np.average(arr[:, 0]['calculation_time'], axis=0)
+    drive_time = np.average(arr[:, 0]['drive_time'], axis=0)
+    n_nodes = arr[:, 0]['n_nodes'][0]
+
+    X = arr[:, 0]['id'][0] + ' (' + n_nodes.astype('U') + ')'
     ax.plot(
         X,
-        arr['calculation_time'],
+        calc_time,
         color=col,
         label=algorithm + ' calculation time')
     ax2.plot(
         X,
-        arr['drive_time'],
+        drive_time,
         color=col,
         linestyle='--',
         label=algorithm + ' drive time')
@@ -54,8 +66,11 @@ def draw_setin(*algorithms):
     axins.set_ylim(-.5, 1.5)
 
     for arr, col in algorithms:
-        axins.plot(arr['id'], arr['drive_time'], color=col)
-        axins.plot(arr['id'], arr['calculation_time'], color=col)
+        calc_time = np.average(arr[:, 0]['calculation_time'], axis=0)
+        drive_time = np.average(arr[:, 0]['drive_time'], axis=0)
+
+        axins.plot(arr[:, 0]['id'][0], drive_time, color=col)
+        axins.plot(arr[:, 0]['id'][0], calc_time, color=col)
 
     mark_inset(ax, axins, loc1=2, loc2=4, fc="none", ec="0.5")
 

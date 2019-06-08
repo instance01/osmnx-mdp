@@ -2,4 +2,4 @@
 cimport osmnx_mdp.simulation
 
 
-osmnx_mdp.simulation.run_simulations()
+osmnx_mdp.simulation.run_simulations(100)
