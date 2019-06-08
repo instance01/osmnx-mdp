@@ -214,8 +214,6 @@ def run_simulation(
     if debug:
         draw_value_graph(MAPS[map_id]['map'], path)
 
-    #print(path)
-
     result = {
         'algorithm': algorithm.__class__.__name__,
         'id': location_id,
@@ -240,7 +238,12 @@ def generate_diverge_policy(G, density=.5):
 
     for node in G.nodes():
         if random.random() < density:
-            successors = list(G.successors(node))
+            # Make sure successors are not already in diverge_policy, else we
+            # might get a loop (two nodes diverging to each other in a loop).
+            successors = [
+                succ for succ in G.successors(node)
+                if succ not in policy
+            ]
             if len(successors) == 0:
                 continue
             policy[node] = np.random.choice(successors, 1)[0]
@@ -248,6 +251,7 @@ def generate_diverge_policy(G, density=.5):
     return policy
 
 
+# TODO Rename
 def run(map_id, location):
     curr_result = []
 
