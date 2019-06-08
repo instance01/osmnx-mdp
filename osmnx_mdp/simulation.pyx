@@ -29,12 +29,12 @@ MAPS = {
         'file': 'data/munich.pickle',
         'place': 'Munich, Germany'
     },
-    #'Berlin': {
-    #    'type': 'place',
-    #    'file': 'data/berlin.pickle',
-    #    'place': 'Berlin, Germany',
-    #    'which_result': 2
-    #},
+    'Berlin': {
+        'type': 'place',
+        'file': 'data/berlin.pickle',
+        'place': 'Berlin, Germany',
+        'which_result': 2
+    },
     'Köln': {
         'type': 'place',
         'file': 'data/koeln.pickle',
