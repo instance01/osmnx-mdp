@@ -165,6 +165,7 @@ int cpp_DStar_Lite::drive(std::vector<long> &out, google::dense_hash_map<long, l
             std::tie(lat1, lon1) = (*this->data)[last_start];
             std::tie(lat2, lon2) = (*this->data)[this->start];
             // TODO / 50 ?
+            // TODO Just use this->heuristic(last_start) ..
             this->k += aerial_dist(lat1, lon1, lat2, lon2) / 50;
             last_start = this->start;
             this->compute_shortest_path();

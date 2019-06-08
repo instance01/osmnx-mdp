@@ -92,7 +92,7 @@ class CPP_MDP {
                 google::dense_hash_map<std::pair<long, long>, CPP_Intersection, pair_hash> &out);
         int make_close_intersections_uncertain(float max_length=100);
         int make_low_angle_intersections_uncertain(float max_angle=30);
-        int solve(int max_iter=20000, double eps=1e-20);
+        int solve(int max_iter=50000, double eps=1e-20);
         int get_policy();
         std::vector<long> drive(google::dense_hash_map<long, long> &diverge_policy);
 };

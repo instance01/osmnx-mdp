@@ -58,7 +58,7 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
     cdef solve_value_iteration(
             self,
             float gamma=1.,
-            int max_iter=20000,
+            int max_iter=50000,
             double eps=1e-20,
             bint verbose=True):
         """Solve the MDP with value iteration.
