@@ -1,4 +1,5 @@
 # cython: language_level=3
+import multiprocessing
 import random
 import pickle
 from timeit import default_timer as timer
@@ -89,17 +90,17 @@ LOCATIONS = {
                 'info': ''
             }
         }, {
-            'start': (52.5878025, 13.2854392),
-            'goal': (52.469358, 13.5531717),
-            'metadata': {
-                'id': 'BERLINSUPERLONG',
-                'info': ''
-            }
-        }, {
             'start': (52.5890102, 13.2817751),
             'goal': (52.4260165, 13.5340521),
             'metadata': {
-                'id': 'BERLINSUPERLONG2',
+                'id': 'BERLINLONG1',
+                'info': ''
+            }
+        }, {
+            'start': (52.5878025, 13.2854392),
+            'goal': (52.469358, 13.5531717),
+            'metadata': {
+                'id': 'BERLINLONG2',
                 'info': ''
             }
         }
@@ -247,52 +248,83 @@ def generate_diverge_policy(G, density=.5):
     return policy
 
 
-cdef run_simulations(iterations=1):
+def run(map_id, location):
+    curr_result = []
+
+    location_id = location['metadata']['id']
+    start = location['start']
+    goal = location['goal']
+
+    G = MAPS[map_id]['map']
+
+    print('Preprocessing graph..')
+    remove_zero_cost_loops(G)
+    remove_dead_ends(G, goal)
+
+    print('filtered n_nodes/goal:', G.number_of_nodes(), goal)
+
+    diverge_policy = generate_diverge_policy(G, .2)
+
+
+    mdp = MDP(G)
+    curr_result.append(run_simulation(mdp, map_id, location_id, start, goal, diverge_policy))
+
+    mdp = MDP(G)
+    mdp.setup(start, goal)
+    brtdp = BRTDP(mdp)
+    curr_result.append(run_simulation(brtdp, map_id, location_id, start, goal, diverge_policy))
+
+    dstar = DStar_Lite(G)
+    curr_result.append(run_simulation(dstar, map_id, location_id, start, goal, diverge_policy))
+
+    return curr_result
+
+
+def run_simulations(iterations=1):
     start_time = timer()
 
     load_maps()
     
     results = []
 
+    # Target machine has 4 cores.
+    # Let's use them to speed up the simulation significantly.
+    # It's important to keep in mind that this might falsify the results, if
+    # not executed correcty.
+    # For example, we cannot have more than 4 workers in the pool.
+    # If we have 5, two might fight for resources on one core. They will be
+    # slower than they would be if they had a full core for themselves.
+
+    # maxtasksperchild=1 to make sure resources are cleaned up completely after
+    # a worker finishes. So memory access to the hashmaps isn't different in
+    # subsequent runs for some algorithms.
+    pool = multiprocessing.Pool(processes=4, maxtasksperchild=1)
+
     for _ in range(iterations):
+        # TODO: Rename all this
+
         curr_result = []
+        async_results = []
+
         for map_id in MAPS.keys():
-            print(LOCATIONS[map_id])
-
-            G = MAPS[map_id]['map']
-
             for location in LOCATIONS[map_id]:
-                location_id = location['metadata']['id']
+                async_results.append(pool.apply_async(run, (map_id, location)))
 
-                start = location['start']
-                goal = location['goal']
-
-                print('Preprocessing graph..')
-                remove_zero_cost_loops(G)
-                remove_dead_ends(G, goal)
-
-                print('filtered n_nodes/goal:', G.number_of_nodes(), goal)
-
-                diverge_policy = generate_diverge_policy(G, .2)
-
-                mdp = MDP(G)
-                curr_result.append(run_simulation(mdp, map_id, location_id, start, goal, diverge_policy))
-
-                mdp = MDP(G)
-                mdp.setup(start, goal)
-                brtdp = BRTDP(mdp)
-                curr_result.append(run_simulation(brtdp, map_id, location_id, start, goal, diverge_policy))
-
-                dstar = DStar_Lite(G)
-                curr_result.append(run_simulation(dstar, map_id, location_id, start, goal, diverge_policy))
+        for async_result in async_results:
+            curr_result.extend(async_result.get())
 
         results.append(curr_result)
 
-    print(results)
-    print('Saving results to simulation.pickle..')
-    with open('simulation.pickle', 'wb+') as f:
-        pickle.dump(results, f)
+        # Save results to simulation.pickle after each iteration so if it should
+        # ever crash, we have partial results.
+        # The point is, they're only improving slightly per iteration, so these
+        # 'partial' results would be very usable.
+        print('Saving temporary results to simulation.pickle..')
+        with open('simulation.pickle', 'wb+') as f:
+            pickle.dump(results, f)
 
+    pool.close()
+    pool.join()
     print('Total time for simulation:', timer() - start_time)
 
 
