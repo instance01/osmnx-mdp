@@ -54,6 +54,6 @@ class CPP_BRTDP {
             google::dense_hash_map<long, std::pair<float, float>> *data);
         int setup(long start, long goal);
         int run_trial(double t);
-        int run_trials(double alpha=1e-20, double t=10);
+        int run_trials(double alpha=1e-10, double t=10);
         std::vector<long> get_path(google::dense_hash_map<long, long> diverge_policy);
 };
