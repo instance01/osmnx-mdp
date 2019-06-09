@@ -6,7 +6,7 @@ from osmnx_mdp.algorithms.mdp cimport MDP
 cimport osmnx_mdp.algorithms.algorithm
 
 
-cdef extern from "cpp_brtdp.cpp":
+cdef extern from "cpp_brtdp.hpp":
     struct pair_hash:
         long operator(pair[long, long])
 

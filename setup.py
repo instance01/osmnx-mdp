@@ -26,6 +26,16 @@ setup(
             include_dirs=["osmnx_mdp/algorithms/"]
         ),
         Extension(
+            "cpp_brtdp",
+            ["osmnx_mdp/algorithms/cpp_brtdp.cpp"],
+            include_dirs=["osmnx_mdp/algorithms/"]
+        ),
+        Extension(
+            "cpp_brtdp_replan",
+            ["osmnx_mdp/algorithms/cpp_brtdp_replan.cpp"],
+            include_dirs=["osmnx_mdp/algorithms/"]
+        ),
+        Extension(
             "lib",
             ["osmnx_mdp/cpp_lib.cpp"],
             libraries=["m"]

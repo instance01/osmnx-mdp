@@ -10,13 +10,14 @@ from osmnx_mdp.lib cimport draw_value_graph
 
 from osmnx_mdp.algorithms.mdp cimport MDP
 from osmnx_mdp.algorithms.brtdp cimport BRTDP
+from osmnx_mdp.algorithms.brtdp_replan cimport BRTDP_REPLAN
 
 cdef run():
-    with open('data/berlin.pickle', 'rb') as f:
+    with open('data/starnberg_environment.pickle', 'rb') as f:
         locs, G = pickle.load(f)
 
-    start = locs[2]['start']
-    goal = locs[2]['goal']
+    start = locs[0]['start']
+    goal = locs[0]['goal']
 
     remove_zero_cost_loops(G)
     remove_dead_ends(G, goal)
@@ -24,8 +25,8 @@ cdef run():
     mdp = MDP(G)
     mdp.setup(start, goal)
 
-    cdef BRTDP brtdp
-    brtdp = BRTDP(mdp)
+    cdef BRTDP_REPLAN brtdp
+    brtdp = BRTDP_REPLAN(mdp)
     brtdp.setup(start, goal)
     brtdp.run_trials()
 

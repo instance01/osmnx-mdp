@@ -3,9 +3,6 @@
 #include <unordered_set>
 
 
-// TODO REMOVE
-#include <iostream>
-
 
 CPP_BRTDP::CPP_BRTDP() {};
 CPP_BRTDP::~CPP_BRTDP() {};
@@ -70,19 +67,24 @@ int CPP_BRTDP::setup(long start, long goal) {
     return 0;
 }
 
-// TODO RENAME
-std::pair<long, long> CPP_BRTDP::update_v(google::dense_hash_map<long, double> &v, const long &x) {
+std::pair<std::pair<long, long>, double> CPP_BRTDP::get_minimum_action(google::dense_hash_map<long, double> &v, const long &node) {
     std::pair<long, long> curr_min_action;
     double curr_min = INFINITY;
-    for (auto &a : (*this->A)[x]) {
-        double q_val = get_Q_value(v, x, a);
+    for (auto &a : (*this->A)[node]) {
+        double q_val = get_Q_value(v, node, a);
         if (q_val < curr_min) {
             curr_min = q_val;
             curr_min_action = a;
         }
     }
-    v[x] = curr_min;
-    return curr_min_action;
+    return std::pair<std::pair<long, long>, double>(curr_min_action, curr_min);
+}
+
+// TODO RENAME
+std::pair<long, long> CPP_BRTDP::update_v(google::dense_hash_map<long, double> &v, const long &node) {
+    auto min_action = this->get_minimum_action(v, node);
+    v[node] = min_action.second;
+    return min_action.first;
 }
 
 // TODO See header for default values alpha=0.001, t=10
@@ -141,9 +143,6 @@ std::vector<long> CPP_BRTDP::get_path(google::dense_hash_map<long, long> diverge
     std::unordered_set<long> visited;
     visited.insert(this->start);
 
-    // TODO: Rename
-    std::unordered_set<long> visited2;
-
     long curr_node = this->start;
     while (curr_node != this->goal) {
         path.push_back(curr_node);
@@ -151,32 +150,29 @@ std::vector<long> CPP_BRTDP::get_path(google::dense_hash_map<long, long> diverge
         long diverged_node = diverge_policy[curr_node];
         if (diverged_node == 0 || visited.find(diverged_node) != visited.end()) {
             // TODO: Updating the value here seems incorrect.
+            // It makes sure we never loop, however quality can get really bad.
+            // It's basically another trial run.
             //std::pair<long, long> curr_min_action = this->update_v(this->vl, curr_node);
+            //curr_node = curr_min_action.second;
 
-            // TODO: REFACTOR
-            std::pair<long, long> curr_min_action;
-            double curr_min = INFINITY;
-            for (auto &a : (*this->A)[curr_node]) {
-                double q_val = get_Q_value(this->vl, curr_node, a);
-                if (q_val < curr_min) {
-                    curr_min = q_val;
-                    curr_min_action = a;
-                }
-            }
+            auto min_action = this->get_minimum_action(this->vl, curr_node);
 
             long last_node = curr_node;
+            curr_node = min_action.first.second;
 
-            curr_node = curr_min_action.second;
-            if (visited2.find(curr_node) != visited2.end()) {
+            // This is quite a difference to vanilla BRTDP. But it's needed,
+            // else we crash because of our hard diverge policies.
+
+            if (visited.find(curr_node) != visited.end()) {
                 // If we're looping, fix this by updating the value of the node.
                 // This is most likely because we diverged too far and BRTDP
                 // wasn't here before.
-
-                // std::cout << curr_node << std::endl;
-                std::pair<long, long> curr_min_action = this->update_v(this->vl, last_node);
-                curr_node = curr_min_action.second;
+                // It takes a while for the costs to become big enough, i.e.
+                // for the loop to resolve.
+                //std::cout << curr_node << " " << this->vu[curr_node] - this->vl[curr_node] << std::endl;
+                curr_node = this->update_v(this->vl, last_node).second;
             }
-            visited2.insert(curr_node);
+            visited.insert(curr_node);
         } else {
             curr_node = diverged_node;
         }

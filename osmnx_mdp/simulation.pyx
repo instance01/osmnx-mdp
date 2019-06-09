@@ -15,6 +15,7 @@ from osmnx_mdp.lib cimport get_time_to_drive
 from osmnx_mdp.algorithms.mdp cimport MDP
 from osmnx_mdp.algorithms.rtdp cimport RTDP
 from osmnx_mdp.algorithms.brtdp cimport BRTDP
+from osmnx_mdp.algorithms.brtdp_replan cimport BRTDP_REPLAN
 from osmnx_mdp.algorithms.dstar_lite cimport DStar_Lite
 from osmnx_mdp.algorithms.algorithm cimport Algorithm
 
@@ -288,17 +289,21 @@ def run(map_id, location):
 
     diverge_policy = gen_random_diverge_policy(G, .2)
 
+    # TODO: Another option: Diverge policy based on uncertain nodes from MDP model.
     # mdp = MDP(G)
     # mdp.setup(start, goal)
     # diverge_policy = gen_diverge_policy_with_uncertain_nodes(G, mdp.uncertain_nodes)
-
 
     mdp = MDP(G)
     curr_result.append(run_simulation(mdp, map_id, location_id, start, goal, diverge_policy))
 
     mdp = MDP(G)
     mdp.setup(start, goal)
+    brtdp = BRTDP_REPLAN(mdp)
+    curr_result.append(run_simulation(brtdp, map_id, location_id, start, goal, diverge_policy))
 
+    mdp = MDP(G)
+    mdp.setup(start, goal)
     brtdp = BRTDP(mdp)
     curr_result.append(run_simulation(brtdp, map_id, location_id, start, goal, diverge_policy))
 

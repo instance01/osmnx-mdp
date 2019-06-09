@@ -1,3 +1,5 @@
+#ifndef CPP_BRTDP_HEADER
+#define CPP_BRTDP_HEADER
 #include <google/dense_hash_map>
 #include <random>
 #include <vector>
@@ -8,7 +10,7 @@
 class CPP_BRTDP {
     public:
         CPP_BRTDP();
-        ~CPP_BRTDP();
+        virtual ~CPP_BRTDP();
 
         long start;
         long goal;
@@ -38,6 +40,9 @@ class CPP_BRTDP {
                 google::dense_hash_map<long, double> &v,
                 const long &s,
                 const std::pair<long, long> &a);
+        std::pair<std::pair<long, long>, double> get_minimum_action(
+                google::dense_hash_map<long, double> &v,
+                const long &x);
         std::pair<long, long> update_v(google::dense_hash_map<long, double> &v, const long &x);
         int init(
             std::vector<long> *S,
@@ -57,3 +62,4 @@ class CPP_BRTDP {
         int run_trials(double alpha=1e-10, double t=10);
         std::vector<long> get_path(google::dense_hash_map<long, long> diverge_policy);
 };
+#endif
