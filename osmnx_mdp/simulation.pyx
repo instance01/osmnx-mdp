@@ -199,7 +199,7 @@ def run_simulation(
     diverge_policy shall be a function in the form diverge_policy(G, node)
     and return for a given node and its options (successors) the next node.
     """
-    print("Running %s." % algorithm.__class__.__name__)
+    print("Running %s on map %s." % (algorithm.__class__.__name__, map_id))
     start_time = timer()
 
     algorithm.setup(start, goal)
@@ -224,20 +224,19 @@ def run_simulation(
         'diverge_policy': diverge_policy
     }
 
-    print("Seconds for calculation:", total_time)
+    print("[%s, %s] Seconds for calculation: %f" % (
+        algorithm.__class__.__name__, map_id, total_time)
+    )
     return result
 
 
-def generate_diverge_policy(G, density=.5):
-    """Generate a divergence policy for all nodes:
-    Diverge at roughly $(density) percent of nodes.
-    We diverge by taking a random successor of the node.
-    So this could also lie on the real path.
+def gen_diverge_policy(G, func):
+    """Generate a diverge policy based on a general function.
     """
     policy = {}
 
     for node in G.nodes():
-        if random.random() < density:
+        if func(node):
             # Make sure successors are not already in diverge_policy, else we
             # might get a loop (two nodes diverging to each other in a loop).
             successors = [
@@ -249,6 +248,26 @@ def generate_diverge_policy(G, density=.5):
             policy[node] = np.random.choice(successors, 1)[0]
 
     return policy
+
+
+def gen_random_diverge_policy(G, density=.2):
+    """Generate a divergence policy for all nodes:
+    Diverge at roughly $(density) percent of nodes.
+    We diverge by taking a random successor of the node.
+    So this could also lie on the real path.
+    """
+    func = lambda _: random.random() < density
+    return gen_diverge_policy(G, func)
+
+
+def gen_diverge_policy_with_uncertain_nodes(G, uncertain_nodes):
+    """Generate a divergence policy for all nodes based on uncertain nodes from
+    the MDP model.
+    Right now uncertainty in the model is based on low angle intersections and
+    close intersections. See more in the MDP class.
+    """
+    func = lambda node: node in uncertain_nodes
+    return gen_diverge_policy(G, func)
 
 
 # TODO Rename
@@ -267,7 +286,11 @@ def run(map_id, location):
 
     print('filtered n_nodes/goal:', G.number_of_nodes(), goal)
 
-    diverge_policy = generate_diverge_policy(G, .2)
+    diverge_policy = gen_random_diverge_policy(G, .2)
+
+    # mdp = MDP(G)
+    # mdp.setup(start, goal)
+    # diverge_policy = gen_diverge_policy_with_uncertain_nodes(G, mdp.uncertain_nodes)
 
 
     mdp = MDP(G)
@@ -275,6 +298,7 @@ def run(map_id, location):
 
     mdp = MDP(G)
     mdp.setup(start, goal)
+
     brtdp = BRTDP(mdp)
     curr_result.append(run_simulation(brtdp, map_id, location_id, start, goal, diverge_policy))
 

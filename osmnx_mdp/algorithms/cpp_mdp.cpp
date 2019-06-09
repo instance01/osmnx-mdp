@@ -93,6 +93,9 @@ int CPP_MDP::make_edge_uncertain(
         temp_P[edge][0] = {node_to, temp_P[edge][0].second - .1};
     }
 
+
+    this->uncertain_nodes.insert(edge.first);
+
     return 0;
 }
 
@@ -329,7 +332,8 @@ int CPP_MDP::solve(int max_iter, double eps) {
         V[s] = 0.;
     }
 
-    for (int i = 0; i < max_iter; ++i) {
+    int i = 0;
+    for (; i < max_iter; ++i) {
         google::dense_hash_map<long, float> prev_V = V;
 
         for (auto &s : *this->S) {
@@ -367,6 +371,8 @@ int CPP_MDP::solve(int max_iter, double eps) {
                 break;
         }
     }
+
+    std::cout << "ITERATIONS: " << i << std::endl;
 
     // Cython needs an integer return.
     return 0;

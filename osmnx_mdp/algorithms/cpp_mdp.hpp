@@ -1,5 +1,6 @@
 #include <google/dense_hash_map>
 #include <vector>
+#include <set>
 
 #include "../cpp_lib.hpp"
 
@@ -55,6 +56,8 @@ class CPP_MDP {
         google::dense_hash_map<std::pair<long, long>, double, pair_hash> *edge_data;
         google::dense_hash_map<long, std::pair<double, double>> *node_data;
         google::dense_hash_map<long, std::vector<long>> *successors;
+
+        std::set<long> uncertain_nodes;
 
         int init(
             std::vector<long> *S,

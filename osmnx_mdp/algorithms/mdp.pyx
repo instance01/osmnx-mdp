@@ -54,6 +54,9 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
                 &self.node_data,
                 &self.successors)
         self.cpp.setup(start, goal)
+        self.uncertain_nodes = set()
+        for x in self.cpp.uncertain_nodes:
+            self.uncertain_nodes.add(x)
 
     cdef solve_value_iteration(
             self,

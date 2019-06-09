@@ -3,6 +3,7 @@ cimport osmnx_mdp.algorithms.algorithm
 
 from libcpp.pair cimport pair
 from libcpp.vector cimport vector
+from libcpp.set cimport set as cset
 
 from osmnx_mdp.algorithms.dense_hash_map cimport dense_hash_map
 
@@ -41,6 +42,8 @@ cdef extern from "cpp_mdp.hpp":
         dense_hash_map[pair[long, long], double, pair_hash] *edge_data
         dense_hash_map[long, pair[double, double]] *node_data
         dense_hash_map[long, vector[long]] *successors
+
+        cset[long] uncertain_nodes
 
         int init(
             vector[long] *S,
@@ -99,6 +102,8 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
 
     cdef close_nodes
     cdef angle_nodes
+
+    cdef set uncertain_nodes
 
     cdef setup(self, long start, long goal)
     cdef solve_value_iteration(self, float gamma=*, int max_iter=*, double eps=*, bint verbose=*)
