@@ -24,9 +24,13 @@ cdef run():
 
     mdp = MDP(G)
     mdp.setup(start, goal)
+    #policy = mdp.solve()
+    #mdp.drive(policy, {})
 
-    cdef BRTDP_REPLAN brtdp
-    brtdp = BRTDP_REPLAN(mdp)
+    #cdef BRTDP_REPLAN brtdp
+    #brtdp = BRTDP_REPLAN(mdp)
+    cdef BRTDP brtdp
+    brtdp = BRTDP(mdp)
     brtdp.setup(start, goal)
     brtdp.run_trials()
 

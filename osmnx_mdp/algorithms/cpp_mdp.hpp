@@ -1,3 +1,5 @@
+#ifndef CPP_MDP_HEADER
+#define CPP_MDP_HEADER
 #include <google/dense_hash_map>
 #include <vector>
 #include <set>
@@ -28,7 +30,6 @@ class CPP_MDP {
     public:
         CPP_MDP();
         ~CPP_MDP();
-
 
         std::vector<long> *S;
         google::dense_hash_map<long, std::vector<std::pair<long, long>>> *A;
@@ -99,3 +100,4 @@ class CPP_MDP {
         int get_policy();
         std::vector<long> drive(google::dense_hash_map<long, long> &diverge_policy);
 };
+#endif

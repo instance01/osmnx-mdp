@@ -2,6 +2,7 @@
 #include <stack>
 #include <unordered_set>
 
+#include "../serialize_util.hpp"
 
 
 CPP_BRTDP::CPP_BRTDP() {};
@@ -20,18 +21,18 @@ double CPP_BRTDP::get_Q_value(
 }
 
 int CPP_BRTDP::init(
-    std::vector<long> *S,
-    google::dense_hash_map<long, std::vector<std::pair<long, long>>> *A,
-    google::dense_hash_map<std::pair<long, long>, float, pair_hash> *C,
-    google::dense_hash_map<
-        long,
+        std::vector<long> *S,
+        google::dense_hash_map<long, std::vector<std::pair<long, long>>> *A,
+        google::dense_hash_map<std::pair<long, long>, float, pair_hash> *C,
         google::dense_hash_map<
-            std::pair<long, long>,
-            std::vector<std::pair<long, double>>,
-            pair_hash
-        >
-    > *P,
-    google::dense_hash_map<long, std::pair<float, float>> *data) {
+            long,
+            google::dense_hash_map<
+                std::pair<long, long>,
+                std::vector<std::pair<long, double>>,
+                pair_hash
+            >
+        > *P,
+        google::dense_hash_map<long, std::pair<float, float>> *data) {
     this->S = S;
     this->A = A;
     this->C = C;
@@ -89,11 +90,18 @@ std::pair<long, long> CPP_BRTDP::update_v(google::dense_hash_map<long, double> &
 
 // TODO See header for default values alpha=0.001, t=10
 int CPP_BRTDP::run_trials(double alpha, double tau) {
+#ifdef TESTS
+    save_brtdp(this, "BRTDPrun_trials.cereal");
+    this->random_generator.seed(42069);
+#endif
     int i = 0;
     while (this->vu[this->start] - this->vl[this->start] > alpha) {
         this->run_trial(tau);
         i += 1;
     }
+#ifdef TESTS
+    save_brtdp(this, "BRTDPrun_trialsWANT.cereal");
+#endif
     return 0;
 }
 
@@ -138,6 +146,9 @@ int CPP_BRTDP::run_trial(double tau) {
 }
 
 std::vector<long> CPP_BRTDP::get_path(google::dense_hash_map<long, long> diverge_policy) {
+#ifdef TESTS
+    save_brtdp(this, "BRTDPget_path.cereal");
+#endif
     std::vector<long> path;
 
     std::unordered_set<long> visited;
@@ -179,6 +190,14 @@ std::vector<long> CPP_BRTDP::get_path(google::dense_hash_map<long, long> diverge
 
         visited.insert(curr_node);
     }
+#ifdef TESTS
+    {
+        std::ofstream os("BRTDPget_pathWANT.cereal", std::ios::binary);
+        cereal::BinaryOutputArchive archive(os);
+        archive(path);
+    }
+#endif
+
 
     return path;
 }

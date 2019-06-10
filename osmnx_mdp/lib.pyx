@@ -5,6 +5,9 @@ import numpy as np
 import osmnx as ox
 
 
+# TODO Move everything here into cpp_lib
+
+
 cdef get_edge_cost(G, node_from, node_to):
     """Edge cost is the amount of time (in hours) an edge takes to travel, i.e.
     length divided by maxspeed.
@@ -103,7 +106,11 @@ cdef get_node_properties(G, path, values=None, extra=[]):
     node_colors = []
     for node in G.nodes():
         if node in path:
-            node_colors.append('g')
+            # TODO Ugly
+            if node in extra:
+                node_colors.append('#476369')
+            else:
+                node_colors.append('g')
         elif node in extra:
             node_colors.append('m')
         else:

@@ -17,7 +17,7 @@ setup(
     ext_modules=cythonize([
         Extension(
             "cpp_mdp",
-            ["osmnx_mdp/algorithms/cpp_mdp.cpp"],
+            ["osmnx_mdp/algorithms/cpp_mdp.cpp", "osmnx_mdp/serialize_util.cpp"],
             include_dirs=["osmnx_mdp/algorithms/"]
         ),
         Extension(
@@ -27,7 +27,7 @@ setup(
         ),
         Extension(
             "cpp_brtdp",
-            ["osmnx_mdp/algorithms/cpp_brtdp.cpp"],
+            ["osmnx_mdp/algorithms/cpp_brtdp.cpp", "osmnx_mdp/serialize_util.cpp"],
             include_dirs=["osmnx_mdp/algorithms/"]
         ),
         Extension(

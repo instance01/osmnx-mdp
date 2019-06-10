@@ -5,6 +5,8 @@
 
 #include "cpp_mdp.hpp"
 
+#include "../serialize_util.hpp"
+
 
 void combinations(
         std::vector<std::pair<std::pair<long, long>, std::pair<long, long>>> &out,
@@ -27,20 +29,20 @@ CPP_MDP::~CPP_MDP() {}
 
 
 int CPP_MDP::init(
-    std::vector<long> *S,
-    google::dense_hash_map<long, std::vector<std::pair<long, long>>> *A,
-    google::dense_hash_map<std::pair<long, long>, float, pair_hash> *C,
-    google::dense_hash_map<
-        long,
+        std::vector<long> *S,
+        google::dense_hash_map<long, std::vector<std::pair<long, long>>> *A,
+        google::dense_hash_map<std::pair<long, long>, float, pair_hash> *C,
         google::dense_hash_map<
-            std::pair<long, long>,
-            std::vector<std::pair<long, double>>,
-            pair_hash
-        >
-    > *P,
-    google::dense_hash_map<std::pair<long, long>, double, pair_hash> *edge_data,
-    google::dense_hash_map<long, std::pair<double, double>> *node_data,
-    google::dense_hash_map<long, std::vector<long>> *successors) {
+            long,
+            google::dense_hash_map<
+                std::pair<long, long>,
+                std::vector<std::pair<long, double>>,
+                pair_hash
+            >
+        > *P,
+        google::dense_hash_map<std::pair<long, long>, double, pair_hash> *edge_data,
+        google::dense_hash_map<long, std::pair<double, double>> *node_data,
+        google::dense_hash_map<long, std::vector<long>> *successors) {
     this->S = S;
     this->A = A;
     this->C = C;
@@ -48,6 +50,9 @@ int CPP_MDP::init(
     this->edge_data = edge_data;
     this->node_data = node_data;
     this->successors = successors;
+
+    this->V.set_empty_key(0);
+    this->policy.set_empty_key(0);
 
     return 0;
 }
@@ -59,20 +64,27 @@ int CPP_MDP::setup(long start, long goal) {
     this->make_goal_self_absorbing();
     this->make_low_angle_intersections_uncertain();
     this->make_close_intersections_uncertain();
- 
+
     int total_uncertain_nodes = this->angle_nodes.size() + this->close_intersections.size();
-    float uncertainty_percent = float(total_uncertain_nodes) / (*this->S).size();//13970.;//this->G.number_of_nodes() * 100;
+    float uncertainty_percent = float(total_uncertain_nodes) / (*this->S).size();
     std::cout << uncertainty_percent * 100 << "\% of nodes are uncertain." << std::endl;
     return 0;
 }
 
 int CPP_MDP::make_goal_self_absorbing() {
+#ifdef TESTS
+    save_mdp(this, "MDPmake_goal_self_absorbing.cereal");
+#endif
+
     // Add a zero-cost loop at the goal to absorb cost.
     std::pair<long, long> edge(this->goal, this->goal);
     (*this->A)[this->goal].push_back(edge);
     (*this->C)[edge] = 0;
     (*this->P)[this->goal][edge] = {{this->goal, 1.0}};
 
+#ifdef TESTS
+    save_mdp(this, "MDPmake_goal_self_absorbingWANT.cereal");
+#endif
     return 0;
 }
 
@@ -92,7 +104,6 @@ int CPP_MDP::make_edge_uncertain(
         temp_P[edge].push_back({other_node, .1});
         temp_P[edge][0] = {node_to, temp_P[edge][0].second - .1};
     }
-
 
     this->uncertain_nodes.insert(edge.first);
 
@@ -153,10 +164,21 @@ int CPP_MDP::get_normal_intersections(
         }
     }
 
+#ifdef TESTS
+    {
+        std::ofstream os("MDPget_normal_intersectionsWANT.cereal", std::ios::binary);
+        cereal::BinaryOutputArchive archive(os);
+        archive(out);
+    }
+#endif
+
     return 0;
 }
 
 int CPP_MDP::make_close_intersections_uncertain(float max_length) {
+#ifdef TESTS
+    save_mdp(this, "MDPmake_close_intersections_uncertain.cereal");
+#endif
     // Scan graph for intersections that follow very closely.
     // 
     // Use cases:
@@ -166,7 +188,7 @@ int CPP_MDP::make_close_intersections_uncertain(float max_length) {
     //       or left on the next intersection, but you do so on the current
     //       one, which is too early.
     google::dense_hash_map<std::pair<long, long>, CPP_Intersection, pair_hash> intersections;
-    intersections.set_empty_key({0, 0});
+    //intersections.set_empty_key({0, 0});
 
     this->get_normal_intersections(intersections);
 
@@ -223,6 +245,8 @@ int CPP_MDP::make_close_intersections_uncertain(float max_length) {
 
     }
 
+    save_mdp(this, "MDPmake_close_intersections_uncertainWANT.cereal");
+
     return 0;
 }
 
@@ -236,6 +260,9 @@ int CPP_MDP::make_low_angle_intersections_uncertain(float max_angle) {
     // If angle between edges (1, 2) and (1, 3) is small enough,
     // make those edges uncertain, i.e. add a 10% chance end up
     // in the other node and not the expected one.
+#ifdef TESTS
+    save_mdp(this, "MDPmake_low_angle_intersections_uncertain.cereal");
+#endif
 
     // TODO: Twisted code. Works, but succs
     // TODO: Add all docstrings/comments from python code
@@ -314,13 +341,20 @@ int CPP_MDP::make_low_angle_intersections_uncertain(float max_angle) {
             }
         }
     }
+
+#ifdef TESTS
+    save_mdp(this, "MDPmake_low_angle_intersections_uncertainWANT.cereal");
+#endif
     
     return 0;
 }
 
 // TODO Everything needs to be double, not float.
 int CPP_MDP::solve(int max_iter, double eps) {
-    V.set_empty_key(0);
+#ifdef TESTS
+    save_mdp(this, "MDPsolve.cereal");
+#endif
+
     google::dense_hash_map<long, google::dense_hash_map<std::pair<long, long>, float, pair_hash>> Q;
     Q.set_empty_key(0);
     for (auto &s : *this->S) {
@@ -374,12 +408,19 @@ int CPP_MDP::solve(int max_iter, double eps) {
 
     std::cout << "ITERATIONS: " << i << std::endl;
 
+#ifdef TESTS
+    save_mdp(this, "MDPsolveWANT.cereal");
+#endif
+
     // Cython needs an integer return.
     return 0;
 }
 
 int CPP_MDP::get_policy() {
-    policy.set_empty_key(0);
+#ifdef TESTS
+    save_mdp(this, "MDPget_policy.cereal");
+#endif
+
     for (auto &s : *this->S) {
         double curr_min = INFINITY;
         std::pair<long, long> curr_min_action;
@@ -399,10 +440,17 @@ int CPP_MDP::get_policy() {
         policy[s] = curr_min_action;
     }
 
+#ifdef TESTS
+    save_mdp(this, "MDPget_policyWANT.cereal");
+#endif
+
     return 0;
 }
 
 std::vector<long> CPP_MDP::drive(google::dense_hash_map<long, long> &diverge_policy) {
+#ifdef TESTS
+    save_mdp(this, "MDPdrive.cereal");
+#endif
     // Make sure we don't loop indefinitely due to diverge policy
     std::set<long> visited;
 
@@ -427,6 +475,14 @@ std::vector<long> CPP_MDP::drive(google::dense_hash_map<long, long> &diverge_pol
 
         nodes.push_back(curr_node);
     }
+
+#ifdef TESTS
+    {
+        std::ofstream os("MDPdriveWANT.cereal", std::ios::binary);
+        cereal::BinaryOutputArchive archive(os);
+        archive(nodes);
+    }
+#endif
 
     return nodes;
 }
