@@ -19,7 +19,7 @@ from osmnx_mdp.algorithms.mdp cimport MDP
 
 class MDPTest(unittest.TestCase):
     def test_get_angle(self):
-        have = get_angle((9, 40), (50, 11), (5, 3))
+        have = get_angle(9, 40, 50, 11, 5, 3)
         want = 73.74922691742808
         self.assertEqual(have, want)
 

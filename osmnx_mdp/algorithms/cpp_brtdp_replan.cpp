@@ -1,32 +1,29 @@
 #include "cpp_brtdp_replan.hpp"
-#include <stack>
 #include <unordered_set>
-
-
-// TODO REMOVE
 #include <iostream>
 
 
-CPP_BRTDP_REPLAN::CPP_BRTDP_REPLAN() {};
-CPP_BRTDP_REPLAN::~CPP_BRTDP_REPLAN() {};
+BRTDP_REPLAN::BRTDP_REPLAN() {};
+BRTDP_REPLAN::~BRTDP_REPLAN() {};
 
 
-void CPP_BRTDP_REPLAN::replan(long curr_node) {
+void BRTDP_REPLAN::replan(const long &curr_node) {
     std::cout << "REPLANNING " << std::endl;
     this->start = curr_node;
     this->run_trials();
 }
 
 
-// TODO Defaults: beta=.02, always_replan=true
-std::vector<long> CPP_BRTDP_REPLAN::get_path(
-        google::dense_hash_map<long, long> diverge_policy,
-        float beta,
-        bool always_replan) {
+std::vector<long> BRTDP_REPLAN::get_path(
+        google::dense_hash_map<long, long> &diverge_policy,
+        const float &beta,
+        const bool &always_replan) {
+    // Defaults:
+    //  beta = .02
+    //  always_replan = true
     std::vector<long> path;
 
-    std::unordered_set<long> visited;
-    visited.insert(this->start);
+    std::unordered_set<long> visited {this->start};
 
     long curr_node = this->start;
     while (curr_node != this->goal) {
@@ -36,9 +33,9 @@ std::vector<long> CPP_BRTDP_REPLAN::get_path(
         if (diverged_node == 0 || visited.find(diverged_node) != visited.end()) {
             // Current node shall not diverge, or we already visited the
             // candidate before. Let's follow the path calculated by BRTPD.
-            auto min_action = this->get_minimum_action(this->vl, curr_node);
+            const auto min_action = this->get_minimum_action(this->vl, curr_node);
 
-            long last_node = curr_node;
+            const long last_node = curr_node;
             curr_node = min_action.first.second;
 
             if (this->vu[curr_node] - this->vl[curr_node] > beta) {

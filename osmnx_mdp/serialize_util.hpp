@@ -3,15 +3,17 @@
 #include <google/dense_hash_map>
 #include "algorithms/cpp_mdp.hpp"
 #include "algorithms/cpp_brtdp.hpp"
+#include "algorithms/cpp_dstar_lite.hpp"
 
 #include <fstream>
-#include "algorithms/cereal/cereal.hpp"
-#include "algorithms/cereal/types/concepts/pair_associative_container.hpp"
-#include "algorithms/cereal/types/memory.hpp"
-#include "algorithms/cereal/types/vector.hpp"
-#include "algorithms/cereal/types/set.hpp"
-#include "algorithms/cereal/types/utility.hpp"
-#include "algorithms/cereal/archives/binary.hpp"
+#include "external/cereal/cereal.hpp"
+#include "external/cereal/types/concepts/pair_associative_container.hpp"
+#include "external/cereal/types/memory.hpp"
+#include "external/cereal/types/vector.hpp"
+#include "external/cereal/types/set.hpp"
+#include "external/cereal/types/unordered_set.hpp"
+#include "external/cereal/types/utility.hpp"
+#include "external/cereal/archives/binary.hpp"
 
 #include <iostream>
 
@@ -49,7 +51,7 @@ namespace google {
 }
 
 template <class Archive>
-void serialize(Archive &ar, CPP_Intersection &intersection)
+void serialize(Archive &ar, Intersection &intersection)
 {
     ar(
         intersection.left_node,
@@ -93,12 +95,23 @@ struct SharedBRTDPData {
     google::dense_hash_map<long, std::pair<float, float>> data;
 };
 
-void save_mdp(CPP_MDP *mdp, std::string name);
+struct SharedDStarLiteData {
+    google::dense_hash_map<long, std::vector<long>> predecessors;
+    google::dense_hash_map<long, std::vector<long>> successors;
+    google::dense_hash_map<long, std::pair<float, float>> data;
+    google::dense_hash_map<std::pair<long, long>, float, pair_hash> cost;
+};
 
-void load_mdp(CPP_MDP *mdp, SharedMDPData &data, std::string name);
+void save_mdp(MDP *mdp, std::string name);
 
-void save_brtdp(CPP_BRTDP *brtdp, std::string name);
+void load_mdp(MDP *mdp, SharedMDPData &data, std::string name);
 
-void load_brtdp(CPP_BRTDP *brtdp, SharedBRTDPData &data, std::string name);
+void save_brtdp(BRTDP *brtdp, std::string name);
+
+void load_brtdp(BRTDP *brtdp, SharedBRTDPData &data, std::string name);
+
+void save_dstar(DStar_Lite *brtdp, std::string name);
+
+void load_dstar(DStar_Lite *brtdp, SharedDStarLiteData &data, std::string name);
 
 #endif

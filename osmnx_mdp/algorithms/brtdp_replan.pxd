@@ -11,7 +11,7 @@ cdef extern from "cpp_brtdp_replan.hpp":
     struct pair_hash:
         long operator(pair[long, long])
 
-    cppclass CPP_BRTDP_REPLAN(CPP_BRTDP):
+    cppclass CPP_BRTDP_REPLAN "BRTDP_REPLAN"(CPP_BRTDP):
         CPP_BRTDP_REPLAN()
 
         vector[long] get_path(

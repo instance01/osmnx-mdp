@@ -1,6 +1,6 @@
 #include "serialize_util.hpp"
 
-void save_mdp(CPP_MDP *mdp, std::string name)
+void save_mdp(MDP *mdp, std::string name)
 {
     std::ofstream os(name, std::ios::binary);
     cereal::BinaryOutputArchive archive(os);
@@ -22,7 +22,7 @@ void save_mdp(CPP_MDP *mdp, std::string name)
     );
 }
 
-void load_mdp(CPP_MDP *mdp, SharedMDPData &data, std::string name)
+void load_mdp(MDP *mdp, SharedMDPData &data, std::string name)
 {
     std::ifstream is(name, std::ios::binary);
     cereal::BinaryInputArchive archive(is);
@@ -53,7 +53,7 @@ void load_mdp(CPP_MDP *mdp, SharedMDPData &data, std::string name)
     mdp->successors = &data.successors;
 }
 
-void save_brtdp(CPP_BRTDP *brtdp, std::string name)
+void save_brtdp(BRTDP *brtdp, std::string name)
 {
     std::ofstream os(name, std::ios::binary);
     cereal::BinaryOutputArchive archive(os);
@@ -70,7 +70,7 @@ void save_brtdp(CPP_BRTDP *brtdp, std::string name)
     );
 }
 
-void load_brtdp(CPP_BRTDP *brtdp, SharedBRTDPData &data, std::string name)
+void load_brtdp(BRTDP *brtdp, SharedBRTDPData &data, std::string name)
 {
     std::ifstream is(name, std::ios::binary);
     cereal::BinaryInputArchive archive(is);
@@ -92,4 +92,47 @@ void load_brtdp(CPP_BRTDP *brtdp, SharedBRTDPData &data, std::string name)
     brtdp->P = &data.P;
 
     brtdp->data = &data.data;
+}
+
+void save_dstar(DStar_Lite *dstar, std::string name)
+{
+    std::ofstream os(name, std::ios::binary);
+    cereal::BinaryOutputArchive archive(os);
+    archive(
+        dstar->rhs,
+        dstar->g,
+        dstar->U,
+        dstar->k,
+        dstar->start,
+        dstar->goal,
+        *(dstar->predecessors),
+        *(dstar->successors),
+        *(dstar->data),
+        *(dstar->cost),
+        dstar->nodes
+    );
+}
+
+void load_dstar(DStar_Lite *dstar, SharedDStarLiteData &data, std::string name)
+{
+    std::ifstream is(name, std::ios::binary);
+    cereal::BinaryInputArchive archive(is);
+    archive(
+        dstar->rhs,
+        dstar->g,
+        dstar->U,
+        dstar->k,
+        dstar->start,
+        dstar->goal,
+        data.predecessors,
+        data.successors,
+        data.data,
+        data.cost,
+        dstar->nodes
+    );
+
+    dstar->predecessors = &data.predecessors;
+    dstar->successors = &data.successors;
+    dstar->data = &data.data;
+    dstar->cost = &data.cost;
 }

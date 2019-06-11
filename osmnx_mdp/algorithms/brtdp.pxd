@@ -10,7 +10,7 @@ cdef extern from "cpp_brtdp.hpp":
     struct pair_hash:
         long operator(pair[long, long])
 
-    cppclass CPP_BRTDP:
+    cppclass CPP_BRTDP "BRTDP":
         CPP_BRTDP()
 
         dense_hash_map[long, double] vl
@@ -23,7 +23,6 @@ cdef extern from "cpp_brtdp.hpp":
             dense_hash_map[long, pair[float, float]] *data
         )
         int setup(long start, long goal)
-        int run_sample_trial()
         int run_trials()
         vector[long] get_path(dense_hash_map[long, long] diverge_policy)
 

@@ -5,22 +5,23 @@
 #include "../serialize_util.hpp"
 
 
-CPP_BRTDP::CPP_BRTDP() {};
-CPP_BRTDP::~CPP_BRTDP() {};
+BRTDP::BRTDP() {};
+BRTDP::~BRTDP() {};
 
-double CPP_BRTDP::get_Q_value(
+double BRTDP::get_Q_value(
         google::dense_hash_map<long, double> &v,
         const long &s,
-        const std::pair<long, long> &a) {
-    double immediate_cost = (*this->C)[a];
+        const std::pair<long, long> &a)
+{
+    const double immediate_cost = (*this->C)[a];
     double future_cost = 0;
-    for (auto &outcome : (*this->P)[s][a]) {
+    for (const auto &outcome : (*this->P)[s][a]) {
         future_cost += outcome.second * v[outcome.first];
     }
     return immediate_cost + future_cost;
 }
 
-int CPP_BRTDP::init(
+int BRTDP::init(
         std::vector<long> *S,
         google::dense_hash_map<long, std::vector<std::pair<long, long>>> *A,
         google::dense_hash_map<std::pair<long, long>, float, pair_hash> *C,
@@ -32,7 +33,8 @@ int CPP_BRTDP::init(
                 pair_hash
             >
         > *P,
-        google::dense_hash_map<long, std::pair<float, float>> *data) {
+        google::dense_hash_map<long, std::pair<float, float>> *data)
+{
     this->S = S;
     this->A = A;
     this->C = C;
@@ -46,19 +48,20 @@ int CPP_BRTDP::init(
     return 0;
 }
 
-int CPP_BRTDP::setup(long start, long goal) {
+int BRTDP::setup(const long &start, const long &goal)
+{
     this->start = start;
     this->goal = goal;
 
     std::default_random_engine rd;
     this->random_generator = std::default_random_engine(rd());
 
-    double lat2 = (*this->data)[this->goal].first;
-    double lon2 = (*this->data)[this->goal].second;
+    const double lat2 = (*this->data)[this->goal].first;
+    const double lon2 = (*this->data)[this->goal].second;
 
-    for (auto &x : *data) {
-        double lat1 = x.second.first;
-        double lon1 = x.second.second;
+    for (const auto &x : *data) {
+        const double lat1 = x.second.first;
+        const double lon1 = x.second.second;
 
         // TODO is this best choice ? 50 and 10 ?
         this->vl[x.first] = aerial_dist(lat1, lon1, lat2, lon2) / 100;
@@ -68,10 +71,13 @@ int CPP_BRTDP::setup(long start, long goal) {
     return 0;
 }
 
-std::pair<std::pair<long, long>, double> CPP_BRTDP::get_minimum_action(google::dense_hash_map<long, double> &v, const long &node) {
+std::pair<std::pair<long, long>, double> BRTDP::get_minimum_action(
+        google::dense_hash_map<long, double> &v,
+        const long &node)
+{
     std::pair<long, long> curr_min_action;
     double curr_min = INFINITY;
-    for (auto &a : (*this->A)[node]) {
+    for (const auto &a : (*this->A)[node]) {
         double q_val = get_Q_value(v, node, a);
         if (q_val < curr_min) {
             curr_min = q_val;
@@ -82,14 +88,20 @@ std::pair<std::pair<long, long>, double> CPP_BRTDP::get_minimum_action(google::d
 }
 
 // TODO RENAME
-std::pair<long, long> CPP_BRTDP::update_v(google::dense_hash_map<long, double> &v, const long &node) {
-    auto min_action = this->get_minimum_action(v, node);
+std::pair<long, long> BRTDP::update_v(
+        google::dense_hash_map<long, double> &v,
+        const long &node)
+{
+    const auto min_action = this->get_minimum_action(v, node);
     v[node] = min_action.second;
     return min_action.first;
 }
 
-// TODO See header for default values alpha=0.001, t=10
-int CPP_BRTDP::run_trials(double alpha, double tau) {
+int BRTDP::run_trials(const double &alpha, const double &tau)
+{
+    // Defaults:
+    //  alpha = 1e-10
+    //  t = 10
 #ifdef TESTS
     save_brtdp(this, "BRTDPrun_trials.cereal");
     this->random_generator.seed(42069);
@@ -105,47 +117,73 @@ int CPP_BRTDP::run_trials(double alpha, double tau) {
     return 0;
 }
 
-int CPP_BRTDP::run_trial(double tau) {
-    long x = this->start;
+double BRTDP::get_outcome_distribution(
+        const std::pair<long, long> &curr_min_action,
+        std::vector<float> &distribution)
+{
+    // Generate a outcome distribution based on the inconsistency between the
+    // upper bound and the lower bound, i.e. the more inconsistent, the higher
+    // the chance to select that outcome.
+    // BRTDP visits unexplored nodes that way.
+    // TODO: There's also other ways to select the next node, check paper.
+    const long node = curr_min_action.first;
+    double B = 0;
+    for (auto &outcome : (*this->P)[node][curr_min_action]) {
+        double cost = outcome.second * (this->vu[outcome.first] - this->vl[outcome.first]);
+        distribution.push_back(cost);
+        B += cost;
+    }
+    return B;
+}
+
+long BRTDP::select_node_probabilistically(
+        const std::pair<long, long> &curr_min_action,
+        const std::vector<float> &distribution_param)
+{
+    // Based on an action, select the next node out of the outcomes
+    // probabilistcally.
+    std::discrete_distribution<int> distribution(distribution_param.begin(), distribution_param.end());
+    const int n = distribution(this->random_generator);
+    return (*this->P)[curr_min_action.first][curr_min_action][n].first;
+}
+
+int BRTDP::run_trial(const double &tau)
+{
+    long node = this->start;
 
     std::stack<long> traj;
 
     while (true) {
-        if (x == this->goal)
+        if (node == this->goal)
             break;
 
-        traj.push(x);
+        traj.push(node);
 
-        this->update_v(this->vu, x);
-        std::pair<long, long> curr_min_action = this->update_v(this->vl, x);
+        this->update_v(this->vu, node);
+        const auto curr_min_action = this->update_v(this->vl, node);
 
         std::vector<float> distribution_param;
-        double B = 0;
-        for (auto &outcome : (*this->P)[x][curr_min_action]) {
-            double cost = outcome.second * (this->vu[outcome.first] - this->vl[outcome.first]);
-            distribution_param.push_back(cost);
-            B += cost;
-        }
-        
+        const double B = get_outcome_distribution(curr_min_action, distribution_param);
+
         if (B < ((this->vu[this->start] - this->vl[this->start]) / tau))
             break;
 
-        std::discrete_distribution<int> distribution(distribution_param.begin(), distribution_param.end());
-        int n = distribution(this->random_generator);
-        x = (*this->P)[x][curr_min_action][n].first;
+        node = select_node_probabilistically(curr_min_action, distribution_param);
     }
 
     while (!traj.empty()) {
-        long x = traj.top();
+        const long node = traj.top();
         traj.pop();
-        this->update_v(this->vu, x);
-        this->update_v(this->vl, x);
+        this->update_v(this->vu, node);
+        this->update_v(this->vl, node);
     }
 
     return 0;
 }
 
-std::vector<long> CPP_BRTDP::get_path(google::dense_hash_map<long, long> diverge_policy) {
+std::vector<long> BRTDP::get_path(
+        google::dense_hash_map<long, long> &diverge_policy)
+{
 #ifdef TESTS
     save_brtdp(this, "BRTDPget_path.cereal");
 #endif
@@ -158,7 +196,7 @@ std::vector<long> CPP_BRTDP::get_path(google::dense_hash_map<long, long> diverge
     while (curr_node != this->goal) {
         path.push_back(curr_node);
 
-        long diverged_node = diverge_policy[curr_node];
+        const long diverged_node = diverge_policy[curr_node];
         if (diverged_node == 0 || visited.find(diverged_node) != visited.end()) {
             // TODO: Updating the value here seems incorrect.
             // It makes sure we never loop, however quality can get really bad.
@@ -166,14 +204,13 @@ std::vector<long> CPP_BRTDP::get_path(google::dense_hash_map<long, long> diverge
             //std::pair<long, long> curr_min_action = this->update_v(this->vl, curr_node);
             //curr_node = curr_min_action.second;
 
-            auto min_action = this->get_minimum_action(this->vl, curr_node);
+            const auto min_action = this->get_minimum_action(this->vl, curr_node);
 
-            long last_node = curr_node;
+            const long last_node = curr_node;
             curr_node = min_action.first.second;
 
             // This is quite a difference to vanilla BRTDP. But it's needed,
             // else we crash because of our hard diverge policies.
-
             if (visited.find(curr_node) != visited.end()) {
                 // If we're looping, fix this by updating the value of the node.
                 // This is most likely because we diverged too far and BRTDP
@@ -183,7 +220,6 @@ std::vector<long> CPP_BRTDP::get_path(google::dense_hash_map<long, long> diverge
                 //std::cout << curr_node << " " << this->vu[curr_node] - this->vl[curr_node] << std::endl;
                 curr_node = this->update_v(this->vl, last_node).second;
             }
-            visited.insert(curr_node);
         } else {
             curr_node = diverged_node;
         }

@@ -30,6 +30,7 @@ data = np.array(data)
 
 mdp = data[:, np.where(data[0]['algorithm'] == 'MDP')]
 brtdp = data[:, np.where(data[0]['algorithm'] == 'BRTDP')]
+brtdp_replan = data[:, np.where(data[0]['algorithm'] == 'BRTDP_REPLAN')]
 dstar = data[:, np.where(data[0]['algorithm'] == 'DStar_Lite')]
 
 
@@ -89,6 +90,7 @@ ax2.set_ylabel('Driving time in minutes')
 # ffaa00 <<<<<<<<<<<<<<
 draw('Value Iteration', mdp, 'r', ax, ax2)
 draw('BRTDP', brtdp, '#ffaa00', ax, ax2)
+draw('BRTDP_REPLAN', brtdp_replan, 'r', ax, ax2)
 draw('D* Lite', dstar, 'g', ax, ax2)
 
 ax.legend(loc='upper left')
@@ -96,6 +98,6 @@ ax2.legend(loc='upper right')
 
 plt.title('Comparison of planners')
 
-draw_setin((brtdp, '#ffaa00'), (dstar, 'g'))
+#draw_setin((brtdp, '#ffaa00'), (dstar, 'g'))
 
 plt.show()

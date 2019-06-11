@@ -26,13 +26,17 @@ struct pair_hash {
     }
 };
 
-float get_angle(
-        float p1_x,
-        float p1_y,
-        float p2_x,
-        float p2_y,
-        float origin_x,
-        float origin_y);
+std::vector<std::pair<std::pair<long, long>, std::pair<long, long>>> combinations(
+        long origin_node,
+        std::vector<long> successors);
+
+double get_angle(
+        double p1_x,
+        double p1_y,
+        double p2_x,
+        double p2_y,
+        double origin_x,
+        double origin_y);
 
 // Returns aerial distance in km.
 //

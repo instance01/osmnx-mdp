@@ -17,7 +17,6 @@ cdef class DStar_Lite(osmnx_mdp.algorithms.algorithm.Algorithm):
         self.successors.set_empty_key(0)
         self.predecessors.set_empty_key(0)
 
-        # TODO Unreadable
         for node in self.G.nodes.data():
             node_id = node[0]
 
@@ -30,12 +29,11 @@ cdef class DStar_Lite(osmnx_mdp.algorithms.algorithm.Algorithm):
             for succ in node_successors:
                 self.cost[(node_id, succ)] = get_edge_cost(self.G, node_id, succ)
 
-        self.cpp = cpp_DStar_Lite()
+        self.cpp = CPP_DStar_Lite()
         self.cpp.init(&self.predecessors, &self.successors, &self.cost, &self.data)
         self.cpp.setup(start, goal)
 
-    # TODO Rename heuristic_func to heuristic
-    cdef heuristic_func(self, node):
+    cdef heuristic(self, node):
         return self.cpp.heuristic(node)
 
     cdef calculate_key(self, node):

@@ -38,38 +38,14 @@ cdef get_edge_cost(G, node_from, node_to):
     return length / maxspeed
 
 
-cdef get_angle(p1, p2, origin):
-    p1 = np.array(p1) - origin
-    p2 = np.array(p2) - origin
-
-    # arctan2 gives us the angle between the ray from the origin to the point
-    # and the x axis.
-    # Thus, to get the angle between two points, simply get the difference
-    # between their two angles to the x axis.
-    angle = np.arctan2(*p2) - np.arctan2(*p1)
-    return np.degrees(angle)
-
-
 cdef aerial_dist(node1, node2, R=6356.8):
-    # TODO: Use osmnx
-    # great_circle_vec(lat1, lng1, lat2, lng2, earth_radius=6371009)
-    """Haversine
-    R shall be radius of earth in km.
-
-    Returns aerial distance in km.
-
-    Source:
-    R. W. Sinnott, "Virtues of the Haversine", Sky and Telescope 68 (2), p.159 (1984).
-    """
-    lon1 = math.radians(node1['lon'])
-    lon2 = math.radians(node2['lon'])
-    lat1 = math.radians(node1['lat'])
-    lat2 = math.radians(node2['lat'])
-    d = math.sin((lat2 - lat1) / 2) ** 2 + \
-        math.cos(lat1) * \
-        math.cos(lat2) * \
-        math.sin((lon2 - lon1) / 2) ** 2
-    return R * 2 * math.asin(d ** .5)
+    return cpp_aerial_dist(
+        <double>node1['lat'],
+        <double>node1['lon'],
+        <double>node2['lat'],
+        <double>node2['lon'],
+        <double>R
+    )
 
 
 cdef get_time_to_drive(col_nodes, G):

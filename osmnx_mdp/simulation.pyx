@@ -13,7 +13,6 @@ from osmnx_mdp.lib cimport remove_dead_ends
 from osmnx_mdp.lib cimport remove_zero_cost_loops
 from osmnx_mdp.lib cimport get_time_to_drive
 from osmnx_mdp.algorithms.mdp cimport MDP
-from osmnx_mdp.algorithms.rtdp cimport RTDP
 from osmnx_mdp.algorithms.brtdp cimport BRTDP
 from osmnx_mdp.algorithms.brtdp_replan cimport BRTDP_REPLAN
 from osmnx_mdp.algorithms.dstar_lite cimport DStar_Lite
@@ -331,7 +330,7 @@ def run_simulations(iterations=1):
     # maxtasksperchild=1 to make sure resources are cleaned up completely after
     # a worker finishes. So memory access to the hashmaps isn't different in
     # subsequent runs for some algorithms.
-    pool = multiprocessing.Pool(processes=4, maxtasksperchild=1)
+    pool = multiprocessing.Pool(processes=2, maxtasksperchild=1)
 
     for _ in range(iterations):
         # TODO: Rename all this

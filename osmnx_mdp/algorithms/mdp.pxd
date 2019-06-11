@@ -7,16 +7,17 @@ from libcpp.set cimport set as cset
 
 from osmnx_mdp.algorithms.dense_hash_map cimport dense_hash_map
 
+
 cdef extern from "cpp_mdp.hpp":
     struct pair_hash:
         long operator(pair[long, long])
-    struct CPP_Intersection:
+    struct CPP_Intersection "Intersection":
         long left_node
         long right_node
         long straight_on_node
         pair[long, long] origin_edge
 
-    cppclass CPP_MDP:
+    cppclass CPP_MDP "MDP":
         CPP_MDP();
 
         vector[long] *S
@@ -92,9 +93,6 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
     cdef dense_hash_map[long, vector[long]] successors
 
     cdef CPP_MDP cpp
-
-    cdef _setup_cpp(self)
-
     cdef G
 
     cdef long start
@@ -105,6 +103,7 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
 
     cdef set uncertain_nodes
 
+    cdef _setup_cpp(self)
     cdef setup(self, long start, long goal)
     cdef solve_value_iteration(self, float gamma=*, int max_iter=*, double eps=*, bint verbose=*)
     cdef get_policy(self, V)

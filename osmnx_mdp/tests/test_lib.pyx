@@ -19,7 +19,7 @@ class TestLib(unittest.TestCase):
         node1 = {'lat': 48.1473983, 'lon': 11.5631933}
         node2 = {'lat': 48.1501208, 'lon': 11.5810993}
 
-        self.assertEqual(aerial_dist(node1, node2), 1.3594507251718166)
+        self.assertEqual(aerial_dist(node1, node2), 1.359450725171816)
 
         # Since we need an admissible heuristic, simply make sure not to
         # over estimate the distance.
@@ -54,11 +54,11 @@ class TestLib(unittest.TestCase):
         self.assertEqual(get_edge_cost(G, 1, 2), 0.001)
 
     def test_get_angle(self):
-        self.assertEqual(get_angle((0, 1), (1, 0), (0, 0)), 90.)
-        self.assertEqual(get_angle((0, .5), (1, 0), (0, 0)), 90.)
-        self.assertEqual(get_angle((.5, .5), (1, 0), (0, 0)), 45.)
-        self.assertEqual(get_angle((-.5, -.5), (1, 0), (0, 0)), 225.)
-        self.assertEqual(get_angle((-1, 0), (1, 0), (0, 0)), 180.)
+        self.assertEqual(get_angle(0, 1, 1, 0, 0, 0), 90.)
+        self.assertEqual(get_angle(0, .5, 1, 0, 0, 0), 90.)
+        self.assertEqual(get_angle(.5, .5, 1, 0, 0, 0), 45.)
+        self.assertEqual(get_angle(-.5, -.5, 1, 0, 0, 0), 225.)
+        self.assertEqual(get_angle(-1, 0, 1, 0, 0, 0), 180.)
         # TODO: More test cases
 
     def test_get_time_to_drive(self):

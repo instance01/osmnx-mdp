@@ -3,8 +3,6 @@
 from libcpp.pair cimport pair
 from libcpp.vector cimport vector
 
-from osmnx_mdp.algorithms.dense_hash_map cimport dense_hash_map
-
 from osmnx_mdp.lib cimport get_edge_cost
 
 

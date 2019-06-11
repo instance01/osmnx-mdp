@@ -7,25 +7,19 @@
 #include "../cpp_lib.hpp"
 
 
-class CPP_BRTDP {
+class BRTDP {
     public:
-        CPP_BRTDP();
-        virtual ~CPP_BRTDP();
+        BRTDP();
+        virtual ~BRTDP();
+
+        std::default_random_engine random_generator;
 
         long start;
         long goal;
 
-        std::default_random_engine random_generator;
-
-        // TODO: The names may make sense with the paper, but not for anyone else, rename.
-        google::dense_hash_map<long, double> vu;
-        google::dense_hash_map<long, double> vl;
-
         std::vector<long> *S;
         google::dense_hash_map<long, std::vector<std::pair<long, long>>> *A;
         google::dense_hash_map<std::pair<long, long>, float, pair_hash> *C;
-        // TODO It is needed that this is DOUBLE. Especially (B)RTDP
-        // needs precision. Who knows how bad the effect in VI is.
         google::dense_hash_map<
             long,
             google::dense_hash_map<
@@ -36,14 +30,20 @@ class CPP_BRTDP {
         > *P;
         google::dense_hash_map<long, std::pair<float, float>> *data;
 
+        // TODO: The names may make sense with the paper, but not for anyone else, rename.
+        google::dense_hash_map<long, double> vu;
+        google::dense_hash_map<long, double> vl;
+
         double get_Q_value(
-                google::dense_hash_map<long, double> &v,
-                const long &s,
-                const std::pair<long, long> &a);
+            google::dense_hash_map<long, double> &v,
+            const long &s,
+            const std::pair<long, long> &a);
         std::pair<std::pair<long, long>, double> get_minimum_action(
-                google::dense_hash_map<long, double> &v,
-                const long &x);
-        std::pair<long, long> update_v(google::dense_hash_map<long, double> &v, const long &x);
+            google::dense_hash_map<long, double> &v,
+            const long &x);
+        std::pair<long, long> update_v(
+            google::dense_hash_map<long, double> &v,
+            const long &x);
         int init(
             std::vector<long> *S,
             google::dense_hash_map<long, std::vector<std::pair<long, long>>> *A,
@@ -57,9 +57,15 @@ class CPP_BRTDP {
                 >
             > *P,
             google::dense_hash_map<long, std::pair<float, float>> *data);
-        int setup(long start, long goal);
-        int run_trial(double t);
-        int run_trials(double alpha=1e-10, double t=10);
-        std::vector<long> get_path(google::dense_hash_map<long, long> diverge_policy);
+        int setup(const long &start, const long &goal);
+        int run_trial(const double &t);
+        double get_outcome_distribution(
+            const std::pair<long, long> &curr_min_action,
+            std::vector<float> &distribution);
+        long select_node_probabilistically(
+            const std::pair<long, long> &curr_min_action,
+            const std::vector<float> &distribution);
+        int run_trials(const double &alpha=1e-10, const double &t=10);
+        std::vector<long> get_path(google::dense_hash_map<long, long> &diverge_policy);
 };
 #endif

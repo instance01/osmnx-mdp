@@ -3,6 +3,7 @@
 #include <google/dense_hash_map>
 #include <vector>
 #include <set>
+#include <unordered_set>
 
 #include "../cpp_lib.hpp"
 
@@ -10,26 +11,31 @@
 // TODO Rename CPP_* things
 // C++ has camelcase style
 
-struct CPP_Intersection {
+struct Intersection {
     long left_node;
     long right_node;
     long straight_on_node;
     std::pair<long, long> origin_edge;
-    bool operator==(CPP_Intersection other) const{
-        if (
-                left_node == other.left_node &&
-                right_node == other.right_node &&
-                straight_on_node == other.straight_on_node)
-            return true;
-        return false;
+    bool operator==(Intersection other) const{
+        return left_node == other.left_node &&
+            right_node == other.right_node &&
+            straight_on_node == other.straight_on_node;
+    };
+};
+
+struct intersection_hash {
+    // Same as pair_hash from cpp_lib.hpp
+    long long operator () (const Intersection &intersection) const {
+        long long ret = intersection.origin_edge.first;
+        ret <<= 32;
+        return ret + intersection.origin_edge.second;
     }
 };
 
-
-class CPP_MDP {
+class MDP {
     public:
-        CPP_MDP();
-        ~CPP_MDP();
+        MDP();
+        ~MDP();
 
         std::vector<long> *S;
         google::dense_hash_map<long, std::vector<std::pair<long, long>>> *A;
@@ -53,7 +59,7 @@ class CPP_MDP {
         long goal;
 
         std::vector<long> angle_nodes;
-        std::vector<CPP_Intersection> close_intersections;
+        std::unordered_set<Intersection, intersection_hash> close_intersections;
         google::dense_hash_map<std::pair<long, long>, double, pair_hash> *edge_data;
         google::dense_hash_map<long, std::pair<double, double>> *node_data;
         google::dense_hash_map<long, std::vector<long>> *successors;
@@ -75,15 +81,9 @@ class CPP_MDP {
             google::dense_hash_map<std::pair<long, long>, double, pair_hash> *edge_data,
             google::dense_hash_map<long, std::pair<double, double>> *node_data,
             google::dense_hash_map<long, std::vector<long>> *successors);
-        int setup(long start, long goal);
+        int setup(const long &start, const long &goal);
         int make_goal_self_absorbing();
 
-        // Make taking the action of following given edge probabilistic,
-        // i.e. end up in the expected edge only 90% of the time and end
-        // up in other_node 10% of the time.
-        // If the edge is already probabilistic, decrease its chance (e.g.
-        // from 90% to 80% and so on).
-        // Modifies temp_P inplace.
         int make_edge_uncertain(
             google::dense_hash_map<
                 std::pair<long, long>,
@@ -92,11 +92,18 @@ class CPP_MDP {
             > &temp_P,
             const std::pair<long, long> &edge,
             const long &other_node);
+        int make_intersection_uncertain(const Intersection &intersection, const long &intersection_node);
         int get_normal_intersections(
-                google::dense_hash_map<std::pair<long, long>, CPP_Intersection, pair_hash> &out);
-        int make_close_intersections_uncertain(float max_length=100);
-        int make_low_angle_intersections_uncertain(float max_angle=30);
-        int solve(int max_iter=50000, double eps=1e-20);
+            google::dense_hash_map<std::pair<long, long>, Intersection, pair_hash> &out);
+        int make_close_intersections_uncertain(const float &max_length=100);
+        int make_low_angle_intersections_uncertain(const float &max_angle=30);
+        double get_Q_value(
+            google::dense_hash_map<long, float> prev_V,
+            const long &s,
+            const std::pair<long, long> &a);
+        google::dense_hash_map<long, google::dense_hash_map<std::pair<long, long>, float, pair_hash>> init_Q();
+        bool converged(google::dense_hash_map<long, float> prev_V, const double &eps);
+        int solve(const int &max_iter=50000, const double &eps=1e-20);
         int get_policy();
         std::vector<long> drive(google::dense_hash_map<long, long> &diverge_policy);
 };

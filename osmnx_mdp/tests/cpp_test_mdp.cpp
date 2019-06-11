@@ -13,13 +13,13 @@
 // }
 
 TEST_CASE("Make sure goal becomes self absorbing", "[make_goal_self_absorbing]") {
-    CPP_MDP mdp;
+    MDP mdp;
     SharedMDPData data;
     load_mdp(&mdp, data, "data/MDPmake_goal_self_absorbing.cereal");
 
     mdp.make_goal_self_absorbing();
 
-    CPP_MDP mdp_want;
+    MDP mdp_want;
     SharedMDPData data_want;
     load_mdp(&mdp_want, data_want, "data/MDPmake_goal_self_absorbingWANT.cereal");
 
@@ -30,31 +30,40 @@ TEST_CASE("Make sure goal becomes self absorbing", "[make_goal_self_absorbing]")
 }
 
 TEST_CASE("Make sure we generate correct normal intersections", "[get_normal_intersections]") {
-    CPP_MDP mdp;
+    MDP mdp;
     SharedMDPData data;
     load_mdp(&mdp, data, "data/MDPmake_close_intersections_uncertain.cereal");
 
-    google::dense_hash_map<std::pair<long, long>, CPP_Intersection, pair_hash> intersections;
+    google::dense_hash_map<std::pair<long, long>, Intersection, pair_hash> intersections;
     mdp.get_normal_intersections(intersections);
 
-    google::dense_hash_map<std::pair<long, long>, CPP_Intersection, pair_hash> intersections_want;
+    google::dense_hash_map<std::pair<long, long>, Intersection, pair_hash> intersections_want;
     {
         std::ifstream is("data/MDPget_normal_intersectionsWANT.cereal", std::ios::binary);
         cereal::BinaryInputArchive archive(is);
         archive(intersections_want);
     }
 
+    for (auto &x : intersections_want) {
+        if (!(x.second == intersections[x.first])) {
+            std::cout << "FUCK" << std::endl;
+            std::cout << x.second.left_node << " " << x.second.right_node << std::endl;
+            std::cout << intersections[x.first].left_node << " " << intersections[x.first].right_node << std::endl;
+        }
+        //std::cout << x.second.left_node << " " << intersections_want[x.first].left_node << std::endl;
+    }
+
     REQUIRE(intersections == intersections_want);
 }
 
 TEST_CASE("Make sure make_close_intersections_uncertain works.", "[make_close_intersections_uncertain]") {
-    CPP_MDP mdp;
+    MDP mdp;
     SharedMDPData data;
     load_mdp(&mdp, data, "data/MDPmake_close_intersections_uncertain.cereal");
 
     mdp.make_close_intersections_uncertain();
 
-    CPP_MDP mdp_want;
+    MDP mdp_want;
     SharedMDPData data_want;
     load_mdp(&mdp_want, data_want, "data/MDPmake_close_intersections_uncertainWANT.cereal");
 
@@ -66,13 +75,13 @@ TEST_CASE("Make sure make_close_intersections_uncertain works.", "[make_close_in
 }
 
 TEST_CASE("Make sure make_low_angle_intersections_uncertain works.", "[make_low_angle_intersections_uncertain]") {
-    CPP_MDP mdp;
+    MDP mdp;
     SharedMDPData data;
     load_mdp(&mdp, data, "data/MDPmake_low_angle_intersections_uncertain.cereal");
 
     mdp.make_low_angle_intersections_uncertain();
 
-    CPP_MDP mdp_want;
+    MDP mdp_want;
     SharedMDPData data_want;
     load_mdp(&mdp_want, data_want, "data/MDPmake_low_angle_intersections_uncertainWANT.cereal");
 
@@ -86,7 +95,7 @@ TEST_CASE("Make sure make_low_angle_intersections_uncertain works.", "[make_low_
 }
 
 TEST_CASE("Make sure solving with value iteration works.", "[solve]") {
-    CPP_MDP mdp;
+    MDP mdp;
     SharedMDPData data;
     load_mdp(&mdp, data, "data/MDPsolve.cereal");
 
@@ -94,7 +103,7 @@ TEST_CASE("Make sure solving with value iteration works.", "[solve]") {
     mdp.solve();
     std::cout << "Done." << std::endl;
 
-    CPP_MDP mdp_want;
+    MDP mdp_want;
     SharedMDPData data_want;
     load_mdp(&mdp_want, data_want, "data/MDPsolveWANT.cereal");
 
@@ -102,11 +111,17 @@ TEST_CASE("Make sure solving with value iteration works.", "[solve]") {
     REQUIRE(*(mdp.A) == *(mdp_want.A));
     REQUIRE(*(mdp.C) == *(mdp_want.C));
     REQUIRE(*(mdp.P) == *(mdp_want.P));
+
+    // for (auto &x : mdp.V) {
+    //     if (x.second != mdp_want.V[x.first])
+    //         std::cout << x.second << " " << mdp_want.V[x.first] << std::endl;
+    // }
+
     REQUIRE(mdp.V == mdp_want.V);
 }
 
 TEST_CASE("Make sure driving is correct.", "[drive]") {
-    CPP_MDP mdp;
+    MDP mdp;
     SharedMDPData data;
     load_mdp(&mdp, data, "data/MDPdrive.cereal");
 

@@ -42,6 +42,7 @@ setup(
         ),
         "osmnx_mdp/algorithms/*.pyx",
         "osmnx_mdp/*.pyx",
+        "osmnx_mdp/debug/*.pyx",
         "osmnx_mdp/tests/*.pyx",
     ],
         language="c++",

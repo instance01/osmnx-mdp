@@ -2,13 +2,32 @@
 #include <cmath>
 
 
-float get_angle(
-        float p1_x,
-        float p1_y,
-        float p2_x,
-        float p2_y,
-        float origin_x,
-        float origin_y) {
+std::vector<std::pair<std::pair<long, long>, std::pair<long, long>>> combinations(
+        long origin_node,
+        std::vector<long> successors)
+{
+    std::vector<std::pair<std::pair<long, long>, std::pair<long, long>>> out;
+
+    for (unsigned long i = 0; i < successors.size(); ++i) {
+        for (unsigned long j = 0; j < successors.size(); ++j) {
+            if (i >= j)
+                continue;
+            std::pair<long, long> edge1(origin_node, successors[i]);
+            std::pair<long, long> edge2(origin_node, successors[j]);
+            out.push_back({edge1, edge2});
+        }
+    }
+
+    return out;
+}
+
+double get_angle(
+        double p1_x,
+        double p1_y,
+        double p2_x,
+        double p2_y,
+        double origin_x,
+        double origin_y) {
     p1_x -= origin_x;
     p1_y -= origin_y;
     p2_x -= origin_x;
@@ -18,7 +37,7 @@ float get_angle(
     // and the x axis.
     // Thus, to get the angle between two points, simply get the difference
     // between their two angles to the x axis.
-    float angle = atan2(p2_x, p2_y) - atan2(p1_x, p1_y);
+    double angle = atan2(p2_x, p2_y) - atan2(p1_x, p1_y);
     return 180 * angle / M_PI;
 }
 

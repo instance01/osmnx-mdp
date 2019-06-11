@@ -8,8 +8,8 @@ from osmnx_mdp.algorithms.dense_hash_map cimport dense_hash_map
 cdef extern from "cpp_dstar_lite.cpp":
     struct pair_hash:
         long long operator(pair[long, long] p)
-    cppclass cpp_DStar_Lite:
-        cpp_DStar_Lite()
+    cppclass CPP_DStar_Lite "DStar_Lite":
+        CPP_DStar_Lite()
         dense_hash_map[long, float] rhs
         dense_hash_map[long, float] g
         dense_hash_map[long, pair[float, float]] U
@@ -42,7 +42,7 @@ cdef class DStar_Lite(osmnx_mdp.algorithms.algorithm.Algorithm):
     cdef dense_hash_map[pair[long, long], float, pair_hash] cost
     cdef dense_hash_map[long, pair[float, float]] data
 
-    cdef cpp_DStar_Lite cpp
+    cdef CPP_DStar_Lite cpp
 
     cdef G
     cdef rhs
@@ -56,7 +56,7 @@ cdef class DStar_Lite(osmnx_mdp.algorithms.algorithm.Algorithm):
     cdef long goal
 
     cdef setup(self, long start, long goal)
-    cdef heuristic_func(self, node)
+    cdef heuristic(self, node)
     cdef calculate_key(self, node)
     cdef update_vertex(self, u)
     cdef compute_shortest_path(self)
