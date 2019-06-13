@@ -98,11 +98,11 @@ class MDP {
         int make_close_intersections_uncertain(const float &max_length=100);
         int make_low_angle_intersections_uncertain(const float &max_angle=30);
         double get_Q_value(
-            google::dense_hash_map<long, float> prev_V,
+            google::dense_hash_map<long, float> &prev_V,
             const long &s,
             const std::pair<long, long> &a);
         google::dense_hash_map<long, google::dense_hash_map<std::pair<long, long>, float, pair_hash>> init_Q();
-        bool converged(google::dense_hash_map<long, float> prev_V, const double &eps);
+        bool converged(google::dense_hash_map<long, float> &prev_V, const double &eps);
         int solve(const int &max_iter=50000, const double &eps=1e-20);
         int get_policy();
         std::vector<long> drive(google::dense_hash_map<long, long> &diverge_policy);

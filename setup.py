@@ -18,22 +18,22 @@ setup(
         Extension(
             "cpp_mdp",
             ["osmnx_mdp/algorithms/cpp_mdp.cpp", "osmnx_mdp/serialize_util.cpp"],
-            include_dirs=["osmnx_mdp/algorithms/"]
+            include_dirs=["osmnx_mdp/external/"]
         ),
         Extension(
             "cpp_dstar_lite",
             ["osmnx_mdp/algorithms/cpp_dstar_lite.cpp"],
-            include_dirs=["osmnx_mdp/algorithms/"]
+            include_dirs=["osmnx_mdp/external/"]
         ),
         Extension(
             "cpp_brtdp",
             ["osmnx_mdp/algorithms/cpp_brtdp.cpp", "osmnx_mdp/serialize_util.cpp"],
-            include_dirs=["osmnx_mdp/algorithms/"]
+            include_dirs=["osmnx_mdp/external/"]
         ),
         Extension(
             "cpp_brtdp_replan",
             ["osmnx_mdp/algorithms/cpp_brtdp_replan.cpp"],
-            include_dirs=["osmnx_mdp/algorithms/"]
+            include_dirs=["osmnx_mdp/external/"]
         ),
         Extension(
             "lib",
@@ -46,6 +46,6 @@ setup(
         "osmnx_mdp/tests/*.pyx",
     ],
         language="c++",
-        include_path=["osmnx_mdp/algorithms/"]
+        include_path=["osmnx_mdp/external/"]
     )
 )

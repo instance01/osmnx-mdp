@@ -373,7 +373,7 @@ int MDP::make_low_angle_intersections_uncertain(const float &max_angle) {
 
 // TODO Same as BRTDP
 double MDP::get_Q_value(
-        google::dense_hash_map<long, float> prev_V,
+        google::dense_hash_map<long, float> &prev_V,
         const long &s,
         const std::pair<long, long> &a)
 {
@@ -401,7 +401,7 @@ google::dense_hash_map<long, google::dense_hash_map<std::pair<long, long>, float
     return Q;
 }
 
-bool MDP::converged(google::dense_hash_map<long, float> prev_V, const double &eps) {
+bool MDP::converged(google::dense_hash_map<long, float> &prev_V, const double &eps) {
     double c = 0;
     auto V_iter = this->V.begin();
     auto prev_V_iter = prev_V.begin();
