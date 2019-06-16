@@ -64,7 +64,7 @@ int BRTDP::setup(const long &start, const long &goal)
         const double lon1 = x.second.second;
 
         // TODO is this best choice ? 50 and 10 ?
-        this->vl[x.first] = aerial_dist(lat1, lon1, lat2, lon2) / 100;
+        this->vl[x.first] = aerial_dist(lat1, lon1, lat2, lon2) / 160;
         this->vu[x.first] = aerial_dist(lat1, lon1, lat2, lon2) / 10;
     }
 
@@ -198,28 +198,8 @@ std::vector<long> BRTDP::get_path(
 
         const long diverged_node = diverge_policy[curr_node];
         if (diverged_node == 0 || visited.find(diverged_node) != visited.end()) {
-            // TODO: Updating the value here seems incorrect.
-            // It makes sure we never loop, however quality can get really bad.
-            // It's basically another trial run.
-            //std::pair<long, long> curr_min_action = this->update_v(this->vl, curr_node);
-            //curr_node = curr_min_action.second;
-
-            const auto min_action = this->get_minimum_action(this->vl, curr_node);
-
-            const long last_node = curr_node;
+            const auto min_action = this->get_minimum_action(this->vu, curr_node);
             curr_node = min_action.first.second;
-
-            // This is quite a difference to vanilla BRTDP. But it's needed,
-            // else we crash because of our hard diverge policies.
-            if (visited.find(curr_node) != visited.end()) {
-                // If we're looping, fix this by updating the value of the node.
-                // This is most likely because we diverged too far and BRTDP
-                // wasn't here before.
-                // It takes a while for the costs to become big enough, i.e.
-                // for the loop to resolve.
-                //std::cout << curr_node << " " << this->vu[curr_node] - this->vl[curr_node] << std::endl;
-                curr_node = this->update_v(this->vl, last_node).second;
-            }
         } else {
             curr_node = diverged_node;
         }

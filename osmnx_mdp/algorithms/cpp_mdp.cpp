@@ -78,20 +78,27 @@ int MDP::make_edge_uncertain(
             pair_hash
         > &temp_P,
         const std::pair<long, long> &edge,
-        const long &other_node) {
+        const long &other_node,
+        const double &uncertainty) {
     // Make taking the action of following given edge probabilistic,
     // i.e. end up in the expected edge only 90% of the time and end
     // up in other_node 10% of the time.
     // If the edge is already probabilistic, decrease its chance (e.g.
     // from 90% to 80% and so on).
     // Modifies temp_P inplace.
+    //
+    // Defaults:
+    //  uncertainty = .1
     const long node_to = edge.second;
 
+    if (node_to == this->goal || edge.first == this->goal)
+        return 0;
+
     if (temp_P.find(edge) == temp_P.end()) {
-        temp_P[edge] = {{node_to, .9}, {other_node, .1}};
+        temp_P[edge] = {{node_to, 1 - uncertainty}, {other_node, uncertainty}};
     } else {
-        temp_P[edge].push_back({other_node, .1});
-        temp_P[edge][0] = {node_to, temp_P[edge][0].second - .1};
+        temp_P[edge].push_back({other_node, uncertainty});
+        temp_P[edge][0] = {node_to, temp_P[edge][0].second - uncertainty};
     }
 
     this->uncertain_nodes.insert(edge.first);
@@ -130,7 +137,7 @@ int MDP::get_normal_intersections(
             //       |
             // y1 ---y--- y3
             //       |
-            //       x 
+            //       x
             // We now check for all outgoing edges from middle_node whether
             // their angle to (x, y) is one of [90, 180, 270].
             // Example: Angle between (x, y) and (y1, y) is 90.

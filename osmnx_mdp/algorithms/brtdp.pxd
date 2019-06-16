@@ -23,7 +23,7 @@ cdef extern from "cpp_brtdp.hpp":
             dense_hash_map[long, pair[float, float]] *data
         )
         int setup(long start, long goal)
-        int run_trials()
+        int run_trials(double alpha, double tau)
         vector[long] get_path(dense_hash_map[long, long] diverge_policy)
 
 
@@ -35,7 +35,7 @@ cdef class BRTDP(osmnx_mdp.algorithms.algorithm.Algorithm):
     cdef CPP_BRTDP cpp
 
     cdef setup(self, long start, long goal)
-    cdef run_trials(self)
+    cdef run_trials(self, alpha=*, tau=*)
     cdef get_path(self, diverge_policy)
     cdef solve(self)
     cdef drive(self, policy, diverge_policy)

@@ -28,7 +28,7 @@ cdef class BRTDP_REPLAN(osmnx_mdp.algorithms.algorithm.Algorithm):
     cdef CPP_BRTDP_REPLAN cpp
 
     cdef setup(self, long start, long goal)
-    cdef run_trials(self)
+    cdef run_trials(self, alpha=*, tau=*)
     cdef get_path(self, diverge_policy)
     cdef solve(self)
     cdef drive(self, policy, diverge_policy)

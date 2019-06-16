@@ -91,7 +91,8 @@ class MDP {
                 pair_hash
             > &temp_P,
             const std::pair<long, long> &edge,
-            const long &other_node);
+            const long &other_node,
+            const double &uncertainty=.1);
         int make_intersection_uncertain(const Intersection &intersection, const long &intersection_node);
         int get_normal_intersections(
             google::dense_hash_map<std::pair<long, long>, Intersection, pair_hash> &out);
