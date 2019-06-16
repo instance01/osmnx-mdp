@@ -79,17 +79,23 @@ cdef get_node_properties(G, path, values=None, extra=[]):
 
     HEX_FORMAT = '#ff%s00'
 
+    # TODO Absolutely lmao code quality
+
+    node_sizes = []
     node_colors = []
     for node in G.nodes():
         if node in path:
             # TODO Ugly
             if node in extra:
-                node_colors.append('#476369')
+                node_colors.append('m')
             else:
                 node_colors.append('g')
+            node_sizes.append(30)
         elif node in extra:
-            node_colors.append('m')
+            node_colors.append('y')
+            node_sizes.append(20)
         else:
+            node_sizes.append(8)
             if values is None:
                 node_colors.append('#555555')
                 continue
@@ -101,8 +107,6 @@ cdef get_node_properties(G, path, values=None, extra=[]):
             val = min(p95_val, val)
             val = hex(int(254 - (val - min_val) / diff_val * 254))[2:4].zfill(2)
             node_colors.append(HEX_FORMAT % val)
-
-    node_sizes = [50 if node in path or node in extra else 8 for node in G.nodes()]
 
     return node_colors, node_sizes
 

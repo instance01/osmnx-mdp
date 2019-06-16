@@ -224,8 +224,8 @@ def run_simulation(
         'diverge_policy': diverge_policy
     }
 
-    print("[%s, %s] Seconds for calculation: %f" % (
-        algorithm.__class__.__name__, map_id, total_time)
+    print("[%s, %s, %s] Seconds for calculation: %f" % (
+        algorithm.__class__.__name__, map_id, location_id, total_time)
     )
     return result
 

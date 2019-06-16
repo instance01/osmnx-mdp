@@ -5,6 +5,8 @@
 // TODO: Move to ../cpp_lib.hpp
 // Basically create a C++ version of lib.
 
+// TODO Move comments to cpp
+
 // TODO: Explain why collisions probably won't happen with this.
 // We assume a 64 bit system.
 // Node numbers sometimes exceed the maximum 32 bit number, which is around
