@@ -107,14 +107,22 @@ int BRTDP::run_trials(const double &alpha, const double &tau)
     this->random_generator.seed(42069);
 #endif
     int i = 0;
+    double last_diff = 0;
     while (this->vu[this->start] - this->vl[this->start] > alpha) {
+        double diff  = this->vu[this->start] - this->vl[this->start];
+        if (last_diff == diff) {
+            std::cout << last_diff << std::endl;
+            break;
+        }
+        last_diff = diff;
+
         this->run_trial(tau);
         i += 1;
     }
 #ifdef TESTS
     save_brtdp(this, "BRTDPrun_trialsWANT.cereal");
 #endif
-    return 0;
+    return i;
 }
 
 double BRTDP::get_outcome_distribution(
@@ -189,8 +197,11 @@ std::vector<long> BRTDP::get_path(
 #endif
     std::vector<long> path;
 
-    std::unordered_set<long> visited;
-    visited.insert(this->start);
+    google::dense_hash_map<long, int> visited;
+    visited.set_empty_key(0);
+    visited[this->start] = 1;
+
+    int custom_updates = 0;
 
     long curr_node = this->start;
     while (curr_node != this->goal) {
@@ -199,13 +210,31 @@ std::vector<long> BRTDP::get_path(
         const long diverged_node = diverge_policy[curr_node];
         if (diverged_node == 0 || visited.find(diverged_node) != visited.end()) {
             const auto min_action = this->get_minimum_action(this->vu, curr_node);
+            const long last_node = curr_node;
             curr_node = min_action.first.second;
+
+            // This is quite a difference to vanilla BRTDP. But it's needed,
+            // else we crash because of our hard diverge policies.
+            if (visited[curr_node] > 5) {
+                custom_updates += 1;
+                // If we're looping, fix this by updating the value of the node.
+                // This is most likely because we diverged too far and BRTDP
+                // wasn't here before.
+                // It takes a while for the costs to become big enough, i.e.
+                // for the loop to resolve.
+                curr_node = this->update_v(this->vl, last_node).second;
+            }
         } else {
             curr_node = diverged_node;
         }
 
-        visited.insert(curr_node);
+        visited[curr_node] += 1;
     }
+
+    if (custom_updates > 0) {
+        std::cout << "custom_updates "  << custom_updates << std::endl;
+    }
+
 #ifdef TESTS
     {
         std::ofstream os("BRTDPget_pathWANT.cereal", std::ios::binary);
@@ -213,7 +242,6 @@ std::vector<long> BRTDP::get_path(
         archive(path);
     }
 #endif
-
 
     return path;
 }

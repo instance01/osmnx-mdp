@@ -123,7 +123,9 @@ int DStar_Lite::compute_shortest_path()
 #ifdef TESTS
     save_dstar(this, "DSTARcompute_shortest_path.cereal");
 #endif
+    int i = 0;
     while (!this->U.empty()) {
+        i += 1;
         const auto candidate = *std::min_element(
                 this->U.begin(),
                 this->U.end(),
@@ -158,7 +160,7 @@ int DStar_Lite::compute_shortest_path()
     save_dstar(this, "DSTARcompute_shortest_pathWANT.cereal");
 #endif
 
-    return 0;
+    return i;
 }
 
 int DStar_Lite::drive(

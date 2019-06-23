@@ -43,7 +43,7 @@ cdef class DStar_Lite(osmnx_mdp.algorithms.algorithm.Algorithm):
         return self.cpp.update_vertex(u)
 
     cdef compute_shortest_path(self):
-        self.cpp.compute_shortest_path()
+        self.iterations = self.cpp.compute_shortest_path()
 
     cdef solve(self):
         self.compute_shortest_path()

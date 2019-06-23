@@ -20,7 +20,8 @@ for results_ in results:
         ('drive_time', float),
         ('n_nodes', int),
         ('path', list),
-        ('diverge_policy', list)])
+        ('diverge_policy', list),
+        ('iterations', int)])
 
     data.append(x)
 
@@ -34,11 +35,20 @@ brtdp_replan = data[:, np.where(data[0]['algorithm'] == 'BRTDP_REPLAN')]
 dstar = data[:, np.where(data[0]['algorithm'] == 'DStar_Lite')]
 
 
+print(mdp.shape)
+print(brtdp.shape)
+print(brtdp_replan.shape)
+print(dstar.shape)
+
+
 def draw(algorithm, arr, col, ax, ax2):
     arr = np.sort(arr, order='n_nodes')
     calc_time = np.average(arr[:, 0]['calculation_time'], axis=0)
     drive_time = np.average(arr[:, 0]['drive_time'], axis=0)
+    iterations = np.average(arr[:, 0]['iterations'], axis=0)
     n_nodes = arr[:, 0]['n_nodes'][0]
+
+    print('Iterations (', algorithm, ')', iterations)
 
     X = arr[:, 0]['id'][0] + ' (' + n_nodes.astype('U') + ')'
     ax.plot(

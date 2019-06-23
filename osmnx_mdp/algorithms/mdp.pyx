@@ -64,7 +64,7 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
             bint verbose=True):
         """Solve the MDP with value iteration.
         """
-        self.cpp.solve(max_iter, eps)
+        self.iterations = self.cpp.solve(max_iter, eps)
 
         # Direct assignment is not possible since Cython doesnt know how to
         # convert a dense_hash_map to a Python object.

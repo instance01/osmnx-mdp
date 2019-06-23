@@ -56,7 +56,12 @@ MAPS = {
         'west': '11.247803',
         'south': '47.809321',
         'east': '11.502211'
-    }
+    },
+    #'Bavaria': {
+    #    'type': 'place',
+    #    'file': 'data/bavaria.pickle',
+    #    'place': 'Bavaria, Germany'
+    #}
 }
 
 
@@ -124,6 +129,16 @@ LOCATIONS = {
             'goal': (47.9648109, 11.4076497),
             'metadata': {
                 'id': 'StarnbergLONG',
+                'info': ''
+            }
+        }
+    ],
+    'Bavaria': [
+        {
+            'start': (47.6274375, 10.1708339),
+            'goal': (49.9361796, 11.7199061),
+            'metadata': {
+                'id': 'BavariaLONG',
                 'info': ''
             }
         }
@@ -221,7 +236,8 @@ def run_simulation(
         'drive_time': drive_time,
         'n_nodes': MAPS[map_id]['map'].number_of_nodes(),
         'path': path,
-        'diverge_policy': diverge_policy
+        'diverge_policy': diverge_policy,
+        'iterations': algorithm.iterations
     }
 
     print("[%s, %s, %s] Seconds for calculation: %f" % (

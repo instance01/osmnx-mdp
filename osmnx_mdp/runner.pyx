@@ -2,4 +2,4 @@
 import osmnx_mdp.simulation
 
 
-osmnx_mdp.simulation.run_simulations(1)
+osmnx_mdp.simulation.run_simulations(10)

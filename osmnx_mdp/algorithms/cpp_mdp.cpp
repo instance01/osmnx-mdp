@@ -1,3 +1,4 @@
+#include <cmath>
 #include "cpp_mdp.hpp"
 #include "../cpp_lib.hpp" // combinations
 #include "../serialize_util.hpp"
@@ -466,7 +467,7 @@ int MDP::solve(const int &max_iter, const double &eps) {
 #endif
 
     // Cython needs an integer return.
-    return 0;
+    return i;
 }
 
 int MDP::get_policy() {

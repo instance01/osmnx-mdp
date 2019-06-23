@@ -22,7 +22,7 @@ cdef class BRTDP(osmnx_mdp.algorithms.algorithm.Algorithm):
         self.cpp.setup(start, goal)
 
     cdef run_trials(self, alpha=1e-10, tau=10):
-        self.cpp.run_trials(alpha, tau)
+        self.iterations = self.cpp.run_trials(alpha, tau)
         self.vl = self.cpp.vl
 
     cdef get_path(self, diverge_policy):
