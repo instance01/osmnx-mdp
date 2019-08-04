@@ -1,0 +1,12 @@
+
+BUILD
+sudo docker build -t lesgo2 -f Dockerfile2 .
+
+RUN
+sudo docker run -v $(pwd):/app -e "DISPLAY" -v "/tmp/.X11-unix:/tmp/.X11-unix:rw" --privileged -it lesgo2 bash
+./run_build.sh
+
+
+See matplotlibrc, vimrc, bashrc for more.
+Esp. bashrc has good alias (includes all the LD_PRELOAD stuff). See setup and run commands/alias.
+
