@@ -1,4 +1,5 @@
 #include <cmath> // sin, asin, cos, pow, M_PI
+#include <cfloat> // DBL_EPSILON
 #include <algorithm> // min_element
 #include <stdexcept> // runtime_error
 #include <unordered_set>
@@ -6,6 +7,7 @@
 #include "cpp_dstar_lite.hpp"
 
 #include "../serialize_util.hpp"
+#include "../cpp_queue_util.hpp" // queue_decrease_priority, queue_pop
 
 
 DStar_Lite::DStar_Lite () {}
@@ -14,8 +16,8 @@ DStar_Lite::~DStar_Lite () {}
 int DStar_Lite::init(
         google::dense_hash_map<long, std::vector<long>> *predecessors,
         google::dense_hash_map<long, std::vector<long>> *successors,
-        google::dense_hash_map<std::pair<long, long>, float, pair_hash> *cost,
-        google::dense_hash_map<long, std::pair<float, float>> *data)
+        google::dense_hash_map<std::pair<long, long>, double, pair_hash> *cost,
+        google::dense_hash_map<long, std::pair<double, double>> *data)
 {
     for (auto &x : *successors) {
         this->nodes.push_back(x.first);
@@ -37,6 +39,8 @@ int DStar_Lite::setup(const long &start, const long &goal)
 {
     this->start = start;
     this->goal = goal;
+
+    this->init_heuristic();
 
     // TODO: Explanations
     // rhs, g:
@@ -60,20 +64,20 @@ int DStar_Lite::setup(const long &start, const long &goal)
     return 0;
 }
 
-std::pair<long, float> DStar_Lite::get_min_successor(const long &node)
+std::pair<long, double> DStar_Lite::get_min_successor(const long &node)
 {
     // For a given node, return the successor which lies on the minimum sum
     // of the estimated path to the node and the edge cost between the node
     // and the successor.
 
-    float min_cost = INFINITY;
+    double min_cost = INFINITY;
     long min_node = 0;
 
     // Manually find minimum. An alternative would be to use min_element,
     // however it is actually less readable in this case.
     for (const auto &succ : (*this->successors)[node]) {
-        const float edge_cost = (*this->cost)[{node, succ}];
-        const float cost = this->g[succ] + edge_cost;
+        const double edge_cost = (*this->cost)[{node, succ}];
+        const double cost = this->g[succ] + edge_cost;
 
         if (cost <= min_cost) {
             min_cost = cost;
@@ -85,24 +89,11 @@ std::pair<long, float> DStar_Lite::get_min_successor(const long &node)
 }
 
 // TODO Rename DStar_Lite
-// TODO Remove divisor thing
-float DStar_Lite::heuristic(const long &node)
-{
-    float lat1, lon1, lat2, lon2;
-    std::tie(lat1, lon1) = (*this->data)[node];
-    std::tie(lat2, lon2) = (*this->data)[this->start];
-    // Divide by 50 since we need an admissible heuristic that doesn't
-    // over-estimate, and 50 is optimistic (since in most of the city
-    // we have 30 and 50 maxspeed).
-    // TODO: However on highways this is not optimistic anymore.
-    // TODO: It seems this wasn't working with 50. 160 on the other hand works quite nicely.
-    return aerial_dist(lat1, lon1, lat2, lon2) / 160; // Hours
-}
 
-std::pair<float, float> DStar_Lite::calculate_key(const long &node)
+std::pair<double, double> DStar_Lite::calculate_key(const long &node)
 {
-    float key = std::min(this->g[node], this->rhs[node]);
-    return std::pair<float, float>(key + this->heuristic(node) + this->k, key);
+    double key = std::min(this->g[node], this->rhs[node]);
+    return std::pair<double, double>(key + this->heuristic_map[node] + this->k, key);
 }
 
 int DStar_Lite::update_vertex(const long &node)
@@ -184,7 +175,7 @@ int DStar_Lite::drive(
             this->start = this->get_min_successor(this->start).first;
         } else {
             this->start = diverged_node;
-            this->k += this->heuristic(last_start);
+            this->k += this->heuristic_map[last_start];
             last_start = this->start;
             this->compute_shortest_path();
         }
@@ -202,4 +193,55 @@ int DStar_Lite::drive(
 #endif
 
     return 0;
+}
+
+// TODO: COPIED (99%) FROM BRTDP
+void DStar_Lite::init_heuristic() {
+    // Single source (from goal) all target Dijkstra
+
+    this->heuristic_map.set_empty_key(0);
+
+    google::dense_hash_map<long, double> dist;
+    google::dense_hash_map<long, long> prev;
+
+    dist.set_empty_key(0);
+    prev.set_empty_key(0);
+
+    std::vector<std::pair<long, double>> queue;
+
+    for (long &state : this->nodes) {
+        dist[state] = INFINITY;
+        queue.push_back({state, INFINITY});
+    }
+    dist[this->goal] = 0;
+
+    std::make_heap(queue.begin(), queue.end());
+
+    while (!queue.empty()) {
+        long node = queue_pop(queue);
+
+        for (long &neighbor : (*this->predecessors)[node]) {
+            double new_dist = dist[node] + (*this->cost)[{neighbor, node}];
+
+            if (new_dist < dist[neighbor] + DBL_EPSILON) {
+                dist[neighbor] = new_dist;
+                prev[neighbor] = node;
+
+                queue_decrease_priority<long, double>(queue, neighbor, new_dist);
+            }
+        }
+    }
+
+    for (long &state : this->nodes) {
+        double curr_cost = 0;
+        long curr_node = state;
+
+        while (curr_node != this->goal) {
+            long next_node = prev[curr_node];
+            curr_cost += (*this->cost)[{curr_node, next_node}];
+            curr_node = next_node;
+        }
+
+        this->heuristic_map[state] = curr_cost;
+    }
 }

@@ -11,17 +11,15 @@
 MDP::MDP() {}
 MDP::~MDP() {}
 
+
 int MDP::init(
         std::vector<long> *S,
         google::dense_hash_map<long, std::vector<std::pair<long, long>>> *A,
-        google::dense_hash_map<std::pair<long, long>, float, pair_hash> *C,
+        google::dense_hash_map<std::pair<long, long>, double, pair_hash> *C,
         google::dense_hash_map<
-            long,
-            google::dense_hash_map<
-                std::pair<long, long>,
-                std::vector<std::pair<long, double>>,
-                pair_hash
-            >
+            std::pair<long, long>,
+            std::vector<std::pair<long, double>>,
+            pair_hash
         > *P,
         google::dense_hash_map<std::pair<long, long>, double, pair_hash> *edge_data,
         google::dense_hash_map<long, std::pair<double, double>> *node_data,
@@ -44,12 +42,15 @@ int MDP::setup(const long &start, const long &goal) {
     this->start = start;
     this->goal = goal;
 
+    // TODO Make this a config option.
+    this->edge_uncertainty = .2;
+
     this->make_goal_self_absorbing();
     this->make_low_angle_intersections_uncertain();
     this->make_close_intersections_uncertain();
 
     const int total_uncertain_nodes = this->angle_nodes.size() + this->close_intersections.size();
-    const float uncertainty_percent = float(total_uncertain_nodes) / (*this->S).size();
+    const double uncertainty_percent = double(total_uncertain_nodes) / (*this->S).size();
     std::cout << uncertainty_percent * 100 << "\% of nodes are uncertain." << std::endl;
 
     return 0;
@@ -64,7 +65,7 @@ int MDP::make_goal_self_absorbing() {
     std::pair<long, long> edge(this->goal, this->goal);
     (*this->A)[this->goal].push_back(edge);
     (*this->C)[edge] = 0;
-    (*this->P)[this->goal][edge] = {{this->goal, 1.0}};
+    (*this->P)[edge] = {{this->goal, 1.0}};
 
 #ifdef TESTS
     save_mdp(this, "MDPmake_goal_self_absorbingWANT.cereal");
@@ -125,7 +126,7 @@ int MDP::get_normal_intersections(
 
     // Maximum deviation in degrees before an angle between two edges is not
     // considered square (90, 180, 270) any longer.
-    const float max_angle_deviation = 10;
+    const double max_angle_deviation = 10;
 
     for (const auto &a : *this->A) {
         for (const auto &origin_edge : a.second) {
@@ -203,22 +204,24 @@ int MDP::make_intersection_uncertain(
 
     // Driver exits too early.
     this->make_edge_uncertain(
-            (*this->P)[origin_node],
+            (*this->P),
             {intersection.origin_edge.second, intersection.straight_on_node},
-            intersection_node);
+            intersection_node,
+            this->edge_uncertainty);
 
     // Driver misses exit.
     this->make_edge_uncertain(
-            (*this->P)[origin_node],
+            (*this->P),
             {origin_node, intersection_node},
-            intersection.straight_on_node);
+            intersection.straight_on_node,
+            this->edge_uncertainty);
 
     this->close_intersections.insert(intersection);
 
     return 0;
 }
 
-int MDP::make_close_intersections_uncertain(const float &max_length) {
+int MDP::make_close_intersections_uncertain(const double &max_length) {
     // Scan graph for intersections that follow very closely.
     // 
     // Use cases:
@@ -249,16 +252,9 @@ int MDP::make_close_intersections_uncertain(const float &max_length) {
             continue;
         }
 
-        const auto origin_edge = intersection.second.origin_edge;
-
-        const double origin_edge_length = (*this->edge_data)[origin_edge];
         const double next_edge_length = (*this->edge_data)[next_edge];
 
-        // osmnx sometimes has very close nodes on one intersection. This is a
-        // false-positive. It's simply a big intersection.
-        // So let's ignore those edges with length less than 20m.
-        // One could preprocess using ox.clean_intersections to get rid of this.
-        if (next_edge_length > max_length || origin_edge_length < 20)
+        if (next_edge_length > max_length)
             continue;
 
         if (intersection.second.left_node != 0 && next_intersection.left_node != 0)
@@ -279,7 +275,7 @@ int MDP::make_close_intersections_uncertain(const float &max_length) {
     return 0;
 }
 
-int MDP::make_low_angle_intersections_uncertain(const float &max_angle) {
+int MDP::make_low_angle_intersections_uncertain(const double &max_angle) {
     //  (2)   (3)
     //   *     *
     //    \   /
@@ -297,7 +293,6 @@ int MDP::make_low_angle_intersections_uncertain(const float &max_angle) {
 #endif
 
     // TODO: Twisted code. Works, but succs
-    // TODO: Add all docstrings/comments from python code
     for (const auto &s : *this->S) {
         for (const auto &succ : (*this->successors)[s]) {
             std::pair<long, long> edge(s, succ);
@@ -356,8 +351,8 @@ int MDP::make_low_angle_intersections_uncertain(const float &max_angle) {
                 // Thus it is not a critical intersection.
                 const double angle = get_angle(x1, y1, x3, y3, origin_x, origin_y) - get_angle(x2, y2, x3, y3, origin_x, origin_y);
                 if (abs(angle) <= max_angle) {
-                    make_edge_uncertain(temp_P, edge1, edge2.second);
-                    make_edge_uncertain(temp_P, edge2, edge1.second);
+                    make_edge_uncertain(temp_P, edge1, edge2.second, this->edge_uncertainty);
+                    make_edge_uncertain(temp_P, edge2, edge1.second, this->edge_uncertainty);
 
                     n_critical_nodes += 1;
                 }
@@ -367,7 +362,7 @@ int MDP::make_low_angle_intersections_uncertain(const float &max_angle) {
                 this->angle_nodes.push_back(origin_node);
 
             for (auto &kv : temp_P) {
-                (*P)[succ][kv.first] = kv.second;
+                (*P)[kv.first] = kv.second;
             }
         }
     }
@@ -381,24 +376,24 @@ int MDP::make_low_angle_intersections_uncertain(const float &max_angle) {
 
 // TODO Same as BRTDP
 double MDP::get_Q_value(
-        google::dense_hash_map<long, float> &prev_V,
+        google::dense_hash_map<long, double> &prev_V,
         const long &s,
         const std::pair<long, long> &a)
 {
-    const double immediate_cost = (*this->C)[a];
     double future_cost = 0;
-    for (const auto &outcome : (*this->P)[s][a]) {
-        future_cost += outcome.second * prev_V[outcome.first];
+    for (const auto &outcome : (*this->P)[a]) {
+        future_cost += outcome.second * ((*this->C)[{s, outcome.first}] + prev_V[outcome.first]);
     }
-    return immediate_cost + future_cost;
+    return future_cost;
 }
 
-google::dense_hash_map<long, google::dense_hash_map<std::pair<long, long>, float, pair_hash>> MDP::init_Q() {
-    google::dense_hash_map<long, google::dense_hash_map<std::pair<long, long>, float, pair_hash>> Q;
+// TODO Hashmaps of Hashmaps sucks, change this.
+google::dense_hash_map<long, google::dense_hash_map<std::pair<long, long>, double, pair_hash>> MDP::init_Q() {
+    google::dense_hash_map<long, google::dense_hash_map<std::pair<long, long>, double, pair_hash>> Q;
     Q.set_empty_key(0);
 
     for (auto &s : *this->S) {
-        Q[s] = google::dense_hash_map<std::pair<long, long>, float, pair_hash>();
+        Q[s] = google::dense_hash_map<std::pair<long, long>, double, pair_hash>();
         Q[s].set_empty_key(std::pair<long, long>(0, 0));
         for (auto &a : (*this->A)[s]) {
             Q[s][a] = 0.;
@@ -409,7 +404,7 @@ google::dense_hash_map<long, google::dense_hash_map<std::pair<long, long>, float
     return Q;
 }
 
-bool MDP::converged(google::dense_hash_map<long, float> &prev_V, const double &eps) {
+bool MDP::converged(google::dense_hash_map<long, double> &prev_V, const double &eps) {
     double c = 0;
     auto V_iter = this->V.begin();
     auto prev_V_iter = prev_V.begin();
@@ -423,7 +418,7 @@ bool MDP::converged(google::dense_hash_map<long, float> &prev_V, const double &e
     return c < eps;
 }
 
-// TODO Everything needs to be double, not float.
+// TODO Everything needs to be double, not double.
 int MDP::solve(const int &max_iter, const double &eps) {
     // Solve the MDP with value iteration
     // Defaults:
@@ -444,7 +439,7 @@ int MDP::solve(const int &max_iter, const double &eps) {
                 Q[s][a] = this->get_Q_value(prev_V, s, a);
             }
 
-            std::pair<const std::pair<long, long>, float> best_action = *min_element(
+            std::pair<const std::pair<long, long>, double> best_action = *min_element(
                     Q[s].begin(),
                     Q[s].end(),
                     [](auto& a, auto& b) { return a.second < b.second; });
@@ -480,8 +475,9 @@ int MDP::get_policy() {
         std::pair<long, long> curr_min_action;
 
         for (auto &a : (*this->A)[s]) {
+            // TODO Use Q value function here. Code duplication.
             double cost = 0;
-            for (auto &outcome : (*this->P)[s][a]) {
+            for (auto &outcome : (*this->P)[a]) {
                 cost += outcome.second * ((*this->C)[a] + V[outcome.first]);
             }
 

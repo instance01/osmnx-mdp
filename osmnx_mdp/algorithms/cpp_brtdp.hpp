@@ -19,16 +19,15 @@ class BRTDP {
 
         std::vector<long> *S;
         google::dense_hash_map<long, std::vector<std::pair<long, long>>> *A;
-        google::dense_hash_map<std::pair<long, long>, float, pair_hash> *C;
+        google::dense_hash_map<std::pair<long, long>, double, pair_hash> *C;
         google::dense_hash_map<
-            long,
-            google::dense_hash_map<
-                std::pair<long, long>,
-                std::vector<std::pair<long, double>>,
-                pair_hash
-            >
+            std::pair<long, long>,
+            std::vector<std::pair<long, double>>,
+            pair_hash
         > *P;
-        google::dense_hash_map<long, std::pair<float, float>> *data;
+
+        google::dense_hash_map<long, std::vector<long>> *predecessors;
+        google::dense_hash_map<long, std::pair<double, double>> *data;
 
         // TODO: The names may make sense with the paper, but not for anyone else, rename.
         google::dense_hash_map<long, double> vu;
@@ -47,25 +46,26 @@ class BRTDP {
         int init(
             std::vector<long> *S,
             google::dense_hash_map<long, std::vector<std::pair<long, long>>> *A,
-            google::dense_hash_map<std::pair<long, long>, float, pair_hash> *C,
+            google::dense_hash_map<std::pair<long, long>, double, pair_hash> *C,
             google::dense_hash_map<
-                long,
-                google::dense_hash_map<
-                    std::pair<long, long>,
-                    std::vector<std::pair<long, double>>,
-                    pair_hash
-                >
+                std::pair<long, long>,
+                std::vector<std::pair<long, double>>,
+                pair_hash
             > *P,
-            google::dense_hash_map<long, std::pair<float, float>> *data);
+            google::dense_hash_map<long, std::vector<long>> *predecessors,
+            google::dense_hash_map<long, std::pair<double, double>> *data);
         int setup(const long &start, const long &goal);
         int run_trial(const double &t);
         double get_outcome_distribution(
             const std::pair<long, long> &curr_min_action,
-            std::vector<float> &distribution);
+            std::vector<double> &distribution);
         long select_node_probabilistically(
             const std::pair<long, long> &curr_min_action,
-            const std::vector<float> &distribution);
+            const std::vector<double> &distribution);
         int run_trials(const double &alpha=1e-10, const double &t=10);
         std::vector<long> get_path(google::dense_hash_map<long, long> &diverge_policy);
+
+        void init_upper_bound_heuristic();
+        void init_lower_bound_heuristic();
 };
 #endif

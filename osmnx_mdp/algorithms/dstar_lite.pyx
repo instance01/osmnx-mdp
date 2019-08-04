@@ -33,9 +33,6 @@ cdef class DStar_Lite(osmnx_mdp.algorithms.algorithm.Algorithm):
         self.cpp.init(&self.predecessors, &self.successors, &self.cost, &self.data)
         self.cpp.setup(start, goal)
 
-    cdef heuristic(self, node):
-        return self.cpp.heuristic(node)
-
     cdef calculate_key(self, node):
         return self.cpp.calculate_key(node)
 

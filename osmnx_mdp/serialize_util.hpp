@@ -64,14 +64,11 @@ void serialize(Archive &ar, Intersection &intersection)
 struct SharedMDPData {
     std::vector<long> S;
     google::dense_hash_map<long, std::vector<std::pair<long, long>>> A;
-    google::dense_hash_map<std::pair<long, long>, float, pair_hash> C;
+    google::dense_hash_map<std::pair<long, long>, double, pair_hash> C;
     google::dense_hash_map<
-        long,
-        google::dense_hash_map<
-            std::pair<long, long>,
-            std::vector<std::pair<long, double>>,
-            pair_hash
-        >
+        std::pair<long, long>,
+        std::vector<std::pair<long, double>>,
+        pair_hash
     > P;
 
     google::dense_hash_map<std::pair<long, long>, double, pair_hash> edge_data;
@@ -82,24 +79,21 @@ struct SharedMDPData {
 struct SharedBRTDPData {
     std::vector<long> S;
     google::dense_hash_map<long, std::vector<std::pair<long, long>>> A;
-    google::dense_hash_map<std::pair<long, long>, float, pair_hash> C;
+    google::dense_hash_map<std::pair<long, long>, double, pair_hash> C;
     google::dense_hash_map<
-        long,
-        google::dense_hash_map<
-            std::pair<long, long>,
-            std::vector<std::pair<long, double>>,
-            pair_hash
-        >
+        std::pair<long, long>,
+        std::vector<std::pair<long, double>>,
+        pair_hash
     > P;
 
-    google::dense_hash_map<long, std::pair<float, float>> data;
+    google::dense_hash_map<long, std::pair<double, double>> data;
 };
 
 struct SharedDStarLiteData {
     google::dense_hash_map<long, std::vector<long>> predecessors;
     google::dense_hash_map<long, std::vector<long>> successors;
-    google::dense_hash_map<long, std::pair<float, float>> data;
-    google::dense_hash_map<std::pair<long, long>, float, pair_hash> cost;
+    google::dense_hash_map<long, std::pair<double, double>> data;
+    google::dense_hash_map<std::pair<long, long>, double, pair_hash> cost;
 };
 
 void save_mdp(MDP *mdp, std::string name);

@@ -39,24 +39,23 @@ class MDP {
 
         std::vector<long> *S;
         google::dense_hash_map<long, std::vector<std::pair<long, long>>> *A;
-        google::dense_hash_map<std::pair<long, long>, float, pair_hash> *C;
+        google::dense_hash_map<std::pair<long, long>, double, pair_hash> *C;
         // It is needed that this is DOUBLE. Especially (B)RTDP
         // needs precision. Who knows how bad the effect in VI is.
         google::dense_hash_map<
-            long,
-            google::dense_hash_map<
-                std::pair<long, long>,
-                std::vector<std::pair<long, double>>,
-                pair_hash
-            >
+            std::pair<long, long>,
+            std::vector<std::pair<long, double>>,
+            pair_hash
         > *P;
 
-        google::dense_hash_map<long, float> V;
+        google::dense_hash_map<long, double> V;
         // TODO Only save the index of the action, not the whole action again.
         google::dense_hash_map<long, std::pair<long, long>> policy;
 
         long start;
         long goal;
+
+        double edge_uncertainty;
 
         std::vector<long> angle_nodes;
         std::unordered_set<Intersection, intersection_hash> close_intersections;
@@ -69,14 +68,11 @@ class MDP {
         int init(
             std::vector<long> *S,
             google::dense_hash_map<long, std::vector<std::pair<long, long>>> *A,
-            google::dense_hash_map<std::pair<long, long>, float, pair_hash> *C,
+            google::dense_hash_map<std::pair<long, long>, double, pair_hash> *C,
             google::dense_hash_map<
-                long,
-                google::dense_hash_map<
-                    std::pair<long, long>,
-                    std::vector<std::pair<long, double>>,
-                    pair_hash
-                >
+                std::pair<long, long>,
+                std::vector<std::pair<long, double>>,
+                pair_hash
             > *P,
             google::dense_hash_map<std::pair<long, long>, double, pair_hash> *edge_data,
             google::dense_hash_map<long, std::pair<double, double>> *node_data,
@@ -96,14 +92,14 @@ class MDP {
         int make_intersection_uncertain(const Intersection &intersection, const long &intersection_node);
         int get_normal_intersections(
             google::dense_hash_map<std::pair<long, long>, Intersection, pair_hash> &out);
-        int make_close_intersections_uncertain(const float &max_length=100);
-        int make_low_angle_intersections_uncertain(const float &max_angle=30);
+        int make_close_intersections_uncertain(const double &max_length=100);
+        int make_low_angle_intersections_uncertain(const double &max_angle=30);
         double get_Q_value(
-            google::dense_hash_map<long, float> &prev_V,
+            google::dense_hash_map<long, double> &prev_V,
             const long &s,
             const std::pair<long, long> &a);
-        google::dense_hash_map<long, google::dense_hash_map<std::pair<long, long>, float, pair_hash>> init_Q();
-        bool converged(google::dense_hash_map<long, float> &prev_V, const double &eps);
+        google::dense_hash_map<long, google::dense_hash_map<std::pair<long, long>, double, pair_hash>> init_Q();
+        bool converged(google::dense_hash_map<long, double> &prev_V, const double &eps);
         int solve(const int &max_iter=50000, const double &eps=1e-20);
         int get_policy();
         std::vector<long> drive(google::dense_hash_map<long, long> &diverge_policy);

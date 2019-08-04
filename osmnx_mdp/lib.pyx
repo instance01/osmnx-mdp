@@ -3,6 +3,8 @@ import math
 
 import numpy as np
 import osmnx as ox
+import networkx as nx
+from networkx.algorithms.components.connected import connected_components
 
 
 # TODO Move everything here into cpp_lib
@@ -181,3 +183,68 @@ cdef remove_dead_ends(G, goal):
 
         for node in todel:
             G.remove_node(node)
+
+
+cdef filter_connected_points(G):
+    # TODO: This is not used right now.
+    return []
+
+    G_candidates = nx.Graph()
+
+    for node in G.nodes.data():
+        node_id = node[0]
+
+        for succ in G.successors(node_id):
+            length = G[node_id][succ][0]['length']
+            if length < 20:
+                G_candidates.add_edge(node_id, succ)
+
+    candidates = list(connected_components(G_candidates))
+
+    # TODO REMOVE
+    pts = []
+
+    for candidate in candidates:
+        pred_metadata = {}
+        succ_metadata = {}
+        predecessors = []
+        successors = []
+
+        for node in candidate:
+            for pred in G.predecessors(node):
+                if pred not in candidate:
+                    predecessors.append(pred)
+                    pred_metadata[pred] = G[pred][node][0]
+
+            for succ in G.successors(node):
+                if succ not in candidate:
+                    successors.append(succ)
+                    succ_metadata[succ] = G[node][succ][0]
+
+        xs = [G.nodes[node]['x'] for node in candidate]
+        ys = [G.nodes[node]['y'] for node in candidate]
+
+        center = {
+            'x': np.average(xs),
+            'y': np.average(ys),
+            'lat': np.average(xs),
+            'lon': np.average(ys)
+        }
+
+        # TODO: This line is intentionally buggy. At least for now.
+        node_id = next(iter(candidate))
+
+        for node in candidate:
+            G.remove_node(node)
+
+        G.add_node(node_id, **center)
+        pts.append(node_id)
+
+        for pred in predecessors:
+            G.add_edge(pred, node_id, **pred_metadata[pred])
+
+        for succ in successors:
+            G.add_edge(node_id, succ, **succ_metadata[succ])
+
+    print('Done filtering')
+    return pts

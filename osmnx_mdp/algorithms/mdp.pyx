@@ -16,7 +16,7 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
         self.node_data.set_empty_key(0)
         self.edge_data.set_empty_key((0, 0))
         self.A.set_empty_key(0)
-        self.P.set_empty_key(0)
+        self.P.set_empty_key((0, 0))
         self.C.set_empty_key((0, 0))
 
         for node in self.G.nodes.data():
@@ -30,13 +30,10 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
             self.S.push_back(node_id)
             self.A[node_id] = [(node_id, succ) for succ in successors]
 
-            if self.P.find(node_id) == self.P.end():
-                self.P[node_id].set_empty_key((0, 0))
-
             for succ in successors:
                 action = (node_id, succ)
                 # For now we end up in correct state 100% of the time.
-                self.P[node_id][action].push_back((succ, 1.0))
+                self.P[action].push_back((succ, 1.0))
                 self.C[action] = get_edge_cost(self.G, node_id, succ)
 
                 self.edge_data[(node_id, succ)] = self.G[node_id][succ][0]['length']
@@ -58,7 +55,7 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
 
     cdef solve_value_iteration(
             self,
-            float gamma=1.,
+            double gamma=1.,
             int max_iter=50000,
             double eps=1e-20,
             bint verbose=True):

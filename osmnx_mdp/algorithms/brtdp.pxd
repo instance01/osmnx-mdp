@@ -18,9 +18,10 @@ cdef extern from "cpp_brtdp.hpp":
         int init(
             vector[long] *S,
             dense_hash_map[long, vector[pair[long, long]]] *A,
-            dense_hash_map[pair[long, long], float, pair_hash] *C,
-            dense_hash_map[long, dense_hash_map[pair[long, long], vector[pair[long, double]], pair_hash]] *P,
-            dense_hash_map[long, pair[float, float]] *data
+            dense_hash_map[pair[long, long], double, pair_hash] *C,
+            dense_hash_map[pair[long, long], vector[pair[long, double]], pair_hash] *P,
+            dense_hash_map[long, vector[long]] *predecessors,
+            dense_hash_map[long, pair[double, double]] *data
         )
         int setup(long start, long goal)
         int run_trials(double alpha, double tau)
@@ -28,7 +29,8 @@ cdef extern from "cpp_brtdp.hpp":
 
 
 cdef class BRTDP(osmnx_mdp.algorithms.algorithm.Algorithm):
-    cdef dense_hash_map[long, pair[float, float]] data
+    cdef dense_hash_map[long, vector[long]] predecessors
+    cdef dense_hash_map[long, pair[double, double]] data
     cdef dense_hash_map[long, double] vl
 
     cdef MDP mdp

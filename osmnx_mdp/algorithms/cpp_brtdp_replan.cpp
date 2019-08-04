@@ -16,7 +16,7 @@ void BRTDP_REPLAN::replan(const long &curr_node) {
 
 std::vector<long> BRTDP_REPLAN::get_path(
         google::dense_hash_map<long, long> &diverge_policy,
-        const float &beta,
+        const double &beta,
         const bool &always_replan) {
     // Defaults:
     //  beta = .02

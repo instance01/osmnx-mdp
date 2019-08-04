@@ -42,10 +42,10 @@ double get_angle(
 }
 
 double aerial_dist(double lat1, double lon1, double lat2, double lon2, double R) {
-    lon1 *= M_PI / 180.0;
-    lon2 *= M_PI / 180.0;
-    lat1 *= M_PI / 180.0;
-    lat2 *= M_PI / 180.0;
-    double d = pow(sin((lat2 - lat1) / 2), 2) + cos(lat1) * cos(lat2) * pow(sin((lon2 - lon1) / 2), 2);
-    return R * 2 * asin(pow(d, .5));
+    // Since all maps are already converted to UTM coordinates, we can simply
+    // use euclidian distance.
+    // For reference, a map based on LAT/LON would have to use Haversine formula
+    // for aerial distance.
+    // UTM coords are in metres. Thus divide by 1000 for kilometres.
+    return sqrt(pow(lat1 - lat2, 2) + pow(lon1 - lon2, 2)) / 1000;
 }

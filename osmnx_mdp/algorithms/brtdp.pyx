@@ -8,9 +8,12 @@ cdef class BRTDP(osmnx_mdp.algorithms.algorithm.Algorithm):
 
     cdef setup(self, long start, long goal):
         self.data.set_empty_key(0)
+        self.predecessors.set_empty_key(0)
+
         for node in self.mdp.G.nodes.data():
             node_id = node[0]
-            self.data[node_id] = (node[1]['lat'], node[1]['lon'])
+            self.data[node_id] = (node[1]['x'], node[1]['y'])
+            self.predecessors[node_id] = list(self.mdp.G.predecessors(node_id))
 
         self.cpp = CPP_BRTDP()
         self.cpp.init(
@@ -18,6 +21,7 @@ cdef class BRTDP(osmnx_mdp.algorithms.algorithm.Algorithm):
                 &self.mdp.A,
                 &self.mdp.C,
                 &self.mdp.P,
+                &self.predecessors,
                 &self.data)
         self.cpp.setup(start, goal)
 

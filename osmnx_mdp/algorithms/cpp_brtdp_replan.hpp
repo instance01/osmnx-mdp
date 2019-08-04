@@ -14,6 +14,6 @@ class BRTDP_REPLAN : public BRTDP {
         void replan(const long &curr_node);
         std::vector<long> get_path(
             google::dense_hash_map<long, long> &diverge_policy,
-            const float &beta=.02,
+            const double &beta=.02,
             const bool &always_replan=true);
 };
