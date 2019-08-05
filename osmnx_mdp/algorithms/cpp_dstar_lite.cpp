@@ -35,7 +35,7 @@ int DStar_Lite::init(
     return 0;
 }
 
-int DStar_Lite::setup(const long &start, const long &goal)
+int DStar_Lite::setup(const long &start, const long &goal, std::unordered_map<std::string, double> cfg)
 {
     this->start = start;
     this->goal = goal;

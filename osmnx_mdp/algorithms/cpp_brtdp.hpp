@@ -1,6 +1,7 @@
 #ifndef CPP_BRTDP_HEADER
 #define CPP_BRTDP_HEADER
 #include <google/dense_hash_map>
+#include <unordered_map>
 #include <random>
 #include <vector>
 
@@ -13,6 +14,9 @@ class BRTDP {
         virtual ~BRTDP();
 
         std::default_random_engine random_generator;
+
+        double alpha;
+        double tau;
 
         long start;
         long goal;
@@ -54,7 +58,7 @@ class BRTDP {
             > *P,
             google::dense_hash_map<long, std::vector<long>> *predecessors,
             google::dense_hash_map<long, std::pair<double, double>> *data);
-        int setup(const long &start, const long &goal);
+        int setup(const long &start, const long &goal, std::unordered_map<std::string, double> cfg);
         int run_trial(const double &t);
         double get_outcome_distribution(
             const std::pair<long, long> &curr_min_action,
@@ -62,7 +66,7 @@ class BRTDP {
         long select_node_probabilistically(
             const std::pair<long, long> &curr_min_action,
             const std::vector<double> &distribution);
-        int run_trials(const double &alpha=1e-10, const double &t=10);
+        int run_trials();
         std::vector<long> get_path(google::dense_hash_map<long, long> &diverge_policy);
 
         void init_upper_bound_heuristic();

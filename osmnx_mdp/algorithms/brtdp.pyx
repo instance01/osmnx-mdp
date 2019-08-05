@@ -6,7 +6,7 @@ cdef class BRTDP(osmnx_mdp.algorithms.algorithm.Algorithm):
     def __init__(self, MDP mdp):
         self.mdp = mdp
 
-    cdef setup(self, long start, long goal):
+    cdef setup(self, long start, long goal, unordered_map[string, double] cfg):
         self.data.set_empty_key(0)
         self.predecessors.set_empty_key(0)
 
@@ -23,10 +23,10 @@ cdef class BRTDP(osmnx_mdp.algorithms.algorithm.Algorithm):
                 &self.mdp.P,
                 &self.predecessors,
                 &self.data)
-        self.cpp.setup(start, goal)
+        self.cpp.setup(start, goal, cfg)
 
-    cdef run_trials(self, alpha=1e-10, tau=10):
-        self.iterations = self.cpp.run_trials(alpha, tau)
+    cdef run_trials(self):
+        self.iterations = self.cpp.run_trials()
         self.vl = self.cpp.vl
 
     cdef get_path(self, diverge_policy):

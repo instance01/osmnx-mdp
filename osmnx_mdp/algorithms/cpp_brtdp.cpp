@@ -49,10 +49,13 @@ int BRTDP::init(
     return 0;
 }
 
-int BRTDP::setup(const long &start, const long &goal)
+int BRTDP::setup(const long &start, const long &goal, std::unordered_map<std::string, double> cfg)
 {
     this->start = start;
     this->goal = goal;
+
+    this->alpha = cfg["alpha"];
+    this->tau = cfg["tau"];
 
     std::default_random_engine rd;
     this->random_generator = std::default_random_engine(rd());
@@ -90,18 +93,15 @@ std::pair<long, long> BRTDP::update_v(
     return min_action.first;
 }
 
-int BRTDP::run_trials(const double &alpha, const double &tau)
+int BRTDP::run_trials()
 {
-    // Defaults:
-    //  alpha = 1e-10
-    //  t = 10
 #ifdef TESTS
     save_brtdp(this, "BRTDPrun_trials.cereal");
     this->random_generator.seed(42069);
 #endif
     int i = 0;
     double last_diff = 0;
-    while (this->vu[this->start] - this->vl[this->start] > alpha) {
+    while (this->vu[this->start] - this->vl[this->start] > this->alpha) {
         double diff  = this->vu[this->start] - this->vl[this->start];
 
         if (last_diff == diff)
@@ -109,7 +109,7 @@ int BRTDP::run_trials(const double &alpha, const double &tau)
 
         last_diff = diff;
 
-        this->run_trial(tau);
+        this->run_trial(this->tau);
     }
 #ifdef TESTS
     save_brtdp(this, "BRTDPrun_trialsWANT.cereal");

@@ -1,4 +1,6 @@
 # cython: language_level=3
+from libcpp.unordered_map cimport unordered_map
+from libcpp.string cimport string
 from libcpp.vector cimport vector
 from libcpp.pair cimport pair
 from osmnx_mdp.algorithms.dense_hash_map cimport dense_hash_map
@@ -28,8 +30,8 @@ cdef class BRTDP_REPLAN(osmnx_mdp.algorithms.algorithm.Algorithm):
     cdef MDP mdp
     cdef CPP_BRTDP_REPLAN cpp
 
-    cdef setup(self, long start, long goal)
-    cdef run_trials(self, alpha=*, tau=*)
+    cdef setup(self, long start, long goal, unordered_map[string, double] cfg)
+    cdef run_trials(self)
     cdef get_path(self, diverge_policy)
     cdef solve(self)
     cdef drive(self, policy, diverge_policy)

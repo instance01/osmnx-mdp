@@ -21,8 +21,9 @@ cdef run():
     remove_zero_cost_loops(G)
     remove_dead_ends(G, goal)
 
+    cfg = {}
     dstar = DStar_Lite(G)
-    dstar.setup(start, goal)
+    dstar.setup(start, goal, cfg)
     dstar.compute_shortest_path()
     col_nodes = list(dstar.drive({}, {}))
     print(col_nodes)

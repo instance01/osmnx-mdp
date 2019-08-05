@@ -11,7 +11,7 @@ cdef class BRTDP_REPLAN(osmnx_mdp.algorithms.algorithm.Algorithm):
     def __init__(self, MDP mdp):
         self.mdp = mdp
 
-    cdef setup(self, long start, long goal):
+    cdef setup(self, long start, long goal, unordered_map[string, double] cfg):
         self.data.set_empty_key(0)
         for node in self.mdp.G.nodes.data():
             node_id = node[0]
@@ -27,10 +27,10 @@ cdef class BRTDP_REPLAN(osmnx_mdp.algorithms.algorithm.Algorithm):
                 &self.mdp.P,
                 &self.predecessors,
                 &self.data)
-        self.cpp.setup(start, goal)
+        self.cpp.setup(start, goal, cfg)
 
-    cdef run_trials(self, alpha=1e-10, tau=10):
-        self.iterations = self.cpp.run_trials(alpha, tau)
+    cdef run_trials(self):
+        self.iterations = self.cpp.run_trials()
         self.vl = self.cpp.vl
 
     cdef get_path(self, diverge_policy):
@@ -43,7 +43,7 @@ cdef class BRTDP_REPLAN(osmnx_mdp.algorithms.algorithm.Algorithm):
             cpp_diverge_policy[k] = v
 
         # TODO: Bug in Cython? Can't set defaults in CPP_BRTDP_REPLAN in pxd.
-        return self.cpp.get_path(cpp_diverge_policy, .02, True)
+        return self.cpp.get_path(cpp_diverge_policy)
 
     cdef solve(self):
         self.run_trials()

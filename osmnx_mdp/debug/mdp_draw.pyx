@@ -97,8 +97,14 @@ cdef run():
     remove_zero_cost_loops(G)
     remove_dead_ends(G, goal)
 
+    cfg =  {
+        'max_angle': 35,
+        'max_length': 200,
+        'edge_uncertainty': .2
+    }
+
     mdp = MDP(G)
-    mdp.setup(start, goal)
+    mdp.setup(start, goal, cfg)
     # TODO: Lol max_iter is not getting passed to the C++ function..
     V, _ = mdp.solve_value_iteration(gamma=1., max_iter=30000)
 

@@ -38,7 +38,7 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
 
                 self.edge_data[(node_id, succ)] = self.G[node_id][succ][0]['length']
 
-    cdef setup(self, long start, long goal):
+    cdef setup(self, long start, long goal, unordered_map[string, double] cfg):
         self._setup_cpp()
         self.cpp.init(
                 &self.S,
@@ -48,7 +48,7 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
                 &self.edge_data,
                 &self.node_data,
                 &self.successors)
-        self.cpp.setup(start, goal)
+        self.cpp.setup(start, goal, cfg)
         self.uncertain_nodes = set()
         for x in self.cpp.uncertain_nodes:
             self.uncertain_nodes.add(x)

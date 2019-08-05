@@ -1,4 +1,6 @@
 # cython: language_level=3
+from libcpp.unordered_map cimport unordered_map
+from libcpp.string cimport string
 from libcpp.vector cimport vector
 from libcpp.pair cimport pair
 from osmnx_mdp.algorithms.dense_hash_map cimport dense_hash_map
@@ -23,8 +25,8 @@ cdef extern from "cpp_brtdp.hpp":
             dense_hash_map[long, vector[long]] *predecessors,
             dense_hash_map[long, pair[double, double]] *data
         )
-        int setup(long start, long goal)
-        int run_trials(double alpha, double tau)
+        int setup(long start, long goal, unordered_map[string, double] cfg)
+        int run_trials()
         vector[long] get_path(dense_hash_map[long, long] diverge_policy)
 
 
@@ -36,8 +38,8 @@ cdef class BRTDP(osmnx_mdp.algorithms.algorithm.Algorithm):
     cdef MDP mdp
     cdef CPP_BRTDP cpp
 
-    cdef setup(self, long start, long goal)
-    cdef run_trials(self, alpha=*, tau=*)
+    cdef setup(self, long start, long goal, unordered_map[string, double] cfg)
+    cdef run_trials(self)
     cdef get_path(self, diverge_policy)
     cdef solve(self)
     cdef drive(self, policy, diverge_policy)

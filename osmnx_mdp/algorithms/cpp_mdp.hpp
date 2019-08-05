@@ -1,6 +1,7 @@
 #ifndef CPP_MDP_HEADER
 #define CPP_MDP_HEADER
 #include <google/dense_hash_map>
+#include <unordered_map>
 #include <vector>
 #include <set>
 #include <unordered_set>
@@ -77,7 +78,7 @@ class MDP {
             google::dense_hash_map<std::pair<long, long>, double, pair_hash> *edge_data,
             google::dense_hash_map<long, std::pair<double, double>> *node_data,
             google::dense_hash_map<long, std::vector<long>> *successors);
-        int setup(const long &start, const long &goal);
+        int setup(const long &start, const long &goal, std::unordered_map<std::string, double> cfg);
         int make_goal_self_absorbing();
 
         int make_edge_uncertain(

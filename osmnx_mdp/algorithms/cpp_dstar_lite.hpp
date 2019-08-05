@@ -1,6 +1,7 @@
 #ifndef CPP_DSTAR_LITE_HEADER
 #define CPP_DSTAR_LITE_HEADER
 #include <google/dense_hash_map>
+#include <unordered_map>
 #include <vector>
 #include <queue>
 
@@ -36,7 +37,7 @@ class DStar_Lite {
                 google::dense_hash_map<long, std::vector<long>> *successors,
                 google::dense_hash_map<std::pair<long, long>, double, pair_hash> *cost,
                 google::dense_hash_map<long, std::pair<double, double>> *data);
-        int setup(const long &start, const long &goal);
+        int setup(const long &start, const long &goal, std::unordered_map<std::string, double> cfg);
         std::pair<double, double> calculate_key(const long &node);
         int update_vertex(const long &node);
         int compute_shortest_path();

@@ -38,16 +38,15 @@ int MDP::init(
     return 0;
 }
 
-int MDP::setup(const long &start, const long &goal) {
+int MDP::setup(const long &start, const long &goal, std::unordered_map<std::string, double> cfg) {
     this->start = start;
     this->goal = goal;
 
-    // TODO Make this a config option.
-    this->edge_uncertainty = .2;
+    this->edge_uncertainty = cfg["edge_uncertainty"];
 
     this->make_goal_self_absorbing();
-    this->make_low_angle_intersections_uncertain();
-    this->make_close_intersections_uncertain();
+    this->make_low_angle_intersections_uncertain(cfg["max_angle"]);
+    this->make_close_intersections_uncertain(cfg["max_length"]);
 
     const int total_uncertain_nodes = this->angle_nodes.size() + this->close_intersections.size();
     const double uncertainty_percent = double(total_uncertain_nodes) / (*this->S).size();

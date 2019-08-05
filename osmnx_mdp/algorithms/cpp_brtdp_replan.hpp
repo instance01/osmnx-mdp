@@ -11,9 +11,10 @@ class BRTDP_REPLAN : public BRTDP {
         BRTDP_REPLAN();
         ~BRTDP_REPLAN();
 
+        double beta;
+        bool always_replan;
+
+        int setup(const long &start, const long &goal, std::unordered_map<std::string, double> cfg);
         void replan(const long &curr_node);
-        std::vector<long> get_path(
-            google::dense_hash_map<long, long> &diverge_policy,
-            const double &beta=.02,
-            const bool &always_replan=true);
+        std::vector<long> get_path(google::dense_hash_map<long, long> &diverge_policy);
 };

@@ -7,7 +7,6 @@ from timeit import default_timer as timer
 import numpy as np
 import osmnx as ox
 
-from osmnx_mdp.lib cimport remove_dead_ends
 from osmnx_mdp.lib cimport draw_value_graph
 from osmnx_mdp.lib cimport remove_dead_ends
 from osmnx_mdp.lib cimport remove_zero_cost_loops
@@ -17,6 +16,31 @@ from osmnx_mdp.algorithms.brtdp cimport BRTDP
 from osmnx_mdp.algorithms.brtdp_replan cimport BRTDP_REPLAN
 from osmnx_mdp.algorithms.dstar_lite cimport DStar_Lite
 from osmnx_mdp.algorithms.algorithm cimport Algorithm
+
+
+# For each simulation this config is adapted.
+CONFIG = {
+    'processes': 1,
+    'diverge_policy': 'random',  # Options: random, model
+    'random_policy_percent': .2,
+    'MDP': {
+        # Cython needs byte strings
+        b'max_angle': 35,
+        b'max_length': 200,
+        b'edge_uncertainty': .2
+    },
+    'BRTDP': {
+        b'alpha': 1e-20,
+        b'tau': 100
+    },
+    'BRTDP_REPLAN': {
+        b'alpha': 1e-20,
+        b'tau': 100,
+        b'beta': .02,
+        b'always_replan': 1
+    },
+    'DStar_Lite': { }
+}
 
 
 MAPS = {
@@ -135,7 +159,8 @@ LOCATIONS = {
     ],
     'Bavaria': [
         {
-            'start': (47.6274375, 10.1708339),
+            #'start': (47.6274375, 10.1708339),
+            'start': (47.7289566,10.3077225),
             'goal': (49.9361796, 11.7199061),
             'metadata': {
                 'id': 'BavariaLONG',
@@ -166,6 +191,18 @@ def load_map_from_osm(map_metadata):
     return G
 
 
+def _update_locs(G, map_id):
+    # TODO: Weird utility function
+    locs = []
+    for i, location in enumerate(LOCATIONS[map_id]):
+        print(map_id, i, location)
+        # TODO PEP-8
+        LOCATIONS[map_id][i]['start'] = ox.utils.get_nearest_node(G, location['start'])
+        LOCATIONS[map_id][i]['goal'] = ox.utils.get_nearest_node(G, location['goal'])
+    locs = LOCATIONS[map_id]
+    return locs
+
+
 def load_maps():
     for map_id, map_metadata in MAPS.items():
         try:
@@ -176,13 +213,7 @@ def load_maps():
             print('Loading fresh map from OSM.')
             G = load_map_from_osm(map_metadata)
 
-            locs = []
-            for i, location in enumerate(LOCATIONS[map_id]):
-                print(map_id, i, location)
-                # TODO PEP-8
-                LOCATIONS[map_id][i]['start'] = ox.utils.get_nearest_node(G, location['start'])
-                LOCATIONS[map_id][i]['goal'] = ox.utils.get_nearest_node(G, location['goal'])
-            locs = LOCATIONS[map_id]
+            locs = _update_locs(G, map_id)
 
             print('Projecting graph. This might take a while..')
             G = ox.project_graph(G)
@@ -214,10 +245,11 @@ def run_simulation(
     diverge_policy shall be a function in the form diverge_policy(G, node)
     and return for a given node and its options (successors) the next node.
     """
-    print("Running %s on map %s." % (algorithm.__class__.__name__, map_id))
+    algorithm_name = algorithm.__class__.__name__
+    print("Running %s on map %s." % (algorithm_name, map_id))
     start_time = timer()
 
-    algorithm.setup(start, goal)
+    algorithm.setup(start, goal, CONFIG[algorithm_name])
     policy = algorithm.solve()
     path = algorithm.drive(policy, diverge_policy)
 
@@ -230,7 +262,7 @@ def run_simulation(
         draw_value_graph(MAPS[map_id]['map'], path)
 
     result = {
-        'algorithm': algorithm.__class__.__name__,
+        'algorithm': algorithm_name,
         'id': location_id,
         'calculation_time': total_time,
         'drive_time': drive_time,
@@ -241,7 +273,7 @@ def run_simulation(
     }
 
     print("[%s, %s, %s] Seconds for calculation: %f" % (
-        algorithm.__class__.__name__, map_id, location_id, total_time)
+        algorithm_name, map_id, location_id, total_time)
     )
     return result
 
@@ -291,6 +323,7 @@ def run(map_id, location):
     curr_result = []
 
     location_id = location['metadata']['id']
+
     start = location['start']
     goal = location['goal']
 
@@ -302,23 +335,23 @@ def run(map_id, location):
 
     print('filtered n_nodes/goal:', G.number_of_nodes(), goal)
 
-    diverge_policy = gen_random_diverge_policy(G, .2)
-
-    # TODO: Another option: Diverge policy based on uncertain nodes from MDP model.
-    # mdp = MDP(G)
-    # mdp.setup(start, goal)
-    # diverge_policy = gen_diverge_policy_with_uncertain_nodes(G, mdp.uncertain_nodes)
+    if CONFIG['diverge_policy'] == 'random':
+        diverge_policy = gen_random_diverge_policy(G, CONFIG['random_policy_percent'])
+    else:
+        mdp = MDP(G)
+        mdp.setup(start, goal, CONFIG['MDP'])
+        diverge_policy = gen_diverge_policy_with_uncertain_nodes(G, mdp.uncertain_nodes)
 
     mdp = MDP(G)
     curr_result.append(run_simulation(mdp, map_id, location_id, start, goal, diverge_policy))
 
     mdp = MDP(G)
-    mdp.setup(start, goal)
+    mdp.setup(start, goal, CONFIG['MDP'])
     brtdp = BRTDP_REPLAN(mdp)
     curr_result.append(run_simulation(brtdp, map_id, location_id, start, goal, diverge_policy))
 
     mdp = MDP(G)
-    mdp.setup(start, goal)
+    mdp.setup(start, goal, CONFIG['MDP'])
     brtdp = BRTDP(mdp)
     curr_result.append(run_simulation(brtdp, map_id, location_id, start, goal, diverge_policy))
 
@@ -346,7 +379,7 @@ def run_simulations(iterations=1):
     # maxtasksperchild=1 to make sure resources are cleaned up completely after
     # a worker finishes. So memory access to the hashmaps isn't different in
     # subsequent runs for some algorithms.
-    pool = multiprocessing.Pool(processes=2, maxtasksperchild=1)
+    pool = multiprocessing.Pool(processes=CONFIG["processes"], maxtasksperchild=1)
 
     for _ in range(iterations):
         # TODO: Rename all this

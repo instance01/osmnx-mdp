@@ -1,6 +1,8 @@
 # cython: language_level=3
 cimport osmnx_mdp.algorithms.algorithm
 
+from libcpp.unordered_map cimport unordered_map
+from libcpp.string cimport string
 from libcpp.pair cimport pair
 from libcpp.vector cimport vector
 from osmnx_mdp.algorithms.dense_hash_map cimport dense_hash_map
@@ -29,7 +31,7 @@ cdef extern from "cpp_dstar_lite.cpp":
                 dense_hash_map[long, vector[long]] *successors,
                 dense_hash_map[pair[long, long], double, pair_hash] *cost,
                 dense_hash_map[long, pair[double, double]] *data)
-        int setup(long start, long goal)
+        int setup(long start, long goal, unordered_map[string, double] cfg)
         pair[double, double] calculate_key(long node)
         int update_vertex(long u)
         int compute_shortest_path()
@@ -54,7 +56,7 @@ cdef class DStar_Lite(osmnx_mdp.algorithms.algorithm.Algorithm):
     cdef long start
     cdef long goal
 
-    cdef setup(self, long start, long goal)
+    cdef setup(self, long start, long goal, unordered_map[string, double] cfg)
     cdef calculate_key(self, node)
     cdef update_vertex(self, u)
     cdef compute_shortest_path(self)
