@@ -25,7 +25,7 @@ cdef extern from "cpp_brtdp_replan.hpp":
 cdef class BRTDP_REPLAN(osmnx_mdp.algorithms.algorithm.Algorithm):
     cdef dense_hash_map[long, vector[long]] predecessors
     cdef dense_hash_map[long, pair[double, double]] data
-    cdef dense_hash_map[long, double] vl
+    cdef dense_hash_map[pair[long, long], double, pair_hash] vl
 
     cdef MDP mdp
     cdef CPP_BRTDP_REPLAN cpp

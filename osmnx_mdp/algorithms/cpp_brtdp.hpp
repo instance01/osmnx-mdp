@@ -34,19 +34,19 @@ class BRTDP {
         google::dense_hash_map<long, std::pair<double, double>> *data;
 
         // TODO: The names may make sense with the paper, but not for anyone else, rename.
-        google::dense_hash_map<long, double> vu;
-        google::dense_hash_map<long, double> vl;
+        google::dense_hash_map<std::pair<long, long>, double, pair_hash> vu;
+        google::dense_hash_map<std::pair<long, long>, double, pair_hash> vl;
 
         double get_Q_value(
-            google::dense_hash_map<long, double> &v,
-            const long &s,
+            google::dense_hash_map<std::pair<long, long>, double, pair_hash> &v,
+            const std::pair<long, long> &s,
             const std::pair<long, long> &a);
         std::pair<std::pair<long, long>, double> get_minimum_action(
-            google::dense_hash_map<long, double> &v,
-            const long &x);
+            google::dense_hash_map<std::pair<long, long>, double, pair_hash> &v,
+            const std::pair<long, long> &x);
         std::pair<long, long> update_v(
-            google::dense_hash_map<long, double> &v,
-            const long &x);
+            google::dense_hash_map<std::pair<long, long>, double, pair_hash> &v,
+            const std::pair<long, long> &x);
         int init(
             std::vector<long> *S,
             google::dense_hash_map<long, std::vector<std::pair<long, long>>> *A,

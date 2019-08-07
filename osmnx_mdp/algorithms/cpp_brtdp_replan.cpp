@@ -27,20 +27,21 @@ std::vector<long> BRTDP_REPLAN::get_path(google::dense_hash_map<long, long> &div
 
     std::unordered_set<long> visited {this->start};
 
-    long curr_node = this->start;
-    while (curr_node != this->goal) {
+    std::pair<long, long> curr_node_pair = {0, this->start};
+    while (curr_node_pair.second != this->goal) {
+        const long curr_node = curr_node_pair.second;
         path.push_back(curr_node);
 
         long diverged_node = diverge_policy[curr_node];
         if (diverged_node == 0 || visited.find(diverged_node) != visited.end()) {
             // Current node shall not diverge, or we already visited the
             // candidate before. Let's follow the path calculated by BRTPD.
-            const auto min_action = this->get_minimum_action(this->vl, curr_node);
+            const auto min_action = this->get_minimum_action(this->vl, curr_node_pair);
 
-            const long last_node = curr_node;
-            curr_node = min_action.first.second;
+            const std::pair<long, long> last_node_pair = curr_node_pair;
+            curr_node_pair = {last_node_pair.second, min_action.first.second};
 
-            if (this->vu[curr_node] - this->vl[curr_node] > this->beta) {
+            if (this->vu[curr_node_pair] - this->vl[curr_node_pair] > this->beta) {
                 this->replan(curr_node);
             } else {
                 // We're looping between two nodes. This is most likely because
@@ -53,15 +54,15 @@ std::vector<long> BRTDP_REPLAN::get_path(google::dense_hash_map<long, long> &div
                 //   costly and we find a new path. Is the new path good though?
                 // Due to this option one is preferred. Replanning doesn't cost
                 // much and makes sure that the new path is excellent.
-                if (visited.find(curr_node) != visited.end()) {
+                if (visited.find(curr_node_pair.second) != visited.end()) {
                     if (this->always_replan)
                         this->replan(curr_node);
                    else
-                        curr_node = this->update_v(this->vl, last_node).second;
+                       curr_node_pair = {last_node_pair.second, this->update_v(this->vl, last_node_pair).second};
                 }
             }
         } else {
-            curr_node = diverged_node;
+            curr_node_pair = {curr_node_pair.second, diverged_node};
         }
 
         visited.insert(curr_node);

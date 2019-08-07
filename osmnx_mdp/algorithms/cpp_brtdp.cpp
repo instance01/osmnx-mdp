@@ -10,16 +10,26 @@
 BRTDP::BRTDP() {};
 BRTDP::~BRTDP() {};
 
+
 // TODO: Same as in MDP
 double BRTDP::get_Q_value(
-        google::dense_hash_map<long, double> &v,
-        const long &s,
+        google::dense_hash_map<std::pair<long, long>, double, pair_hash> &v,
+        const std::pair<long, long> &s_pair,
         const std::pair<long, long> &a)
 {
+    long s = s_pair.second;
     double future_cost = 0;
     for (const auto &outcome : (*this->P)[a]) {
-        future_cost += outcome.second * ((*this->C)[{s, outcome.first}] + v[outcome.first]);
+        // TODO {s, outcome.first} is code duplication.
+        future_cost += outcome.second * ((*this->C)[{s, outcome.first}] + v[{s, outcome.first}]);
     }
+
+    // Penalize U-turns by increasing cost by 10%.
+    // TODO: Is this fine ?
+    if (a.second == s_pair.first) {
+        future_cost *= 1.1;
+    }
+
     return future_cost;
 }
 
@@ -43,8 +53,8 @@ int BRTDP::init(
     this->predecessors = predecessors;
     this->data = data;
 
-    this->vl.set_empty_key(0);
-    this->vu.set_empty_key(0);
+    this->vl.set_empty_key({0, 0});
+    this->vu.set_empty_key({0, 0});
 
     return 0;
 }
@@ -63,17 +73,22 @@ int BRTDP::setup(const long &start, const long &goal, std::unordered_map<std::st
     this->init_upper_bound_heuristic();
     this->init_lower_bound_heuristic();
 
+    // TODO Move into function
+    // TODO This assumes start has one predecessor..
+    this->vl[{0, this->start}] = this->vl[{(*this->predecessors)[this->start][0], this->start}];
+    this->vu[{0, this->start}] = this->vu[{(*this->predecessors)[this->start][0], this->start}];
+
     return 0;
 }
 
 std::pair<std::pair<long, long>, double> BRTDP::get_minimum_action(
-        google::dense_hash_map<long, double> &v,
-        const long &node)
+        google::dense_hash_map<std::pair<long, long>, double, pair_hash> &v,
+        const std::pair<long, long> &node_pair)
 {
     std::pair<long, long> curr_min_action;
     double curr_min = INFINITY;
-    for (const auto &a : (*this->A)[node]) {
-        double q_val = get_Q_value(v, node, a);
+    for (const auto &a : (*this->A)[node_pair.second]) {
+        double q_val = get_Q_value(v, node_pair, a);
 
         if (q_val < curr_min) {
             curr_min = q_val;
@@ -85,11 +100,11 @@ std::pair<std::pair<long, long>, double> BRTDP::get_minimum_action(
 
 // TODO RENAME
 std::pair<long, long> BRTDP::update_v(
-        google::dense_hash_map<long, double> &v,
-        const long &node)
+        google::dense_hash_map<std::pair<long, long>, double, pair_hash> &v,
+        const std::pair<long, long> &node_pair)
 {
-    const auto min_action = this->get_minimum_action(v, node);
-    v[node] = min_action.second;
+    const auto min_action = this->get_minimum_action(v, node_pair);
+    v[node_pair] = min_action.second;
     return min_action.first;
 }
 
@@ -99,17 +114,22 @@ int BRTDP::run_trials()
     save_brtdp(this, "BRTDPrun_trials.cereal");
     this->random_generator.seed(42069);
 #endif
+    std::pair<long, long> start_pair = {0, this->start};
+
     int i = 0;
     double last_diff = 0;
-    while (this->vu[this->start] - this->vl[this->start] > this->alpha) {
-        double diff  = this->vu[this->start] - this->vl[this->start];
 
-        if (last_diff == diff)
+    while (this->vu[start_pair] - this->vl[start_pair] > this->alpha) {
+        double diff = this->vu[start_pair] - this->vl[start_pair];
+
+        if (std::fabs(last_diff - diff) < DBL_EPSILON)
             break;
 
         last_diff = diff;
 
         this->run_trial(this->tau);
+
+        i += 1;
     }
 #ifdef TESTS
     save_brtdp(this, "BRTDPrun_trialsWANT.cereal");
@@ -128,7 +148,8 @@ double BRTDP::get_outcome_distribution(
     // TODO: There's also other ways to select the next node, check paper.
     double B = 0;
     for (auto &outcome : (*this->P)[curr_min_action]) {
-        double cost = outcome.second * (this->vu[outcome.first] - this->vl[outcome.first]);
+        std::pair<long, long> node_pair = {curr_min_action.first, outcome.first};
+        double cost = outcome.second * (this->vu[node_pair] - this->vl[node_pair]);
         distribution.push_back(cost);
         B += cost;
     }
@@ -141,40 +162,47 @@ long BRTDP::select_node_probabilistically(
 {
     // Based on an action, select the next node out of the outcomes
     // probabilistcally.
-    std::discrete_distribution<int> distribution(distribution_param.begin(), distribution_param.end());
+    std::discrete_distribution<int> distribution(
+        distribution_param.begin(),
+        distribution_param.end()
+    );
     const int n = distribution(this->random_generator);
     return (*this->P)[curr_min_action][n].first;
 }
 
 int BRTDP::run_trial(const double &tau)
 {
-    long node = this->start;
+    std::pair<long, long> start_pair = {0, this->start};
+    std::pair<long, long> node_pair = start_pair;
 
-    std::stack<long> traj;
+    std::stack<std::pair<long, long>> traj;
 
     while (true) {
-        if (node == this->goal)
+        if (node_pair.second == this->goal)
             break;
 
-        traj.push(node);
+        traj.push(node_pair);
 
-        this->update_v(this->vu, node);
-        const auto curr_min_action = this->update_v(this->vl, node);
+        this->update_v(this->vu, node_pair);
+        const auto curr_min_action = this->update_v(this->vl, node_pair);
 
         std::vector<double> distribution_param;
         const double B = get_outcome_distribution(curr_min_action, distribution_param);
 
-        if (B < ((this->vu[this->start] - this->vl[this->start]) / tau))
+        if (B < ((this->vu[start_pair] - this->vl[start_pair]) / tau))
             break;
 
-        node = select_node_probabilistically(curr_min_action, distribution_param);
+        node_pair = {
+            node_pair.second,
+            select_node_probabilistically(curr_min_action, distribution_param)
+        };
     }
 
     while (!traj.empty()) {
-        const long node = traj.top();
+        const std::pair<long, long> node_pair = traj.top();
         traj.pop();
-        this->update_v(this->vu, node);
-        this->update_v(this->vl, node);
+        this->update_v(this->vu, node_pair);
+        this->update_v(this->vl, node_pair);
     }
 
     return 0;
@@ -196,8 +224,9 @@ std::vector<long> BRTDP::get_path(
 
     int failure_counter = 0;
 
-    long curr_node = this->start;
-    while (curr_node != this->goal) {
+    std::pair<long, long> curr_node_pair = {0, this->start};
+    while (curr_node_pair.second != this->goal) {
+        const long curr_node = curr_node_pair.second;
         path.push_back(curr_node);
 
         // TODO: Remove this again.
@@ -210,9 +239,9 @@ std::vector<long> BRTDP::get_path(
         const long diverged_node = diverge_policy[curr_node];
 
         if (diverged_node == 0 || visited.find(diverged_node) != visited.end()) {
-            const auto min_action = this->get_minimum_action(this->vu, curr_node);
-            const long last_node = curr_node;
-            curr_node = min_action.first.second;
+            const auto min_action = this->get_minimum_action(this->vu, curr_node_pair);
+            const std::pair<long, long> last_node_pair = curr_node_pair;
+            curr_node_pair = {last_node_pair.second, min_action.first.second};
 
             // TODO: This happens very rarely and only with very aggressive
             // diverge policies that are probably way too much.
@@ -220,17 +249,17 @@ std::vector<long> BRTDP::get_path(
             //
             // This is quite a difference to vanilla BRTDP. But it's needed,
             // else we crash because of our hard diverge policies.
-            if (visited[curr_node] > 5) {
+            if (visited[curr_node_pair.second] > 5) {
                 custom_updates += 1;
                 // If we're looping, fix this by updating the value of the node.
                 // This is most likely because we diverged too far and BRTDP
                 // wasn't here before.
                 // It takes a while for the costs to become big enough, i.e.
                 // for the loop to resolve.
-                curr_node = this->update_v(this->vl, last_node).second;
+                curr_node_pair = {last_node_pair.second, this->update_v(this->vl, last_node_pair).second};
             }
         } else {
-            curr_node = diverged_node;
+            curr_node_pair = {curr_node_pair.second, diverged_node};
         }
 
         visited[curr_node] += 1;
@@ -393,7 +422,9 @@ void BRTDP::init_upper_bound_heuristic() {
     }
 
     for (long &state : (*this->S)) {
-        this->vu[state] = w[state] + (1 - pg[state]) * max_lambda;
+        for (long &neighbor : (*this->predecessors)[state]) {
+            this->vu[{neighbor, state}] = w[state] + (1 - pg[state]) * max_lambda;
+        }
     }
 }
 
@@ -441,6 +472,8 @@ void BRTDP::init_lower_bound_heuristic() {
             curr_node = next_node;
         }
 
-        this->vl[state] = curr_cost;
+        for (long &neighbor : (*this->predecessors)[state]) {
+            this->vl[{neighbor, state}] = curr_cost;
+        }
     }
 }

@@ -17,7 +17,7 @@ cdef class BRTDP_REPLAN(osmnx_mdp.algorithms.algorithm.Algorithm):
             node_id = node[0]
             self.data[node_id] = (node[1]['lat'], node[1]['lon'])
 
-            self.predecessors[node_id] = list(self.G.predecessors(node_id))
+            self.predecessors[node_id] = list(self.mdp.G.predecessors(node_id))
 
         self.cpp = CPP_BRTDP_REPLAN()
         self.cpp.init(
