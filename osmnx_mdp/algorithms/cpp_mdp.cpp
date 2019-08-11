@@ -23,7 +23,8 @@ int MDP::init(
         > *P,
         google::dense_hash_map<std::pair<long, long>, double, pair_hash> *edge_data,
         google::dense_hash_map<long, std::pair<double, double>> *node_data,
-        google::dense_hash_map<long, std::vector<long>> *successors) {
+        google::dense_hash_map<long, std::vector<long>> *successors,
+        google::dense_hash_map<long, std::vector<long>> *predecessors) {
     this->S = S;
     this->A = A;
     this->C = C;
@@ -31,8 +32,9 @@ int MDP::init(
     this->edge_data = edge_data;
     this->node_data = node_data;
     this->successors = successors;
+    this->predecessors = predecessors;
 
-    this->V.set_empty_key(0);
+    this->V.set_empty_key({0, 0});
     this->policy.set_empty_key(0);
 
     return 0;
@@ -375,40 +377,52 @@ int MDP::make_low_angle_intersections_uncertain(const double &max_angle) {
 
 // TODO Same as BRTDP
 double MDP::get_Q_value(
-        google::dense_hash_map<long, double> &prev_V,
+        google::dense_hash_map<std::pair<long, long>, double, pair_hash> &prev_V,
         const long &s,
         const std::pair<long, long> &a)
 {
     double future_cost = 0;
     for (const auto &outcome : (*this->P)[a]) {
-        future_cost += outcome.second * ((*this->C)[{s, outcome.first}] + prev_V[outcome.first]);
+        future_cost += outcome.second * ((*this->C)[{s, outcome.first}] + prev_V[{s, outcome.first}]);
     }
     return future_cost;
 }
 
 // TODO Hashmaps of Hashmaps sucks, change this.
-google::dense_hash_map<long, google::dense_hash_map<std::pair<long, long>, double, pair_hash>> MDP::init_Q() {
-    google::dense_hash_map<long, google::dense_hash_map<std::pair<long, long>, double, pair_hash>> Q;
-    Q.set_empty_key(0);
+auto MDP::init_Q() {
+    google::dense_hash_map<
+        std::pair<long, long>,
+        google::dense_hash_map<std::pair<long, long>, double, pair_hash>,
+        pair_hash> Q;
+    Q.set_empty_key({0, 0});
 
     for (auto &s : *this->S) {
-        Q[s] = google::dense_hash_map<std::pair<long, long>, double, pair_hash>();
-        Q[s].set_empty_key(std::pair<long, long>(0, 0));
-        for (auto &a : (*this->A)[s]) {
-            Q[s][a] = 0.;
+        for (auto &pred : (*this->predecessors)[s]) {
+            std::pair<long, long> state_pair = {pred, s};
+
+            Q[state_pair] = google::dense_hash_map<std::pair<long, long>, double, pair_hash>();
+            Q[state_pair].set_empty_key(std::pair<long, long>(0, 0));
+
+            for (auto &a : (*this->A)[s]) {
+                Q[state_pair][a] = 0.;
+            }
+
+            V[state_pair] = 0.;
         }
-        V[s] = 0.;
     }
 
     return Q;
 }
 
-bool MDP::converged(google::dense_hash_map<long, double> &prev_V, const double &eps) {
+bool MDP::converged(
+        google::dense_hash_map<std::pair<long, long>, double, pair_hash> &prev_V,
+        const double &eps)
+{
     double c = 0;
     auto V_iter = this->V.begin();
     auto prev_V_iter = prev_V.begin();
 
-    while (V_iter != V.end() || prev_V_iter != prev_V.end()) {
+    while (V_iter != V.end() && prev_V_iter != prev_V.end()) {
         c += (*V_iter).second - (*prev_V_iter).second;
         ++V_iter;
         ++prev_V_iter;
@@ -434,16 +448,20 @@ int MDP::solve(const int &max_iter, const double &eps) {
         auto prev_V = V;
 
         for (const auto &s : *this->S) {
-            for (const auto &a : (*this->A)[s]) {
-                Q[s][a] = this->get_Q_value(prev_V, s, a);
+            for (auto &pred : (*this->predecessors)[s]) {
+                std::pair<long, long> state_pair = {pred, s};
+
+                for (const auto &a : (*this->A)[s]) {
+                    Q[state_pair][a] = this->get_Q_value(prev_V, s, a);
+                }
+
+                std::pair<const std::pair<long, long>, double> best_action = *min_element(
+                        Q[state_pair].begin(),
+                        Q[state_pair].end(),
+                        [](auto& a, auto& b) { return a.second < b.second; });
+
+                this->V[state_pair] = best_action.second;
             }
-
-            std::pair<const std::pair<long, long>, double> best_action = *min_element(
-                    Q[s].begin(),
-                    Q[s].end(),
-                    [](auto& a, auto& b) { return a.second < b.second; });
-
-            V[s] = best_action.second;
         }
 
         // Only check for convergence every 10 (100) runs.
@@ -477,7 +495,7 @@ int MDP::get_policy() {
             // TODO Use Q value function here. Code duplication.
             double cost = 0;
             for (auto &outcome : (*this->P)[a]) {
-                cost += outcome.second * ((*this->C)[a] + V[outcome.first]);
+                cost += outcome.second * ((*this->C)[a] + V[{s, outcome.first}]);
             }
 
             if (cost < curr_min) {

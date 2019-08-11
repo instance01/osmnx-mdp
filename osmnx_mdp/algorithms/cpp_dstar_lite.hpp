@@ -10,7 +10,7 @@
 
 class DStar_Lite {
     private:
-        std::pair<long, double> get_min_successor(const long &node);
+        std::pair<long, double> get_min_successor(const std::pair<long, long> &node_pair);
 
     public:
         DStar_Lite();
@@ -26,6 +26,8 @@ class DStar_Lite {
         long start;
         long goal;
 
+        bool dijkstra_heuristic;
+
         google::dense_hash_map<long, std::vector<long>> *predecessors;
         google::dense_hash_map<long, std::vector<long>> *successors;
         google::dense_hash_map<long, std::pair<double, double>> *data;
@@ -38,6 +40,7 @@ class DStar_Lite {
                 google::dense_hash_map<std::pair<long, long>, double, pair_hash> *cost,
                 google::dense_hash_map<long, std::pair<double, double>> *data);
         int setup(const long &start, const long &goal, std::unordered_map<std::string, double> cfg);
+        float aerial_heuristic(const long &node);
         std::pair<double, double> calculate_key(const long &node);
         int update_vertex(const long &node);
         int compute_shortest_path();

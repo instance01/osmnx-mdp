@@ -19,6 +19,7 @@ double BRTDP::get_Q_value(
 {
     long s = s_pair.second;
     double future_cost = 0;
+
     for (const auto &outcome : (*this->P)[a]) {
         // TODO {s, outcome.first} is code duplication.
         future_cost += outcome.second * ((*this->C)[{s, outcome.first}] + v[{s, outcome.first}]);
@@ -226,7 +227,7 @@ std::vector<long> BRTDP::get_path(
 
     std::pair<long, long> curr_node_pair = {0, this->start};
     while (curr_node_pair.second != this->goal) {
-        const long curr_node = curr_node_pair.second;
+        long curr_node = curr_node_pair.second;
         path.push_back(curr_node);
 
         // TODO: Remove this again.
@@ -256,13 +257,14 @@ std::vector<long> BRTDP::get_path(
                 // wasn't here before.
                 // It takes a while for the costs to become big enough, i.e.
                 // for the loop to resolve.
+                this->update_v(this->vu, last_node_pair);
                 curr_node_pair = {last_node_pair.second, this->update_v(this->vl, last_node_pair).second};
             }
         } else {
             curr_node_pair = {curr_node_pair.second, diverged_node};
         }
 
-        visited[curr_node] += 1;
+        visited[curr_node_pair.second] += 1;
     }
 
     // TODO Consider

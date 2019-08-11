@@ -49,7 +49,7 @@ class MDP {
             pair_hash
         > *P;
 
-        google::dense_hash_map<long, double> V;
+        google::dense_hash_map<std::pair<long, long>, double, pair_hash> V;
         // TODO Only save the index of the action, not the whole action again.
         google::dense_hash_map<long, std::pair<long, long>> policy;
 
@@ -62,6 +62,7 @@ class MDP {
         std::unordered_set<Intersection, intersection_hash> close_intersections;
         google::dense_hash_map<std::pair<long, long>, double, pair_hash> *edge_data;
         google::dense_hash_map<long, std::pair<double, double>> *node_data;
+        google::dense_hash_map<long, std::vector<long>> *predecessors;
         google::dense_hash_map<long, std::vector<long>> *successors;
 
         std::set<long> uncertain_nodes;
@@ -77,7 +78,8 @@ class MDP {
             > *P,
             google::dense_hash_map<std::pair<long, long>, double, pair_hash> *edge_data,
             google::dense_hash_map<long, std::pair<double, double>> *node_data,
-            google::dense_hash_map<long, std::vector<long>> *successors);
+            google::dense_hash_map<long, std::vector<long>> *successors,
+            google::dense_hash_map<long, std::vector<long>> *predecessors);
         int setup(const long &start, const long &goal, std::unordered_map<std::string, double> cfg);
         int make_goal_self_absorbing();
 
@@ -96,11 +98,13 @@ class MDP {
         int make_close_intersections_uncertain(const double &max_length=100);
         int make_low_angle_intersections_uncertain(const double &max_angle=30);
         double get_Q_value(
-            google::dense_hash_map<long, double> &prev_V,
+            google::dense_hash_map<std::pair<long, long>, double, pair_hash> &prev_V,
             const long &s,
             const std::pair<long, long> &a);
-        google::dense_hash_map<long, google::dense_hash_map<std::pair<long, long>, double, pair_hash>> init_Q();
-        bool converged(google::dense_hash_map<long, double> &prev_V, const double &eps);
+        auto init_Q();
+        bool converged(
+                google::dense_hash_map<std::pair<long, long>, double, pair_hash> &prev_V,
+                const double &eps);
         int solve(const int &max_iter=50000, const double &eps=1e-20);
         int get_policy();
         std::vector<long> drive(google::dense_hash_map<long, long> &diverge_policy);

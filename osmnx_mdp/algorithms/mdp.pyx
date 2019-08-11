@@ -12,6 +12,7 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
         self.cpp = CPP_MDP()
 
     cdef _setup_cpp(self):
+        self.predecessors.set_empty_key(0)
         self.successors.set_empty_key(0)
         self.node_data.set_empty_key(0)
         self.edge_data.set_empty_key((0, 0))
@@ -23,6 +24,7 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
             node_id = node[0]
             successors = list(self.G.successors(node_id))
 
+            self.predecessors[node_id] = list(self.G.predecessors(node_id))
             self.successors[node_id] = successors
 
             self.node_data[node_id] = (node[1]['x'], node[1]['y'])
@@ -47,7 +49,8 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
                 &self.P,
                 &self.edge_data,
                 &self.node_data,
-                &self.successors)
+                &self.successors,
+                &self.predecessors)
         self.cpp.setup(start, goal, cfg)
         self.uncertain_nodes = set()
         for x in self.cpp.uncertain_nodes:

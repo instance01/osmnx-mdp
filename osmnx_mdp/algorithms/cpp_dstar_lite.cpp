@@ -40,7 +40,12 @@ int DStar_Lite::setup(const long &start, const long &goal, std::unordered_map<st
     this->start = start;
     this->goal = goal;
 
-    this->init_heuristic();
+    if (cfg["heuristic"] == 0) {
+        this->dijkstra_heuristic = true;
+        this->init_heuristic();
+    } else {
+        this->dijkstra_heuristic = false;
+    }
 
     // TODO: Explanations
     // rhs, g:
@@ -64,11 +69,12 @@ int DStar_Lite::setup(const long &start, const long &goal, std::unordered_map<st
     return 0;
 }
 
-std::pair<long, double> DStar_Lite::get_min_successor(const long &node)
+std::pair<long, double> DStar_Lite::get_min_successor(const std::pair<long, long> &node_pair)
 {
-    // For a given node, return the successor which lies on the minimum sum
-    // of the estimated path to the node and the edge cost between the node
+    // For a given node, return the successor which lies on the minimum sum of
+    // the estimated path to the node g(x) and the edge cost between the node
     // and the successor.
+    const long node = node_pair.second;
 
     double min_cost = INFINITY;
     long min_node = 0;
@@ -77,7 +83,12 @@ std::pair<long, double> DStar_Lite::get_min_successor(const long &node)
     // however it is actually less readable in this case.
     for (const auto &succ : (*this->successors)[node]) {
         const double edge_cost = (*this->cost)[{node, succ}];
-        const double cost = this->g[succ] + edge_cost;
+        double cost = this->g[succ] + edge_cost;
+
+        // Penalize U-turns by increasing cost by 10%.
+        if (node_pair.first == succ) {
+            cost *= 1.1;
+        }
 
         if (cost <= min_cost) {
             min_cost = cost;
@@ -88,18 +99,27 @@ std::pair<long, double> DStar_Lite::get_min_successor(const long &node)
     return {min_node, min_cost};
 }
 
+float DStar_Lite::aerial_heuristic(const long &node)
+{
+    float lat1, lon1, lat2, lon2;
+    std::tie(lat1, lon1) = (*this->data)[node];
+    std::tie(lat2, lon2) = (*this->data)[this->start];
+    return aerial_dist(lat1, lon1, lat2, lon2) / 160; // Hours
+}
+
 // TODO Rename DStar_Lite
 
 std::pair<double, double> DStar_Lite::calculate_key(const long &node)
 {
     double key = std::min(this->g[node], this->rhs[node]);
-    return std::pair<double, double>(key + this->heuristic_map[node] + this->k, key);
+    double heuristic_val = this->dijkstra_heuristic ? this->heuristic_map[node] : aerial_heuristic(node);
+    return std::pair<double, double>(key + heuristic_val + this->k, key);
 }
 
 int DStar_Lite::update_vertex(const long &node)
 {
     if (node != this->goal)
-        this->rhs[node] = this->get_min_successor(node).second;
+        this->rhs[node] = this->get_min_successor({0, node}).second;
 
     this->U.erase(node);
 
@@ -161,9 +181,10 @@ int DStar_Lite::drive(
 #ifdef TESTS
     save_dstar(this, "DSTARdrive.cereal");
 #endif
+    std::pair<long, long> start_pair = {0, this->start};
     long last_start = this->start;
 
-    std::unordered_set<long> visited = {this->start};
+    std::unordered_set<std::pair<long, long>, pair_hash> visited = {start_pair};
     out.push_back(this->start);
 
     while (this->start != this->goal) {
@@ -171,16 +192,22 @@ int DStar_Lite::drive(
             throw std::runtime_error("No path found.");
 
         const long diverged_node = diverge_policy[this->start];
-        if (diverged_node == 0 || visited.find(diverged_node) != visited.end()) {
-            this->start = this->get_min_successor(this->start).first;
+
+        const std::pair<long, long> diverged_pair = {start_pair.second, diverged_node};
+        if (diverged_node == 0 || visited.find(diverged_pair) != visited.end()) {
+            this->start = this->get_min_successor(start_pair).first;
         } else {
             this->start = diverged_node;
-            this->k += this->heuristic_map[last_start];
+            double heuristic_val = this->dijkstra_heuristic ?
+                this->heuristic_map[last_start] : aerial_heuristic(last_start);
+            this->k += heuristic_val;
             last_start = this->start;
             this->compute_shortest_path();
         }
 
-        visited.insert(this->start);
+        start_pair = {start_pair.second, this->start};
+
+        visited.insert(start_pair);
         out.push_back(this->start);
     }
 

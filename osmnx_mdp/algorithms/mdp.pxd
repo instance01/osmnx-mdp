@@ -31,7 +31,7 @@ cdef extern from "cpp_mdp.hpp":
             pair_hash
         ] *P
 
-        dense_hash_map[long, double] V
+        dense_hash_map[pair[long, long], double, pair_hash] V
         dense_hash_map[long, pair[long, long]] policy
 
         long start
@@ -41,6 +41,7 @@ cdef extern from "cpp_mdp.hpp":
         vector[CPP_Intersection] close_intersections
         dense_hash_map[pair[long, long], double, pair_hash] *edge_data
         dense_hash_map[long, pair[double, double]] *node_data
+        dense_hash_map[long, vector[long]] *predecessors
         dense_hash_map[long, vector[long]] *successors
 
         cset[long] uncertain_nodes
@@ -56,7 +57,8 @@ cdef extern from "cpp_mdp.hpp":
             ] *P,
             dense_hash_map[pair[long, long], double, pair_hash] *edge_data,
             dense_hash_map[long, pair[double, double]] *node_data,
-            dense_hash_map[long, vector[long]] *successors)
+            dense_hash_map[long, vector[long]] *successors,
+            dense_hash_map[long, vector[long]] *predecessors)
         int setup(long start, long goal, unordered_map[string, double] cfg)
         int make_goal_self_absorbing()
         int make_edge_uncertain(
@@ -83,6 +85,7 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
 
     cdef dense_hash_map[pair[long, long], double, pair_hash] edge_data
     cdef dense_hash_map[long, pair[double, double]] node_data
+    cdef dense_hash_map[long, vector[long]] predecessors
     cdef dense_hash_map[long, vector[long]] successors
 
     cdef CPP_MDP cpp
