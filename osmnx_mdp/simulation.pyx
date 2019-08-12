@@ -19,6 +19,7 @@ from osmnx_mdp.algorithms.algorithm cimport Algorithm
 
 
 # For each simulation this config is adapted.
+# Algorithm configs are always bytestring -> double due to static typing in C++.
 CONFIG = {
     'processes': 1,
     'diverge_policy': 'random',  # Options: random, model
@@ -39,7 +40,9 @@ CONFIG = {
         b'beta': .02,
         b'always_replan': 1
     },
-    'DStar_Lite': { }
+    'DStar_Lite': {
+        b'heuristic': 1 # Options: 0 for Dijkstra, 1 for aerial distance
+    }
 }
 
 
@@ -81,11 +84,11 @@ MAPS = {
         'south': '47.809321',
         'east': '11.502211'
     },
-    #'Bavaria': {
-    #    'type': 'place',
-    #    'file': 'data/bavaria.pickle',
-    #    'place': 'Bavaria, Germany'
-    #}
+    'Bavaria': {
+        'type': 'place',
+        'file': 'data/bavaria.pickle',
+        'place': 'Bavaria, Germany'
+    }
 }
 
 
