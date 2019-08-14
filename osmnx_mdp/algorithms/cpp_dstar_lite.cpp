@@ -236,11 +236,13 @@ void DStar_Lite::init_heuristic() {
 
     std::vector<std::pair<long, double>> queue;
 
-    for (long &state : this->nodes) {
-        dist[state] = INFINITY;
-        queue.push_back({state, INFINITY});
-    }
     dist[this->goal] = 0;
+
+    for (long &state : this->nodes) {
+        if (state != this->goal)
+            dist[state] = INFINITY;
+        queue.push_back({state, dist[state]});
+    }
 
     std::make_heap(queue.begin(), queue.end());
 

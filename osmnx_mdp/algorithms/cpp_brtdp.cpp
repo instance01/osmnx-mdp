@@ -441,11 +441,13 @@ void BRTDP::init_lower_bound_heuristic() {
 
     std::vector<std::pair<long, double>> queue;
 
-    for (long &state : (*this->S)) {
-        dist[state] = INFINITY;
-        queue.push_back({state, INFINITY});
-    }
     dist[this->goal] = 0;
+
+    for (long &state : (*this->S)) {
+        if (state != this->goal)
+            dist[state] = INFINITY;
+        queue.push_back({state, dist[state]});
+    }
 
     std::make_heap(queue.begin(), queue.end());
 
