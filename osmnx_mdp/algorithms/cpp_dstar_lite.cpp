@@ -10,6 +10,8 @@
 #include "../cpp_queue_util.hpp" // queue_decrease_priority, queue_pop
 
 
+// TODO Rename DStar_Lite
+
 DStar_Lite::DStar_Lite () {}
 DStar_Lite::~DStar_Lite () {}
 
@@ -40,20 +42,14 @@ int DStar_Lite::setup(const long &start, const long &goal, std::unordered_map<st
     this->start = start;
     this->goal = goal;
 
+    this->k = 0;
+
     if (cfg["heuristic"] == 0) {
         this->dijkstra_heuristic = true;
         this->init_heuristic();
     } else {
         this->dijkstra_heuristic = false;
     }
-
-    // TODO: Explanations
-    // rhs, g:
-    // Estimate of distance from current node to start node
-    // rhs is an estimate using g value of predecessors + distance from
-    // current node to the predecessor.
-    // g is the previously calculated g-value (similar to A*).
-    // Thus rhs will mostly be a bit ahead of g.
 
     // TODO Per paper: It's not necessary to init all states to inf here
     // We can also do it when we encounter a new state in
@@ -104,10 +100,8 @@ float DStar_Lite::aerial_heuristic(const long &node)
     float lat1, lon1, lat2, lon2;
     std::tie(lat1, lon1) = (*this->data)[node];
     std::tie(lat2, lon2) = (*this->data)[this->start];
-    return aerial_dist(lat1, lon1, lat2, lon2) / 160; // Hours
+    return aerial_dist(lat1, lon1, lat2, lon2) / 200; // Hours
 }
-
-// TODO Rename DStar_Lite
 
 std::pair<double, double> DStar_Lite::calculate_key(const long &node)
 {
@@ -118,13 +112,10 @@ std::pair<double, double> DStar_Lite::calculate_key(const long &node)
 
 int DStar_Lite::update_vertex(const long &node)
 {
-    if (node != this->goal)
-        this->rhs[node] = this->get_min_successor({0, node}).second;
-
-    this->U.erase(node);
-
     if (this->g[node] != this->rhs[node])
         this->U[node] = this->calculate_key(node);
+    else if(this->g[node] == this->rhs[node])
+        this->U.erase(node);
 
     return 0;
 }
@@ -146,24 +137,44 @@ int DStar_Lite::compute_shortest_path()
         const bool start_consistent = this->rhs[this->start] == this->g[this->start];
         if (reached_start && start_consistent)
             break;
+        // TODO: Different from the optimized version of D* Lite
+        //const bool start_not_overconsistent = this->rhs[this->start] <= this->g[this->start];
+        //if (reached_start && start_not_overconsistent)
+        //    break;
 
         const long node = candidate.first;
         const auto k_old = candidate.second;
 
-        this->U.erase(node);
         const auto key = this->calculate_key(node);
 
         if (k_old < key) {
             this->U[node] = key;
         } else if (this->g[node] > this->rhs[node]) {
             this->g[node] = this->rhs[node];
+            this->U.erase(node);
+            for (const auto &pred : (*this->predecessors)[node]) {
+                if (pred != this->goal)
+                    this->rhs[pred] = std::min(
+                            this->rhs[pred],
+                            (*this->cost)[{pred, node}] + this->g[node]);
+                this->update_vertex(pred);
+            }
         } else {
+            const auto g_old = this->g[node];
             this->g[node] = INFINITY;
-            this->update_vertex(node);
-        }
 
-        for (const auto &pred : (*this->predecessors)[node]) {
-            this->update_vertex(pred);
+            // TODO: This might potentially rather SLOW it down than make it faster..
+            auto to_update = (*this->predecessors)[node];
+            to_update.push_back(node);
+            for (const auto &x : to_update) {
+                if (this->rhs[x] == (*this->cost)[{x, node}] + g_old) {
+                    if (x != this->goal) {
+                        //this->rhs[x] = this->get_min_successor({node, x}).second;
+                        this->rhs[x] = this->get_min_successor({0, x}).second;
+                    }
+                }
+                this->update_vertex(x);
+            }
         }
     }
     
@@ -236,13 +247,12 @@ void DStar_Lite::init_heuristic() {
 
     std::vector<std::pair<long, double>> queue;
 
-    dist[this->goal] = 0;
 
     for (long &state : this->nodes) {
-        if (state != this->goal)
-            dist[state] = INFINITY;
-        queue.push_back({state, dist[state]});
+        dist[state] = INFINITY;
     }
+    dist[this->goal] = 0;
+    queue.push_back({this->goal, dist[this->goal]});
 
     std::make_heap(queue.begin(), queue.end());
 

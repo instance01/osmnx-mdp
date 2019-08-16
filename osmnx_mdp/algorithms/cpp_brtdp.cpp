@@ -7,6 +7,9 @@
 #include "../cpp_queue_util.hpp" // queue_decrease_priority, queue_pop
 
 
+#include <chrono>
+
+
 BRTDP::BRTDP() {};
 BRTDP::~BRTDP() {};
 
@@ -71,8 +74,20 @@ int BRTDP::setup(const long &start, const long &goal, std::unordered_map<std::st
     std::default_random_engine rd;
     this->random_generator = std::default_random_engine(rd());
 
+    const double lat2 = (*this->data)[this->goal].first;
+    const double lon2 = (*this->data)[this->goal].second;
+
+    for (const auto &x : *data) {
+        const double lat1 = x.second.first;
+        const double lon1 = x.second.second;
+
+        for (auto &pred : (*this->predecessors)[x.first]) {
+            this->vl[{pred, x.first}] = aerial_dist(lat1, lon1, lat2, lon2) / 200;
+        }
+    }
+
     this->init_upper_bound_heuristic();
-    this->init_lower_bound_heuristic();
+    //this->init_lower_bound_heuristic();
 
     // TODO Move into function
     // TODO This assumes start has one predecessor..
@@ -123,7 +138,7 @@ int BRTDP::run_trials()
     while (this->vu[start_pair] - this->vl[start_pair] > this->alpha) {
         double diff = this->vu[start_pair] - this->vl[start_pair];
 
-        if (std::fabs(last_diff - diff) < DBL_EPSILON)
+        if (diff < 1.0 && std::fabs(last_diff - diff) < DBL_EPSILON)
             break;
 
         last_diff = diff;
@@ -339,7 +354,8 @@ void BRTDP::init_upper_bound_heuristic() {
 
     // Paper: 'Select an action arbitrarily.'
     // So I just take the first action and noone can stop me.
-    policy[this->goal] = (*this->A)[this->goal][0];
+    //policy[this->goal] = (*this->A)[this->goal][0];
+    policy[this->goal] = {this->goal, this->goal};
 
     std::vector<std::pair<long, std::pair<double, double>>> queue;
     queue.push_back({this->goal, {0, 0}});
@@ -388,13 +404,14 @@ void BRTDP::init_upper_bound_heuristic() {
 
             double total_w = 0;
             double total_pg = 0;
+
             for (auto &outcome : outcomes) {
                 long y = outcome.first;
                 total_w += outcome.second * w[y];
                 total_pg += outcome.second * pg[y];
             }
 
-            if (pg[x] < total_pg) {
+            if (pg[x] < total_pg - DBL_EPSILON) {
                 lambda[action] = ((*this->C)[action] + total_w - w[x]) / (total_pg - pg[x]);
                 // TODO: Below mention double imprecision ..
             } else if (w[x] + DBL_EPSILON >= (*this->C)[action] + total_w && std::fabs(pg[x] - total_pg) < DBL_EPSILON) {
@@ -433,6 +450,9 @@ void BRTDP::init_upper_bound_heuristic() {
 void BRTDP::init_lower_bound_heuristic() {
     // Single source (from goal) all target Dijkstra
 
+    google::dense_hash_map<long, bool> fin;
+    fin.set_empty_key(0);
+
     google::dense_hash_map<long, double> dist;
     google::dense_hash_map<long, long> prev;
 
@@ -441,23 +461,29 @@ void BRTDP::init_lower_bound_heuristic() {
 
     std::vector<std::pair<long, double>> queue;
 
-    dist[this->goal] = 0;
-
     for (long &state : (*this->S)) {
-        if (state != this->goal)
-            dist[state] = INFINITY;
-        queue.push_back({state, dist[state]});
+        dist[state] = INFINITY;
     }
+    dist[this->goal] = 0;
+    queue.push_back({this->goal, 0});
 
     std::make_heap(queue.begin(), queue.end());
 
+    auto starttime = std::chrono::high_resolution_clock::now();
     while (!queue.empty()) {
         long node = queue_pop(queue);
+
+        fin[node] = true;
 
         for (long &neighbor : (*this->predecessors)[node]) {
             double new_dist = dist[node] + (*this->C)[{neighbor, node}];
 
-            if (new_dist < dist[neighbor] + DBL_EPSILON) {
+            if (fin[neighbor])
+                continue;
+
+            // TODO
+            //if (new_dist < dist[neighbor] + DBL_EPSILON) {
+            if (new_dist < dist[neighbor]) {
                 dist[neighbor] = new_dist;
                 prev[neighbor] = node;
 
@@ -465,6 +491,10 @@ void BRTDP::init_lower_bound_heuristic() {
             }
         }
     }
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - starttime);
+    std::cout << "Time taken by loop: " << duration.count() << " msec" << std::endl;
+
 
     for (long &state : (*this->S)) {
         double curr_cost = 0;
@@ -477,6 +507,7 @@ void BRTDP::init_lower_bound_heuristic() {
         }
 
         for (long &neighbor : (*this->predecessors)[state]) {
+            //std::cout << this->vl[{neighbor, state}] << " >> " << curr_cost << std::endl;
             this->vl[{neighbor, state}] = curr_cost;
         }
     }
