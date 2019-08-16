@@ -62,6 +62,15 @@ int MDP::make_goal_self_absorbing() {
     save_mdp(this, "MDPmake_goal_self_absorbing.cereal");
 #endif
 
+    // Get rid of all leaking actions
+    std::vector<std::pair<long, long>>::iterator action = (*this->A)[this->goal].begin();
+    while (action != (*this->A)[this->goal].end()) {
+        if (action->second != this->goal) {
+            action = (*this->A)[this->goal].erase(action);
+            // TODO: Erase from P too?
+        }
+    }
+
     // Add a zero-cost loop at the goal to absorb cost.
     std::pair<long, long> edge(this->goal, this->goal);
     (*this->A)[this->goal].push_back(edge);
