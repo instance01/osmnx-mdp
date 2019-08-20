@@ -12,6 +12,9 @@
 
 // TODO Rename DStar_Lite
 
+// TODO: Move to lib
+const double U_TURN_PENALTY = 30 / 3600.; // 30 seconds, converted to hours
+
 DStar_Lite::DStar_Lite () {}
 DStar_Lite::~DStar_Lite () {}
 
@@ -29,10 +32,10 @@ int DStar_Lite::init(
     this->predecessors = predecessors;
     this->successors = successors;
 
-    this->rhs.set_empty_key(0);
-    this->g.set_empty_key(0);
-    this->U.set_empty_key(0);
-    this->U.set_deleted_key(1);
+    this->rhs.set_empty_key({0, 0});
+    this->g.set_empty_key({0, 0});
+    this->U.set_empty_key({0, 0});
+    this->U.set_deleted_key({1, 1});
 
     return 0;
 }
@@ -48,19 +51,26 @@ int DStar_Lite::setup(const long &start, const long &goal, std::unordered_map<st
         this->dijkstra_heuristic = true;
         this->init_heuristic();
     } else {
+        this->heuristic_max_speed = cfg["heuristic_max_speed"];
         this->dijkstra_heuristic = false;
     }
+
+    (*this->predecessors)[this->start].push_back(0);
 
     // TODO Per paper: It's not necessary to init all states to inf here
     // We can also do it when we encounter a new state in
     // compute_shortest_path
     for (const auto &node : this->nodes) {
-        this->rhs[node] = INFINITY;
-        this->g[node] = INFINITY;
+        for (const auto &pred : (*this->predecessors)[node]) {
+            this->rhs[{pred, node}] = INFINITY;
+            this->g[{pred, node}] = INFINITY;
+        }
     }
 
-    this->rhs[this->goal] = 0;
-    this->U[this->goal] = this->calculate_key(this->goal);
+        for (const auto &pred : (*this->predecessors)[this->goal]) {
+    this->rhs[{pred, this->goal}] = 0;
+    this->U[{pred, this->goal}] = this->calculate_key({pred, this->goal});
+        }
 
     return 0;
 }
@@ -79,11 +89,11 @@ std::pair<long, double> DStar_Lite::get_min_successor(const std::pair<long, long
     // however it is actually less readable in this case.
     for (const auto &succ : (*this->successors)[node]) {
         const double edge_cost = (*this->cost)[{node, succ}];
-        double cost = this->g[succ] + edge_cost;
+        double cost = this->g[{node, succ}] + edge_cost;
 
         // Penalize U-turns by increasing cost by 10%.
         if (node_pair.first == succ) {
-            cost *= 1.1;
+            cost += U_TURN_PENALTY;
         }
 
         if (cost <= min_cost) {
@@ -100,22 +110,22 @@ float DStar_Lite::aerial_heuristic(const long &node)
     float lat1, lon1, lat2, lon2;
     std::tie(lat1, lon1) = (*this->data)[node];
     std::tie(lat2, lon2) = (*this->data)[this->start];
-    return aerial_dist(lat1, lon1, lat2, lon2) / 200; // Hours
+    return aerial_dist(lat1, lon1, lat2, lon2) / this->heuristic_max_speed; // Hours
 }
 
-std::pair<double, double> DStar_Lite::calculate_key(const long &node)
+std::pair<double, double> DStar_Lite::calculate_key(const std::pair<long, long> &node_pair)
 {
-    double key = std::min(this->g[node], this->rhs[node]);
-    double heuristic_val = this->dijkstra_heuristic ? this->heuristic_map[node] : aerial_heuristic(node);
+    double key = std::min(this->g[node_pair], this->rhs[node_pair]);
+    double heuristic_val = this->dijkstra_heuristic ? this->heuristic_map[node_pair.second] : aerial_heuristic(node_pair.second);
     return std::pair<double, double>(key + heuristic_val + this->k, key);
 }
 
-int DStar_Lite::update_vertex(const long &node)
+int DStar_Lite::update_vertex(const std::pair<long, long> &node_pair)
 {
-    if (this->g[node] != this->rhs[node])
-        this->U[node] = this->calculate_key(node);
-    else if(this->g[node] == this->rhs[node])
-        this->U.erase(node);
+    if (this->g[node_pair] != this->rhs[node_pair])
+        this->U[node_pair] = this->calculate_key(node_pair);
+    else if(this->g[node_pair] == this->rhs[node_pair])
+        this->U.erase(node_pair);
 
     return 0;
 }
@@ -125,6 +135,12 @@ int DStar_Lite::compute_shortest_path()
 #ifdef TESTS
     save_dstar(this, "DSTARcompute_shortest_path.cereal");
 #endif
+
+    // TODO Horrendous code quality.
+    // TODO Horrendous code quality.
+    // TODO Horrendous code quality.
+
+
     int i = 0;
     while (!this->U.empty()) {
         i += 1;
@@ -133,8 +149,8 @@ int DStar_Lite::compute_shortest_path()
                 this->U.end(),
                 [](auto& a, auto& b) { return a.second < b.second; });
 
-        const bool reached_start = candidate.second >= this->calculate_key(this->start);
-        const bool start_consistent = this->rhs[this->start] == this->g[this->start];
+        const bool reached_start = candidate.second >= this->calculate_key({0, this->start});
+        const bool start_consistent = this->rhs[{0, this->start}] == this->g[{0, this->start}];
         if (reached_start && start_consistent)
             break;
         // TODO: Different from the optimized version of D* Lite
@@ -142,38 +158,42 @@ int DStar_Lite::compute_shortest_path()
         //if (reached_start && start_not_overconsistent)
         //    break;
 
-        const long node = candidate.first;
+        const std::pair<long, long> node_pair = candidate.first;
         const auto k_old = candidate.second;
 
-        const auto key = this->calculate_key(node);
+        const auto key = this->calculate_key(node_pair);
 
         if (k_old < key) {
-            this->U[node] = key;
-        } else if (this->g[node] > this->rhs[node]) {
-            this->g[node] = this->rhs[node];
-            this->U.erase(node);
-            for (const auto &pred : (*this->predecessors)[node]) {
-                if (pred != this->goal)
-                    this->rhs[pred] = std::min(
-                            this->rhs[pred],
-                            (*this->cost)[{pred, node}] + this->g[node]);
-                this->update_vertex(pred);
+            this->U[node_pair] = key;
+        } else if (this->g[node_pair] > this->rhs[node_pair]) {
+            this->g[node_pair] = this->rhs[node_pair];
+            this->U.erase(node_pair);
+            for (const auto &pred : (*this->predecessors)[node_pair.second]) {
+                for (const auto &predpred : (*this->predecessors)[pred]) {
+                    double penalty = predpred == node_pair.second ? U_TURN_PENALTY : 0.0;
+                    if (pred != this->goal)
+                        this->rhs[{predpred, pred}] = std::min(
+                                this->rhs[{predpred, pred}],
+                                ((*this->cost)[{pred, node_pair.second}] + this->g[node_pair]) + penalty);
+                    this->update_vertex({predpred, pred});
+                }
             }
         } else {
-            const auto g_old = this->g[node];
-            this->g[node] = INFINITY;
+            const auto g_old = this->g[node_pair];
+            this->g[node_pair] = INFINITY;
 
-            // TODO: This might potentially rather SLOW it down than make it faster..
-            auto to_update = (*this->predecessors)[node];
-            to_update.push_back(node);
+            // TODO: Pushing back might potentially rather SLOW it down than make it faster..
+            auto to_update = (*this->predecessors)[node_pair.second];
+            to_update.push_back(node_pair.second);
             for (const auto &x : to_update) {
-                if (this->rhs[x] == (*this->cost)[{x, node}] + g_old) {
-                    if (x != this->goal) {
-                        //this->rhs[x] = this->get_min_successor({node, x}).second;
-                        this->rhs[x] = this->get_min_successor({0, x}).second;
+                for (const auto &pred : (*this->predecessors)[x]) {
+                    if (this->rhs[{pred, x}] == (*this->cost)[{x, node_pair.second}] + g_old) {
+                        if (x != this->goal) {
+                            this->rhs[{pred, x}] = this->get_min_successor({pred, x}).second;
+                        }
                     }
+                    this->update_vertex({pred, x});
                 }
-                this->update_vertex(x);
             }
         }
     }
@@ -199,7 +219,7 @@ int DStar_Lite::drive(
     out.push_back(this->start);
 
     while (this->start != this->goal) {
-        if (this->g[this->start] == INFINITY)
+        if (this->g[{0, this->start}] == INFINITY)
             throw std::runtime_error("No path found.");
 
         const long diverged_node = diverge_policy[this->start];

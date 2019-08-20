@@ -12,9 +12,9 @@ cdef extern from "cpp_dstar_lite.cpp":
         long long operator(pair[long, long] p)
     cppclass CPP_DStar_Lite "DStar_Lite":
         CPP_DStar_Lite()
-        dense_hash_map[long, double] rhs
-        dense_hash_map[long, double] g
-        dense_hash_map[long, pair[double, double]] U
+        dense_hash_map[pair[long, long], double, pair_hash] rhs
+        dense_hash_map[pair[long, long], double, pair_hash] g
+        dense_hash_map[pair[long, long], pair[double, double], pair_hash] U
 
         int k
         long start
@@ -32,8 +32,6 @@ cdef extern from "cpp_dstar_lite.cpp":
                 dense_hash_map[pair[long, long], double, pair_hash] *cost,
                 dense_hash_map[long, pair[double, double]] *data)
         int setup(long start, long goal, unordered_map[string, double] cfg)
-        pair[double, double] calculate_key(long node)
-        int update_vertex(long u)
         int compute_shortest_path()
         int drive(vector[long] &out, dense_hash_map[long, long] diverge_policy)
 
@@ -57,8 +55,6 @@ cdef class DStar_Lite(osmnx_mdp.algorithms.algorithm.Algorithm):
     cdef long goal
 
     cdef setup(self, long start, long goal, unordered_map[string, double] cfg)
-    cdef calculate_key(self, node)
-    cdef update_vertex(self, u)
     cdef compute_shortest_path(self)
     cdef solve(self)
     cdef drive(self, policy, diverge_policy)

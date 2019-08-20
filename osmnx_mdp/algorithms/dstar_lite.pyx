@@ -33,12 +33,6 @@ cdef class DStar_Lite(osmnx_mdp.algorithms.algorithm.Algorithm):
         self.cpp.init(&self.predecessors, &self.successors, &self.cost, &self.data)
         self.cpp.setup(start, goal, cfg)
 
-    cdef calculate_key(self, node):
-        return self.cpp.calculate_key(node)
-
-    cdef update_vertex(self, u):
-        return self.cpp.update_vertex(u)
-
     cdef compute_shortest_path(self):
         self.iterations = self.cpp.compute_shortest_path()
 
