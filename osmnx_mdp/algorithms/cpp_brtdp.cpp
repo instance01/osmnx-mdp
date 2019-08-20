@@ -10,6 +10,10 @@
 #include <chrono>
 
 
+// TODO: Copied from D* Lite, move to lib.
+const double U_TURN_PENALTY = 30 / 3600.; // 30 seconds, converted to hours
+
+
 BRTDP::BRTDP() {};
 BRTDP::~BRTDP() {};
 
@@ -24,14 +28,12 @@ double BRTDP::get_Q_value(
     double future_cost = 0;
 
     for (const auto &outcome : (*this->P)[a]) {
-        // TODO {s, outcome.first} is code duplication.
-        future_cost += outcome.second * ((*this->C)[{s, outcome.first}] + v[{s, outcome.first}]);
+        std::pair<long, long> node_pair = {s, outcome.first};
+        future_cost += outcome.second * ((*this->C)[node_pair] + v[node_pair]);
     }
 
-    // Penalize U-turns by increasing cost by 10%.
-    // TODO: Is this fine ?
     if (a.second == s_pair.first) {
-        future_cost *= 1.1;
+        future_cost += U_TURN_PENALTY;
     }
 
     return future_cost;
@@ -70,6 +72,7 @@ int BRTDP::setup(const long &start, const long &goal, std::unordered_map<std::st
 
     this->alpha = cfg["alpha"];
     this->tau = cfg["tau"];
+    this->heuristic_max_speed = cfg["heuristic_max_speed"];
 
     std::default_random_engine rd;
     this->random_generator = std::default_random_engine(rd());
@@ -82,7 +85,8 @@ int BRTDP::setup(const long &start, const long &goal, std::unordered_map<std::st
         const double lon1 = x.second.second;
 
         for (auto &pred : (*this->predecessors)[x.first]) {
-            this->vl[{pred, x.first}] = aerial_dist(lat1, lon1, lat2, lon2) / 200;
+            double dist = aerial_dist(lat1, lon1, lat2, lon2);
+            this->vl[{pred, x.first}] = dist / this->heuristic_max_speed;
         }
     }
 

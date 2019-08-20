@@ -18,6 +18,8 @@ class BRTDP {
         double alpha;
         double tau;
 
+        double heuristic_max_speed;
+
         long start;
         long goal;
 
