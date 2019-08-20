@@ -50,11 +50,14 @@ cdef aerial_dist(node1, node2, R=6356.8):
     )
 
 
-cdef get_time_to_drive(col_nodes, G):
+cdef get_time_to_drive(col_nodes, G, include_traffic_signals=True):
     minutes_multiplier = 60.
+    five_seconds = 5. / minutes_multiplier
     time_to_drive = 0  # Minutes
 
-    # TODO: For later: Expensive loop.
+    traffic_signals_time = 0
+
+    # Expensive loop (zip), but not included in metric
     for (node_from, node_to) in zip(col_nodes, col_nodes[1:]):
         if node_to in G[node_from]:
             cost = get_edge_cost(G, node_from, node_to)
@@ -65,6 +68,16 @@ cdef get_time_to_drive(col_nodes, G):
             dist = aerial_dist(node_from, node_to)
             maxspeed = 30.
             time_to_drive += dist / maxspeed * minutes_multiplier
+
+        if include_traffic_signals:
+            if G.nodes[node_to]['highway'] == 'traffic_signals':
+                # There's a traffic signal on that node.
+                # Add the minimum waiting time on a traffic signal as given by
+                # RiLSA 2015.
+                traffic_signals_time += five_seconds
+
+    time_to_drive += traffic_signals_time
+    print('Traffic signals secs:', traffic_signals_time)
 
     return time_to_drive
 

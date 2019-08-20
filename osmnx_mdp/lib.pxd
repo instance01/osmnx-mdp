@@ -19,7 +19,7 @@ cdef extern from "cpp_lib.hpp":
 
 cdef get_edge_cost(G, node_from, node_to)
 cdef aerial_dist(node1, node2, R=*)
-cdef get_time_to_drive(col_nodes, G)
+cdef get_time_to_drive(col_nodes, G, include_traffic_signals=*)
 cdef get_node_properties(G, path, values=*, extra=*)
 cdef draw_value_graph(G, path, values=*, extra=*, annotate=*)
 cdef remove_zero_cost_loops(G)
