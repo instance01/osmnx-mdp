@@ -35,7 +35,7 @@ int MDP::init(
     this->predecessors = predecessors;
 
     this->V.set_empty_key({0, 0});
-    this->policy.set_empty_key(0);
+    this->policy.set_empty_key({0, 0});
 
     return 0;
 }
@@ -63,13 +63,14 @@ int MDP::make_goal_self_absorbing() {
 #endif
 
     // Get rid of all leaking actions
-    std::vector<std::pair<long, long>>::iterator action = (*this->A)[this->goal].begin();
-    while (action != (*this->A)[this->goal].end()) {
-        if (action->second != this->goal) {
-            action = (*this->A)[this->goal].erase(action);
-            // TODO: Erase from P too?
-        }
-    }
+    // TODO Needed?
+    //std::vector<std::pair<long, long>>::iterator action = (*this->A)[this->goal].begin();
+    //while (action != (*this->A)[this->goal].end()) {
+    //    if (action->second != this->goal) {
+    //        action = (*this->A)[this->goal].erase(action);
+    //        // TODO: Erase from P too?
+    //    }
+    //}
 
     // Add a zero-cost loop at the goal to absorb cost.
     std::pair<long, long> edge(this->goal, this->goal);
@@ -387,13 +388,19 @@ int MDP::make_low_angle_intersections_uncertain(const double &max_angle) {
 // TODO Same as BRTDP
 double MDP::get_Q_value(
         google::dense_hash_map<std::pair<long, long>, double, pair_hash> &prev_V,
-        const long &s,
+        const std::pair<long, long> &s_pair,
         const std::pair<long, long> &a)
 {
     double future_cost = 0;
     for (const auto &outcome : (*this->P)[a]) {
-        future_cost += outcome.second * ((*this->C)[{s, outcome.first}] + prev_V[{s, outcome.first}]);
+        std::pair<long, long> node_pair = {s_pair.second, outcome.first};
+        future_cost += outcome.second * ((*this->C)[node_pair] + prev_V[node_pair]);
     }
+
+    if (a.second == s_pair.first) {
+        future_cost += U_TURN_PENALTY;
+    }
+
     return future_cost;
 }
 
@@ -428,13 +435,9 @@ bool MDP::converged(
         const double &eps)
 {
     double c = 0;
-    auto V_iter = this->V.begin();
-    auto prev_V_iter = prev_V.begin();
 
-    while (V_iter != V.end() && prev_V_iter != prev_V.end()) {
-        c += (*V_iter).second - (*prev_V_iter).second;
-        ++V_iter;
-        ++prev_V_iter;
+    for (auto &v : this->V) {
+        c += v.second - prev_V[v.first];
     }
 
     return c < eps;
@@ -460,7 +463,7 @@ int MDP::solve(const int &max_iter, const double &eps) {
                 std::pair<long, long> state_pair = {pred, s};
 
                 for (const auto &a : (*this->A)[s]) {
-                    Q[state_pair][a] = this->get_Q_value(prev_V, s, a);
+                    Q[state_pair][a] = this->get_Q_value(prev_V, state_pair, a);
                 }
 
                 std::pair<const std::pair<long, long>, double> best_action = *min_element(
@@ -496,23 +499,29 @@ int MDP::get_policy() {
 #endif
 
     for (auto &s : *this->S) {
-        double curr_min = INFINITY;
-        std::pair<long, long> curr_min_action;
+        for (auto &pred : (*this->predecessors)[s]) {
+            double curr_min = INFINITY;
+            std::pair<long, long> curr_min_action;
 
-        for (auto &a : (*this->A)[s]) {
-            // TODO Use Q value function here. Code duplication.
-            double cost = 0;
-            for (auto &outcome : (*this->P)[a]) {
-                cost += outcome.second * ((*this->C)[a] + V[{s, outcome.first}]);
+            for (auto &a : (*this->A)[s]) {
+                // TODO Use Q value function here. Code duplication.
+                double cost = 0;
+                for (auto &outcome : (*this->P)[a]) {
+                    cost += outcome.second * ((*this->C)[a] + V[{s, outcome.first}]);
+                }
+
+                if (a.second == pred) {
+                    cost += U_TURN_PENALTY;
+                }
+
+                if (cost < curr_min) {
+                    curr_min = cost;
+                    curr_min_action = a;
+                }
             }
 
-            if (cost < curr_min) {
-                curr_min = cost;
-                curr_min_action = a;
-            }
+            policy[{pred, s}] = curr_min_action;
         }
-
-        policy[s] = curr_min_action;
     }
 
 #ifdef TESTS
@@ -530,21 +539,21 @@ std::vector<long> MDP::drive(google::dense_hash_map<long, long> &diverge_policy)
     std::unordered_set<long> visited;
 
     std::vector<long> nodes = {this->start};
-    long curr_node = this->start;
+    std::pair<long, long> curr_node = {(*this->predecessors)[this->start][0], this->start};
 
-    while (curr_node != this->goal) {
+    while (curr_node.second != this->goal) {
         if (policy.find(curr_node) == policy.end())
             break;
 
-        const long diverged_node = diverge_policy[curr_node];
+        const long diverged_node = diverge_policy[curr_node.second];
         if (diverged_node == 0 || visited.find(diverged_node) != visited.end()) {
-            curr_node = policy[curr_node].second;
+            curr_node = policy[curr_node];
         } else {
-            curr_node = diverged_node;
+            curr_node = {curr_node.second, diverged_node};
             visited.insert(diverged_node);
         }
 
-        nodes.push_back(curr_node);
+        nodes.push_back(curr_node.second);
     }
 
 #ifdef TESTS

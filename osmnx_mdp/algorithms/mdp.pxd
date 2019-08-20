@@ -32,7 +32,7 @@ cdef extern from "cpp_mdp.hpp":
         ] *P
 
         dense_hash_map[pair[long, long], double, pair_hash] V
-        dense_hash_map[long, pair[long, long]] policy
+        dense_hash_map[pair[long, long], pair[long, long], pair_hash] policy
 
         long start
         long goal

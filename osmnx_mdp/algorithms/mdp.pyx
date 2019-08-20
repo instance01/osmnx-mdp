@@ -41,7 +41,9 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
                 has_traffic_signal = self.G.nodes[succ]['highway'] == 'traffic_signals'
                 if has_traffic_signal:
                     # 5 seconds converted to hours.
-                    self.C[action] += 5 / 3600.
+                    #self.C[action] += 5 / 3600.
+                    # TODO
+                    pass
 
                 self.edge_data[(node_id, succ)] = self.G[node_id][succ][0]['length']
 

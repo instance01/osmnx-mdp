@@ -51,7 +51,7 @@ class MDP {
 
         google::dense_hash_map<std::pair<long, long>, double, pair_hash> V;
         // TODO Only save the index of the action, not the whole action again.
-        google::dense_hash_map<long, std::pair<long, long>> policy;
+        google::dense_hash_map<std::pair<long, long>, std::pair<long, long>, pair_hash> policy;
 
         long start;
         long goal;
@@ -99,7 +99,7 @@ class MDP {
         int make_low_angle_intersections_uncertain(const double &max_angle=30);
         double get_Q_value(
             google::dense_hash_map<std::pair<long, long>, double, pair_hash> &prev_V,
-            const long &s,
+            const std::pair<long, long> &s_pair,
             const std::pair<long, long> &a);
         auto init_Q();
         bool converged(
