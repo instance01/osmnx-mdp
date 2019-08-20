@@ -2,8 +2,6 @@
 #define LIB_INCLUDE
 
 #include <vector>
-// TODO: Move to ../cpp_lib.hpp
-// Basically create a C++ version of lib.
 
 // TODO Move comments to cpp
 
@@ -27,6 +25,8 @@ struct pair_hash {
         return ret + p.second;
     }
 };
+
+const double U_TURN_PENALTY = 30 / 3600.; // 30 seconds converted to hours.
 
 std::vector<std::pair<std::pair<long, long>, std::pair<long, long>>> combinations(
         long origin_node,

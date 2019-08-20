@@ -10,10 +10,6 @@
 #include <chrono>
 
 
-// TODO: Copied from D* Lite, move to lib.
-const double U_TURN_PENALTY = 30 / 3600.; // 30 seconds, converted to hours
-
-
 BRTDP::BRTDP() {};
 BRTDP::~BRTDP() {};
 

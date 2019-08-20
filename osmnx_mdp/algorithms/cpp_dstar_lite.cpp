@@ -12,11 +12,10 @@
 
 // TODO Rename DStar_Lite
 
-// TODO: Move to lib
-const double U_TURN_PENALTY = 30 / 3600.; // 30 seconds, converted to hours
 
 DStar_Lite::DStar_Lite () {}
 DStar_Lite::~DStar_Lite () {}
+
 
 int DStar_Lite::init(
         google::dense_hash_map<long, std::vector<long>> *predecessors,
