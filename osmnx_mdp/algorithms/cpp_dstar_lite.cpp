@@ -255,7 +255,6 @@ int DStar_Lite::drive(
 // TODO: COPIED (99%) FROM BRTDP
 void DStar_Lite::init_heuristic() {
     // Single source (from goal) all target Dijkstra
-
     this->heuristic_map.set_empty_key(0);
 
     google::dense_hash_map<long, double> dist;
@@ -265,7 +264,6 @@ void DStar_Lite::init_heuristic() {
     prev.set_empty_key(0);
 
     std::vector<std::pair<long, double>> queue;
-
 
     for (long &state : this->nodes) {
         dist[state] = INFINITY;

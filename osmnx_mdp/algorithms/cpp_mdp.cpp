@@ -22,6 +22,7 @@ int MDP::init(
             pair_hash
         > *P,
         google::dense_hash_map<std::pair<long, long>, double, pair_hash> *edge_data,
+        google::dense_hash_map<std::pair<long, long>, std::pair<double, double>, pair_hash> *angle_data,
         google::dense_hash_map<long, std::pair<double, double>> *node_data,
         google::dense_hash_map<long, std::vector<long>> *successors,
         google::dense_hash_map<long, std::vector<long>> *predecessors) {
@@ -30,6 +31,7 @@ int MDP::init(
     this->C = C;
     this->P = P;
     this->edge_data = edge_data;
+    this->angle_data = angle_data;
     this->node_data = node_data;
     this->successors = successors;
     this->predecessors = predecessors;
@@ -165,8 +167,8 @@ int MDP::get_normal_intersections(
 
                 double p1_x, p1_y, p2_x, p2_y, origin_x, origin_y;
 
-                std::tie(p1_x, p1_y) = (*this->node_data)[origin_node];
-                std::tie(p2_x, p2_y) = (*this->node_data)[succ];
+                std::tie(p1_x, p1_y) = (*this->angle_data)[{middle_node, origin_node}];
+                std::tie(p2_x, p2_y) = (*this->angle_data)[{middle_node, succ}];
                 std::tie(origin_x, origin_y) = (*this->node_data)[middle_node];
 
                 double angle = get_angle(p1_x, p1_y, p2_x, p2_y, origin_x, origin_y);

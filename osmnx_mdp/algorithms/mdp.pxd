@@ -41,6 +41,7 @@ cdef extern from "cpp_mdp.hpp":
         vector[CPP_Intersection] close_intersections
         dense_hash_map[pair[long, long], double, pair_hash] *edge_data
         dense_hash_map[long, pair[double, double]] *node_data
+        dense_hash_map[pair[long, long], pair[double, double], pair_hash] *angle_data
         dense_hash_map[long, vector[long]] *predecessors
         dense_hash_map[long, vector[long]] *successors
 
@@ -56,6 +57,7 @@ cdef extern from "cpp_mdp.hpp":
                 pair_hash
             ] *P,
             dense_hash_map[pair[long, long], double, pair_hash] *edge_data,
+            dense_hash_map[pair[long, long], pair[double, double], pair_hash] *angle_data,
             dense_hash_map[long, pair[double, double]] *node_data,
             dense_hash_map[long, vector[long]] *successors,
             dense_hash_map[long, vector[long]] *predecessors)
@@ -85,6 +87,7 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
 
     cdef dense_hash_map[pair[long, long], double, pair_hash] edge_data
     cdef dense_hash_map[long, pair[double, double]] node_data
+    cdef dense_hash_map[pair[long, long], pair[double, double], pair_hash] angle_data
     cdef dense_hash_map[long, vector[long]] predecessors
     cdef dense_hash_map[long, vector[long]] successors
 

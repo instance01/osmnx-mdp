@@ -16,6 +16,7 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
         self.successors.set_empty_key(0)
         self.node_data.set_empty_key(0)
         self.edge_data.set_empty_key((0, 0))
+        self.angle_data.set_empty_key((0, 0))
         self.A.set_empty_key(0)
         self.P.set_empty_key((0, 0))
         self.C.set_empty_key((0, 0))
@@ -41,11 +42,16 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
                 has_traffic_signal = self.G.nodes[succ]['highway'] == 'traffic_signals'
                 if has_traffic_signal:
                     # 5 seconds converted to hours.
-                    #self.C[action] += 5 / 3600.
-                    # TODO
-                    pass
+                    self.C[action] += 5 / 3600.
 
                 self.edge_data[(node_id, succ)] = self.G[node_id][succ][0]['length']
+
+                data = self.G[node_id][succ][0]
+                if not data.get('geometry'):
+                    real_coords = (self.G.nodes[succ]['x'], self.G.nodes[succ]['y'])
+                else:
+                    real_coords = list(data['geometry'].coords)[1]
+                self.angle_data[(node_id, succ)] = real_coords
 
     cdef setup(self, long start, long goal, unordered_map[string, double] cfg):
         self._setup_cpp()
@@ -55,6 +61,7 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
                 &self.C,
                 &self.P,
                 &self.edge_data,
+                &self.angle_data,
                 &self.node_data,
                 &self.successors,
                 &self.predecessors)

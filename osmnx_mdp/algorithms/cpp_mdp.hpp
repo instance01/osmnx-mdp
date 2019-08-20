@@ -61,6 +61,7 @@ class MDP {
         std::vector<long> angle_nodes;
         std::unordered_set<Intersection, intersection_hash> close_intersections;
         google::dense_hash_map<std::pair<long, long>, double, pair_hash> *edge_data;
+        google::dense_hash_map<std::pair<long, long>, std::pair<double, double>, pair_hash> *angle_data;
         google::dense_hash_map<long, std::pair<double, double>> *node_data;
         google::dense_hash_map<long, std::vector<long>> *predecessors;
         google::dense_hash_map<long, std::vector<long>> *successors;
@@ -77,6 +78,7 @@ class MDP {
                 pair_hash
             > *P,
             google::dense_hash_map<std::pair<long, long>, double, pair_hash> *edge_data,
+            google::dense_hash_map<std::pair<long, long>, std::pair<double, double>, pair_hash> *angle_data,
             google::dense_hash_map<long, std::pair<double, double>> *node_data,
             google::dense_hash_map<long, std::vector<long>> *successors,
             google::dense_hash_map<long, std::vector<long>> *predecessors);

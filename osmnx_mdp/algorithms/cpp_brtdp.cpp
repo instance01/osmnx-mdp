@@ -453,7 +453,6 @@ void BRTDP::init_upper_bound_heuristic() {
 
 void BRTDP::init_lower_bound_heuristic() {
     // Single source (from goal) all target Dijkstra
-
     google::dense_hash_map<long, double> dist;
     google::dense_hash_map<long, long> prev;
 
@@ -487,8 +486,7 @@ void BRTDP::init_lower_bound_heuristic() {
     }
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - starttime);
-    std::cout << "Time taken by loop: " << duration.count() << " msec" << std::endl;
-
+    std::cout << "Time taken by Dijkstra loop: " << duration.count() << " msec" << std::endl;
 
     for (long &state : (*this->S)) {
         double curr_cost = 0;
@@ -501,7 +499,6 @@ void BRTDP::init_lower_bound_heuristic() {
         }
 
         for (long &neighbor : (*this->predecessors)[state]) {
-            //std::cout << this->vl[{neighbor, state}] << " >> " << curr_cost << std::endl;
             this->vl[{neighbor, state}] = curr_cost;
         }
     }
