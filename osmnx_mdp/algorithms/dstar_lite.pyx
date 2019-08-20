@@ -29,6 +29,12 @@ cdef class DStar_Lite(osmnx_mdp.algorithms.algorithm.Algorithm):
             for succ in node_successors:
                 self.cost[(node_id, succ)] = get_edge_cost(self.G, node_id, succ)
 
+                # TODO Copied from mdp, duplicate code. Consider lib func.
+                has_traffic_signal = self.G.nodes[succ]['highway'] == 'traffic_signals'
+                if has_traffic_signal:
+                    # 5 seconds converted to hours.
+                    self.cost[(node_id, succ)] += 5 / 3600.
+
         self.cpp = CPP_DStar_Lite()
         self.cpp.init(&self.predecessors, &self.successors, &self.cost, &self.data)
         self.cpp.setup(start, goal, cfg)

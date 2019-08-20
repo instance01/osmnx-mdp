@@ -440,7 +440,6 @@ bool MDP::converged(
     return c < eps;
 }
 
-// TODO Everything needs to be double, not double.
 int MDP::solve(const int &max_iter, const double &eps) {
     // Solve the MDP with value iteration
     // Defaults:

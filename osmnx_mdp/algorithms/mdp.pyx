@@ -38,6 +38,11 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
                 self.P[action].push_back((succ, 1.0))
                 self.C[action] = get_edge_cost(self.G, node_id, succ)
 
+                has_traffic_signal = self.G.nodes[succ]['highway'] == 'traffic_signals'
+                if has_traffic_signal:
+                    # 5 seconds converted to hours.
+                    self.C[action] += 5 / 3600.
+
                 self.edge_data[(node_id, succ)] = self.G[node_id][succ][0]['length']
 
     cdef setup(self, long start, long goal, unordered_map[string, double] cfg):
