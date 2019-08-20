@@ -19,11 +19,13 @@ from osmnx_mdp.algorithms.algorithm cimport Algorithm
 
 
 # For each simulation this config is adapted.
-# Algorithm configs are always bytestring -> double due to static typing in C++.
+# Algorithm configs always map 'bytestring -> double' due to static typing in
+# C++.
 CONFIG = {
     'processes': 1,
     'diverge_policy': 'random',  # Options: random, model
     'random_policy_percent': .2,
+    'include_traffic_signals_in_metric': True,
     'MDP': {
         # Cython needs byte strings
         b'max_angle': 35,
@@ -32,7 +34,9 @@ CONFIG = {
     },
     'BRTDP': {
         b'alpha': 1e-20,
-        b'tau': 100
+        b'tau': 100,
+        b'heuristic': 1, # Options: 0 for Dijkstra, 1 for aerial distance
+        b'heuristic_max_speed': 200 # In km/h
     },
     'BRTDP_REPLAN': {
         b'alpha': 1e-20,
@@ -41,7 +45,8 @@ CONFIG = {
         b'always_replan': 1
     },
     'DStar_Lite': {
-        b'heuristic': 1 # Options: 0 for Dijkstra, 1 for aerial distance
+        b'heuristic': 1, # Options: 0 for Dijkstra, 1 for aerial distance
+        b'heuristic_max_speed': 200 # In km/h
     }
 }
 
@@ -162,12 +167,11 @@ LOCATIONS = {
     ],
     'Bavaria': [
         {
-            #'start': (47.6274375, 10.1708339),
-            'start': (47.7289566,10.3077225),
+            'start': (47.7289566, 10.3077225),
             'goal': (49.9361796, 11.7199061),
             'metadata': {
                 'id': 'BavariaLONG',
-                'info': ''
+                'info': 'Diagonally through Bavaria'
             }
         }
     ]
@@ -259,7 +263,10 @@ def run_simulation(
     end_time = timer()
 
     total_time = end_time - start_time
-    drive_time = get_time_to_drive(path, MAPS[map_id]['map'])
+    drive_time = get_time_to_drive(
+            path,
+            MAPS[map_id]['map'],
+            CONFIG['include_traffic_signals_in_metric'])
 
     if debug:
         draw_value_graph(MAPS[map_id]['map'], path)
@@ -348,10 +355,10 @@ def run(map_id, location):
     mdp = MDP(G)
     curr_result.append(run_simulation(mdp, map_id, location_id, start, goal, diverge_policy))
 
-    mdp = MDP(G)
-    mdp.setup(start, goal, CONFIG['MDP'])
-    brtdp = BRTDP_REPLAN(mdp)
-    curr_result.append(run_simulation(brtdp, map_id, location_id, start, goal, diverge_policy))
+    # mdp = MDP(G)
+    # mdp.setup(start, goal, CONFIG['MDP'])
+    # brtdp = BRTDP_REPLAN(mdp)
+    # curr_result.append(run_simulation(brtdp, map_id, location_id, start, goal, diverge_policy))
 
     mdp = MDP(G)
     mdp.setup(start, goal, CONFIG['MDP'])

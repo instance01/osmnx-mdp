@@ -67,10 +67,10 @@ int DStar_Lite::setup(const long &start, const long &goal, std::unordered_map<st
         }
     }
 
-        for (const auto &pred : (*this->predecessors)[this->goal]) {
-    this->rhs[{pred, this->goal}] = 0;
-    this->U[{pred, this->goal}] = this->calculate_key({pred, this->goal});
-        }
+    for (const auto &pred : (*this->predecessors)[this->goal]) {
+        this->rhs[{pred, this->goal}] = 0;
+        this->U[{pred, this->goal}] = this->calculate_key({pred, this->goal});
+    }
 
     return 0;
 }
@@ -282,7 +282,7 @@ void DStar_Lite::init_heuristic() {
         for (long &neighbor : (*this->predecessors)[node]) {
             double new_dist = dist[node] + (*this->cost)[{neighbor, node}];
 
-            if (new_dist < dist[neighbor] + DBL_EPSILON) {
+            if (new_dist < dist[neighbor] - DBL_EPSILON) {
                 dist[neighbor] = new_dist;
                 prev[neighbor] = node;
 

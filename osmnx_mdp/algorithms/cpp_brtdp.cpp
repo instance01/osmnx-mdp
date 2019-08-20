@@ -72,26 +72,30 @@ int BRTDP::setup(const long &start, const long &goal, std::unordered_map<std::st
 
     this->alpha = cfg["alpha"];
     this->tau = cfg["tau"];
-    this->heuristic_max_speed = cfg["heuristic_max_speed"];
 
     std::default_random_engine rd;
     this->random_generator = std::default_random_engine(rd());
 
-    const double lat2 = (*this->data)[this->goal].first;
-    const double lon2 = (*this->data)[this->goal].second;
+    if (cfg["heuristic"] == 0) {
+        this->init_lower_bound_heuristic();
+    } else {
+        this->heuristic_max_speed = cfg["heuristic_max_speed"];
 
-    for (const auto &x : *data) {
-        const double lat1 = x.second.first;
-        const double lon1 = x.second.second;
+        const double lat2 = (*this->data)[this->goal].first;
+        const double lon2 = (*this->data)[this->goal].second;
 
-        for (auto &pred : (*this->predecessors)[x.first]) {
-            double dist = aerial_dist(lat1, lon1, lat2, lon2);
-            this->vl[{pred, x.first}] = dist / this->heuristic_max_speed;
+        for (const auto &x : *data) {
+            const double lat1 = x.second.first;
+            const double lon1 = x.second.second;
+
+            for (auto &pred : (*this->predecessors)[x.first]) {
+                double dist = aerial_dist(lat1, lon1, lat2, lon2);
+                this->vl[{pred, x.first}] = dist / this->heuristic_max_speed;
+            }
         }
     }
 
     this->init_upper_bound_heuristic();
-    //this->init_lower_bound_heuristic();
 
     // TODO Move into function
     // TODO This assumes start has one predecessor..
@@ -454,9 +458,6 @@ void BRTDP::init_upper_bound_heuristic() {
 void BRTDP::init_lower_bound_heuristic() {
     // Single source (from goal) all target Dijkstra
 
-    google::dense_hash_map<long, bool> fin;
-    fin.set_empty_key(0);
-
     google::dense_hash_map<long, double> dist;
     google::dense_hash_map<long, long> prev;
 
@@ -477,17 +478,10 @@ void BRTDP::init_lower_bound_heuristic() {
     while (!queue.empty()) {
         long node = queue_pop(queue);
 
-        fin[node] = true;
-
         for (long &neighbor : (*this->predecessors)[node]) {
             double new_dist = dist[node] + (*this->C)[{neighbor, node}];
 
-            if (fin[neighbor])
-                continue;
-
-            // TODO
-            //if (new_dist < dist[neighbor] + DBL_EPSILON) {
-            if (new_dist < dist[neighbor]) {
+            if (new_dist < dist[neighbor] - DBL_EPSILON) {
                 dist[neighbor] = new_dist;
                 prev[neighbor] = node;
 
