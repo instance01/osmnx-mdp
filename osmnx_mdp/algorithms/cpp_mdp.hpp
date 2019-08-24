@@ -44,9 +44,12 @@ class MDP {
         // It is needed that this is DOUBLE. Especially (B)RTDP
         // needs precision. Who knows how bad the effect in VI is.
         google::dense_hash_map<
-            std::pair<long, long>,
-            std::vector<std::pair<long, double>>,
-            pair_hash
+            long,
+            google::dense_hash_map<
+                std::pair<long, long>,
+                std::vector<std::pair<long, double>>,
+                pair_hash
+            >
         > *P;
 
         google::dense_hash_map<std::pair<long, long>, double, pair_hash> V;
@@ -73,9 +76,12 @@ class MDP {
             google::dense_hash_map<long, std::vector<std::pair<long, long>>> *A,
             google::dense_hash_map<std::pair<long, long>, double, pair_hash> *C,
             google::dense_hash_map<
-                std::pair<long, long>,
-                std::vector<std::pair<long, double>>,
-                pair_hash
+                long,
+                google::dense_hash_map<
+                    std::pair<long, long>,
+                    std::vector<std::pair<long, double>>,
+                    pair_hash
+                >
             > *P,
             google::dense_hash_map<std::pair<long, long>, double, pair_hash> *edge_data,
             google::dense_hash_map<std::pair<long, long>, std::pair<double, double>, pair_hash> *angle_data,

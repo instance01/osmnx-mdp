@@ -21,7 +21,14 @@ cdef extern from "cpp_brtdp.hpp":
             vector[long] *S,
             dense_hash_map[long, vector[pair[long, long]]] *A,
             dense_hash_map[pair[long, long], double, pair_hash] *C,
-            dense_hash_map[pair[long, long], vector[pair[long, double]], pair_hash] *P,
+            dense_hash_map[
+                long,
+                dense_hash_map[
+                    pair[long, long],
+                    vector[pair[long, double]],
+                    pair_hash
+                ],
+            ] *P,
             dense_hash_map[long, vector[long]] *predecessors,
             dense_hash_map[long, pair[double, double]] *data
         )

@@ -18,14 +18,19 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
         self.edge_data.set_empty_key((0, 0))
         self.angle_data.set_empty_key((0, 0))
         self.A.set_empty_key(0)
-        self.P.set_empty_key((0, 0))
+        self.P.set_empty_key(0)
         self.C.set_empty_key((0, 0))
+
+        for node in self.G.nodes():
+            self.P[node].set_empty_key((0, 0))
+        self.P[1].set_empty_key((0, 0))
 
         for node in self.G.nodes.data():
             node_id = node[0]
             successors = list(self.G.successors(node_id))
+            predecessors = list(self.G.predecessors(node_id))
 
-            self.predecessors[node_id] = list(self.G.predecessors(node_id))
+            self.predecessors[node_id] = predecessors
             self.successors[node_id] = successors
 
             self.node_data[node_id] = (node[1]['x'], node[1]['y'])
@@ -36,7 +41,11 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
             for succ in successors:
                 action = (node_id, succ)
                 # For now we end up in correct state 100% of the time.
-                self.P[action].push_back((succ, 1.0))
+                if len(predecessors) == 0:
+                    self.P[1][action].push_back((succ, 1.0))
+                    self.predecessors[node_id].push_back(1)
+                for pred in predecessors:
+                    self.P[pred][action].push_back((succ, 1.0))
                 self.C[action] = get_edge_cost(self.G, node_id, succ)
 
                 has_traffic_signal = self.G.nodes[succ]['highway'] == 'traffic_signals'

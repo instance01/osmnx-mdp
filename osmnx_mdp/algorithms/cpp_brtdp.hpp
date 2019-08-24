@@ -27,9 +27,12 @@ class BRTDP {
         google::dense_hash_map<long, std::vector<std::pair<long, long>>> *A;
         google::dense_hash_map<std::pair<long, long>, double, pair_hash> *C;
         google::dense_hash_map<
-            std::pair<long, long>,
-            std::vector<std::pair<long, double>>,
-            pair_hash
+            long,
+            google::dense_hash_map<
+                std::pair<long, long>,
+                std::vector<std::pair<long, double>>,
+                pair_hash
+            >
         > *P;
 
         google::dense_hash_map<long, std::vector<long>> *predecessors;
@@ -54,18 +57,23 @@ class BRTDP {
             google::dense_hash_map<long, std::vector<std::pair<long, long>>> *A,
             google::dense_hash_map<std::pair<long, long>, double, pair_hash> *C,
             google::dense_hash_map<
-                std::pair<long, long>,
-                std::vector<std::pair<long, double>>,
-                pair_hash
+                long,
+                google::dense_hash_map<
+                    std::pair<long, long>,
+                    std::vector<std::pair<long, double>>,
+                    pair_hash
+                >
             > *P,
             google::dense_hash_map<long, std::vector<long>> *predecessors,
             google::dense_hash_map<long, std::pair<double, double>> *data);
         int setup(const long &start, const long &goal, std::unordered_map<std::string, double> cfg);
         int run_trial(const double &t);
         double get_outcome_distribution(
+            const long pred,
             const std::pair<long, long> &curr_min_action,
             std::vector<double> &distribution);
         long select_node_probabilistically(
+            const long pred,
             const std::pair<long, long> &curr_min_action,
             const std::vector<double> &distribution);
         int run_trials();

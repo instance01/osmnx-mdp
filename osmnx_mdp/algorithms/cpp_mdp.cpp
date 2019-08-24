@@ -1,4 +1,5 @@
 #include <cmath>
+#include <cfloat> // DBL_EPSILON
 #include "cpp_mdp.hpp"
 #include "../cpp_lib.hpp" // combinations
 #include "../serialize_util.hpp"
@@ -17,9 +18,12 @@ int MDP::init(
         google::dense_hash_map<long, std::vector<std::pair<long, long>>> *A,
         google::dense_hash_map<std::pair<long, long>, double, pair_hash> *C,
         google::dense_hash_map<
-            std::pair<long, long>,
-            std::vector<std::pair<long, double>>,
-            pair_hash
+            long,
+            google::dense_hash_map<
+                std::pair<long, long>,
+                std::vector<std::pair<long, double>>,
+                pair_hash
+            >
         > *P,
         google::dense_hash_map<std::pair<long, long>, double, pair_hash> *edge_data,
         google::dense_hash_map<std::pair<long, long>, std::pair<double, double>, pair_hash> *angle_data,
@@ -63,22 +67,20 @@ int MDP::make_goal_self_absorbing() {
 #ifdef TESTS
     save_mdp(this, "MDPmake_goal_self_absorbing.cereal");
 #endif
+    std::pair<long, long> edge(this->goal, this->goal);
 
     // Get rid of all leaking actions
-    // TODO Needed?
-    //std::vector<std::pair<long, long>>::iterator action = (*this->A)[this->goal].begin();
-    //while (action != (*this->A)[this->goal].end()) {
-    //    if (action->second != this->goal) {
-    //        action = (*this->A)[this->goal].erase(action);
-    //        // TODO: Erase from P too?
-    //    }
-    //}
+    (*this->A)[this->goal] = {};
+    for (const auto &pred : (*this->predecessors)[this->goal]) {
+        (*this->P)[pred][edge] = {};
+    }
 
     // Add a zero-cost loop at the goal to absorb cost.
-    std::pair<long, long> edge(this->goal, this->goal);
     (*this->A)[this->goal].push_back(edge);
     (*this->C)[edge] = 0;
-    (*this->P)[edge] = {{this->goal, 1.0}};
+    for (const auto &pred : (*this->predecessors)[this->goal]) {
+        (*this->P)[pred][edge] = {{this->goal, 1.0}};
+    }
 
 #ifdef TESTS
     save_mdp(this, "MDPmake_goal_self_absorbingWANT.cereal");
@@ -213,18 +215,19 @@ int MDP::make_intersection_uncertain(
         const Intersection &intersection,
         const long &intersection_node)
 {
+    auto origin_node_pred = intersection.origin_edge.first;
     auto origin_node = intersection.origin_edge.second;
 
     // Driver exits too early.
     this->make_edge_uncertain(
-            (*this->P),
-            {intersection.origin_edge.second, intersection.straight_on_node},
+            (*this->P)[origin_node_pred],
+            {origin_node, intersection.straight_on_node},
             intersection_node,
             this->edge_uncertainty);
 
     // Driver misses exit.
     this->make_edge_uncertain(
-            (*this->P),
+            (*this->P)[origin_node_pred],
             {origin_node, intersection_node},
             intersection.straight_on_node,
             this->edge_uncertainty);
@@ -313,8 +316,16 @@ int MDP::make_low_angle_intersections_uncertain(const double &max_angle) {
 
             int n_critical_nodes = 0;
 
-            google::dense_hash_map<std::pair<long, long>, std::vector<std::pair<long, double>>, pair_hash> temp_P;
-            temp_P.set_empty_key({0, 0});
+            google::dense_hash_map<
+                long,
+                google::dense_hash_map<
+                    std::pair<long, long>,
+                    std::vector<std::pair<long, double>>,
+                    pair_hash
+                >
+            > temp_P;
+            temp_P.set_empty_key(0);
+            temp_P[edge.first].set_empty_key({0, 0});
 
             double x3, y3, origin_x, origin_y;
 
@@ -364,8 +375,8 @@ int MDP::make_low_angle_intersections_uncertain(const double &max_angle) {
                 // Thus it is not a critical intersection.
                 const double angle = get_angle(x1, y1, x3, y3, origin_x, origin_y) - get_angle(x2, y2, x3, y3, origin_x, origin_y);
                 if (abs(angle) <= max_angle) {
-                    make_edge_uncertain(temp_P, edge1, edge2.second, this->edge_uncertainty);
-                    make_edge_uncertain(temp_P, edge2, edge1.second, this->edge_uncertainty);
+                    make_edge_uncertain(temp_P[edge.first], edge1, edge2.second, this->edge_uncertainty);
+                    make_edge_uncertain(temp_P[edge.first], edge2, edge1.second, this->edge_uncertainty);
 
                     n_critical_nodes += 1;
                 }
@@ -375,7 +386,9 @@ int MDP::make_low_angle_intersections_uncertain(const double &max_angle) {
                 this->angle_nodes.push_back(origin_node);
 
             for (auto &kv : temp_P) {
-                (*P)[kv.first] = kv.second;
+                for (auto &action_outcomes_pair : kv.second) {
+                    (*this->P)[kv.first][action_outcomes_pair.first] = action_outcomes_pair.second;
+                }
             }
         }
     }
@@ -394,7 +407,8 @@ double MDP::get_Q_value(
         const std::pair<long, long> &a)
 {
     double future_cost = 0;
-    for (const auto &outcome : (*this->P)[a]) {
+
+    for (const auto &outcome : (*this->P)[s_pair.first][a]) {
         std::pair<long, long> node_pair = {s_pair.second, outcome.first};
         future_cost += outcome.second * ((*this->C)[node_pair] + prev_V[node_pair]);
     }
@@ -439,10 +453,11 @@ bool MDP::converged(
     double c = 0;
 
     for (auto &v : this->V) {
-        c += v.second - prev_V[v.first];
+        c += std::fabs(v.second - prev_V[v.first]);
     }
 
-    return c < eps;
+    // TODO Why calculate this std::max in each iteration - move it to init.
+    return c < std::max(eps, DBL_EPSILON * this->V.size());
 }
 
 int MDP::solve(const int &max_iter, const double &eps) {
@@ -508,7 +523,7 @@ int MDP::get_policy() {
             for (auto &a : (*this->A)[s]) {
                 // TODO Use Q value function here. Code duplication.
                 double cost = 0;
-                for (auto &outcome : (*this->P)[a]) {
+                for (auto &outcome : (*this->P)[pred][a]) {
                     cost += outcome.second * ((*this->C)[a] + V[{s, outcome.first}]);
                 }
 
@@ -543,9 +558,16 @@ std::vector<long> MDP::drive(google::dense_hash_map<long, long> &diverge_policy)
     std::vector<long> nodes = {this->start};
     std::pair<long, long> curr_node = {(*this->predecessors)[this->start][0], this->start};
 
+    int i = 0;
+
     while (curr_node.second != this->goal) {
         if (policy.find(curr_node) == policy.end())
             break;
+
+        if (++i > 20000) {
+            std::cout << " FAIL " << std::endl;
+            break;
+        }
 
         const long diverged_node = diverge_policy[curr_node.second];
         if (diverged_node == 0 || visited.find(diverged_node) != visited.end()) {

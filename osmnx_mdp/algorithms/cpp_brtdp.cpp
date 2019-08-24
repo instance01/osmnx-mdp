@@ -23,7 +23,7 @@ double BRTDP::get_Q_value(
     long s = s_pair.second;
     double future_cost = 0;
 
-    for (const auto &outcome : (*this->P)[a]) {
+    for (const auto &outcome : (*this->P)[s_pair.first][a]) {
         std::pair<long, long> node_pair = {s, outcome.first};
         future_cost += outcome.second * ((*this->C)[node_pair] + v[node_pair]);
     }
@@ -40,9 +40,12 @@ int BRTDP::init(
         google::dense_hash_map<long, std::vector<std::pair<long, long>>> *A,
         google::dense_hash_map<std::pair<long, long>, double, pair_hash> *C,
         google::dense_hash_map<
-            std::pair<long, long>,
-            std::vector<std::pair<long, double>>,
-            pair_hash
+            long,
+            google::dense_hash_map<
+                std::pair<long, long>,
+                std::vector<std::pair<long, double>>,
+                pair_hash
+            >
         > *P,
         google::dense_hash_map<long, std::vector<long>> *predecessors,
         google::dense_hash_map<long, std::pair<double, double>> *data)
@@ -95,8 +98,8 @@ int BRTDP::setup(const long &start, const long &goal, std::unordered_map<std::st
 
     // TODO Move into function
     // TODO This assumes start has one predecessor..
-    this->vl[{0, this->start}] = this->vl[{(*this->predecessors)[this->start][0], this->start}];
-    this->vu[{0, this->start}] = this->vu[{(*this->predecessors)[this->start][0], this->start}];
+    this->vl[{1, this->start}] = this->vl[{(*this->predecessors)[this->start][0], this->start}];
+    this->vu[{1, this->start}] = this->vu[{(*this->predecessors)[this->start][0], this->start}];
 
     return 0;
 }
@@ -134,7 +137,7 @@ int BRTDP::run_trials()
     save_brtdp(this, "BRTDPrun_trials.cereal");
     this->random_generator.seed(42069);
 #endif
-    std::pair<long, long> start_pair = {0, this->start};
+    std::pair<long, long> start_pair = {1, this->start};
 
     int i = 0;
     double last_diff = 0;
@@ -158,6 +161,7 @@ int BRTDP::run_trials()
 }
 
 double BRTDP::get_outcome_distribution(
+        const long pred,
         const std::pair<long, long> &curr_min_action,
         std::vector<double> &distribution)
 {
@@ -167,7 +171,7 @@ double BRTDP::get_outcome_distribution(
     // BRTDP visits unexplored nodes that way.
     // TODO: There's also other ways to select the next node, check paper.
     double B = 0;
-    for (auto &outcome : (*this->P)[curr_min_action]) {
+    for (auto &outcome : (*this->P)[pred][curr_min_action]) {
         std::pair<long, long> node_pair = {curr_min_action.first, outcome.first};
         double cost = outcome.second * (this->vu[node_pair] - this->vl[node_pair]);
         distribution.push_back(cost);
@@ -177,6 +181,7 @@ double BRTDP::get_outcome_distribution(
 }
 
 long BRTDP::select_node_probabilistically(
+        const long pred,
         const std::pair<long, long> &curr_min_action,
         const std::vector<double> &distribution_param)
 {
@@ -187,12 +192,12 @@ long BRTDP::select_node_probabilistically(
         distribution_param.end()
     );
     const int n = distribution(this->random_generator);
-    return (*this->P)[curr_min_action][n].first;
+    return (*this->P)[pred][curr_min_action][n].first;
 }
 
 int BRTDP::run_trial(const double &tau)
 {
-    std::pair<long, long> start_pair = {0, this->start};
+    std::pair<long, long> start_pair = {1, this->start};
     std::pair<long, long> node_pair = start_pair;
 
     std::stack<std::pair<long, long>> traj;
@@ -207,14 +212,20 @@ int BRTDP::run_trial(const double &tau)
         const auto curr_min_action = this->update_v(this->vl, node_pair);
 
         std::vector<double> distribution_param;
-        const double B = get_outcome_distribution(curr_min_action, distribution_param);
+        const double B = get_outcome_distribution(
+                node_pair.first,
+                curr_min_action,
+                distribution_param);
 
         if (B < ((this->vu[start_pair] - this->vl[start_pair]) / tau))
             break;
 
         node_pair = {
             node_pair.second,
-            select_node_probabilistically(curr_min_action, distribution_param)
+            select_node_probabilistically(
+                    node_pair.first,
+                    curr_min_action,
+                    distribution_param)
         };
     }
 
@@ -244,7 +255,7 @@ std::vector<long> BRTDP::get_path(
 
     int failure_counter = 0;
 
-    std::pair<long, long> curr_node_pair = {0, this->start};
+    std::pair<long, long> curr_node_pair = {1, this->start};
     while (curr_node_pair.second != this->goal) {
         long curr_node = curr_node_pair.second;
         path.push_back(curr_node);
@@ -306,89 +317,132 @@ std::vector<long> BRTDP::get_path(
 
 void BRTDP::init_upper_bound_heuristic() {
     // Using DS-MPI as described in the paper.
-    // TODO long ass function like wheres the self respect
-    // TODO It works and I aint got time so let's postpone cleaning this.
+    // TODO Long function, break up without losing expressiveness of the
+    // algorithm
     google::dense_hash_map<
         long,
-        std::vector<std::pair<std::pair<long, long>, double>>
+        std::vector<std::pair<std::tuple<long, long, long>, double>>
     > P_pred_lookup;
 
     P_pred_lookup.set_empty_key(0);
 
-    for (auto &action_outcomes_pair : (*this->P)) {
-        auto action = action_outcomes_pair.first;
-        auto outcomes = action_outcomes_pair.second;
+    for (auto &pred_rest_pair : (*this->P)) {
+        auto pred = pred_rest_pair.first;
 
-        for (auto &outcome : outcomes) {
-            P_pred_lookup[outcome.first].push_back({action, outcome.second});
+        for (auto &action_outcomes_pair : (*this->P)[pred]) {
+            auto action = action_outcomes_pair.first;
+            auto outcomes = action_outcomes_pair.second;
+
+            for (auto &outcome : outcomes) {
+                P_pred_lookup[outcome.first].push_back(
+                    {
+                        {pred, action.first, action.second},
+                        outcome.second
+                    }
+                );
+            }
         }
     }
 
     // TODO: This has got to become a struct. lmao
-    google::dense_hash_map<std::pair<long, long>, double, pair_hash> pg_hat;
-    google::dense_hash_map<std::pair<long, long>, double, pair_hash> w_hat;
-    google::dense_hash_map<long, double> w;
-    google::dense_hash_map<long, double> pg;
-    google::dense_hash_map<long, std::pair<long, long>> policy;
-    google::dense_hash_map<long, std::pair<double, double>> priority;
-    google::dense_hash_map<long, bool> fin;
+    google::dense_hash_map<
+        long,
+        google::dense_hash_map<std::pair<long, long>, double, pair_hash>
+    > pg_hat;
+    google::dense_hash_map<
+        long,
+        google::dense_hash_map<std::pair<long, long>, double, pair_hash>
+    > w_hat;
+    google::dense_hash_map<std::pair<long, long>, double, pair_hash> w;
+    google::dense_hash_map<std::pair<long, long>, double, pair_hash> pg;
+    google::dense_hash_map<std::pair<long, long>, std::pair<long, long>, pair_hash> policy;
+    google::dense_hash_map<std::pair<long, long>, std::pair<double, double>, pair_hash> priority;
+    google::dense_hash_map<std::pair<long, long>, bool, pair_hash> fin;
 
-    pg_hat.set_empty_key({0, 0});
-    w_hat.set_empty_key({0, 0});
-    pg.set_empty_key(0);
-    w.set_empty_key(0);
-    policy.set_empty_key(0);
-    priority.set_empty_key(0);
-    fin.set_empty_key(0);
+    pg_hat.set_empty_key(0);
+    w_hat.set_empty_key(0);
+    pg.set_empty_key({0, 0});
+    w.set_empty_key({0, 0});
+    policy.set_empty_key({0, 0});
+    priority.set_empty_key({0, 0});
+    fin.set_empty_key({0, 0});
 
     for (long &state : (*this->S)) {
-        priority[state] = {INFINITY, INFINITY};
-        fin[state] = false;
-        for (auto &action : (*this->A)[state]) {
-            pg_hat[action] = 0;
-            w_hat[action] = (*this->C)[action];
+        pg_hat[state].set_empty_key({0, 0});
+        w_hat[state].set_empty_key({0, 0});
+    }
+    pg_hat[1].set_empty_key({0, 0});
+    w_hat[1].set_empty_key({0, 0});
+
+    for (long &state : (*this->S)) {
+        for (long &pred : (*this->predecessors)[state]) {
+            std::pair<long, long> node_pair(pred, state);
+            priority[node_pair] = {INFINITY, INFINITY};
+            fin[node_pair] = false;
+
+            for (auto &action : (*this->A)[state]) {
+                pg_hat[pred][action] = 0;
+                w_hat[pred][action] = (*this->C)[action];
+            }
+            pg[node_pair] = 1;
+            w[node_pair] = 1;
         }
-        pg[state] = 1;
-        w[state] = 1;
     }
 
     for (auto &action : (*this->A)[this->goal]) {
-        pg_hat[action] = 1;
+        for (long &pred : (*this->predecessors)[this->goal]) {
+            pg_hat[pred][action] = 1;
+        }
     }
+    pg_hat[this->goal][{this->goal, this->goal}] = 1;
 
-    // Paper: 'Select an action arbitrarily.'
-    // So I just take the first action and noone can stop me.
-    //policy[this->goal] = (*this->A)[this->goal][0];
-    policy[this->goal] = {this->goal, this->goal};
+    for (long &pred : (*this->predecessors)[this->goal]) {
+        policy[{pred, this->goal}] = {this->goal, this->goal};
+    }
+    policy[{this->goal, this->goal}] = {this->goal, this->goal};
 
-    std::vector<std::pair<long, std::pair<double, double>>> queue;
-    queue.push_back({this->goal, {0, 0}});
+    std::vector<
+        std::pair<
+            std::pair<long, long>,
+            std::pair<double, double>
+        >
+    > queue;
+
+    queue.push_back({{(*this->predecessors)[this->goal][0], this->goal}, {0, 0}});
 
     while (!queue.empty()) {
-        long x = queue_pop(queue);
+        auto x = queue_pop(queue);
 
         fin[x] = true;
-        w[x] = w_hat[policy[x]];
-        pg[x] = pg_hat[policy[x]];
+        w[x] = w_hat[x.first][policy[x]];
+        pg[x] = pg_hat[x.first][policy[x]];
 
-        for (auto &action_chance_pair : P_pred_lookup[x]) {
-            auto action = action_chance_pair.first;
+        for (auto &action_chance_pair : P_pred_lookup[x.second]) {
+            long pred, action_first, action_second;
+            std::tie(pred, action_first, action_second) = action_chance_pair.first;
+            std::pair<long, long> action(action_first, action_second);
             double chance = action_chance_pair.second;
-            long y = action.first;
+            std::pair<long, long> y = {pred, action.first};
+
+            if (x.first != action.first)
+                continue;
 
             if (fin[y])
                 continue;
 
-            w_hat[action] += chance * w[x];
-            pg_hat[action] += chance * pg[x];
+            w_hat[pred][action] += chance * w[x];
+            pg_hat[pred][action] += chance * pg[x];
 
-            std::pair<double, double> curr_priority = {1 - pg_hat[action], w_hat[action]};
+            std::pair<double, double> curr_priority = {1 - pg_hat[pred][action], w_hat[pred][action]};
 
             if (curr_priority < priority[y]) {
                 priority[y] = curr_priority;
                 policy[y] = action;
 
-                queue_decrease_priority<long, std::pair<double, double>>(queue, y, curr_priority);
+                queue_decrease_priority<
+                    std::pair<long, long>,
+                    std::pair<double, double>
+                >(queue, y, curr_priority);
             }
         }
     }
@@ -404,27 +458,31 @@ void BRTDP::init_upper_bound_heuristic() {
         for (auto &action : actions) {
             long x = action.first;
 
-            auto outcomes = (*this->P)[action];
+            for (const long &pred : (*this->predecessors)[x]) {
+                auto outcomes = (*this->P)[pred][action];
 
-            double total_w = 0;
-            double total_pg = 0;
+                double total_w = 0;
+                double total_pg = 0;
 
-            for (auto &outcome : outcomes) {
-                long y = outcome.first;
-                total_w += outcome.second * w[y];
-                total_pg += outcome.second * pg[y];
-            }
+                for (auto &outcome : outcomes) {
+                    long y = outcome.first;
+                    total_w += outcome.second * w[{x, y}];
+                    total_pg += outcome.second * pg[{x, y}];
+                }
 
-            if (pg[x] < total_pg - DBL_EPSILON) {
-                lambda[action] = ((*this->C)[action] + total_w - w[x]) / (total_pg - pg[x]);
-                // TODO: Below mention double imprecision ..
-            } else if (w[x] + DBL_EPSILON >= (*this->C)[action] + total_w && std::fabs(pg[x] - total_pg) < DBL_EPSILON) {
-                lambda[action] = 0;
-            } else {
-                lambda[action] = INFINITY;
+                if (pg[{pred, x}] < total_pg - DBL_EPSILON) {
+                    lambda[action] = ((*this->C)[action] + total_w - w[{pred, x}]) / (total_pg - pg[{pred, x}]);
+                    // TODO: Below mention double imprecision ..
+                } else if (w[{pred, x}] + DBL_EPSILON >= (*this->C)[action] + total_w && std::fabs(pg[{pred, x}] - total_pg) < DBL_EPSILON) {
+                    lambda[action] = 0;
+                } else {
+                    lambda[action] = INFINITY;
+                }
             }
         }
     }
+
+    lambda[{this->goal, this->goal}] = 0;
 
     // TODO: Too manual? The min_element alternative looks unreadable quite frankly.
     double max_lambda = -INFINITY;
@@ -444,9 +502,12 @@ void BRTDP::init_upper_bound_heuristic() {
         max_lambda = std::max(max_lambda, min_action);
     }
 
+    std::cout << "Max lambda: " << max_lambda << std::endl;
+
     for (long &state : (*this->S)) {
         for (long &neighbor : (*this->predecessors)[state]) {
-            this->vu[{neighbor, state}] = w[state] + (1 - pg[state]) * max_lambda;
+            std::pair<long, long> node_pair = {neighbor, state};
+            this->vu[node_pair] = w[node_pair] + (1 - pg[node_pair]) * max_lambda;
         }
     }
 }

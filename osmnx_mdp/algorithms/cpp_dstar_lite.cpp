@@ -90,7 +90,7 @@ std::pair<long, double> DStar_Lite::get_min_successor(const std::pair<long, long
         const double edge_cost = (*this->cost)[{node, succ}];
         double cost = this->g[{node, succ}] + edge_cost;
 
-        // Penalize U-turns by increasing cost by 10%.
+        // Penalize U-turns.
         if (node_pair.first == succ) {
             cost += U_TURN_PENALTY;
         }
@@ -217,9 +217,16 @@ int DStar_Lite::drive(
     std::unordered_set<std::pair<long, long>, pair_hash> visited = {start_pair};
     out.push_back(this->start);
 
+    int i = 0;
+
     while (this->start != this->goal) {
         if (this->g[{0, this->start}] == INFINITY)
             throw std::runtime_error("No path found.");
+
+        if (++i > 20000) {
+            std::cout << " (D*) FAIL " << std::endl;
+            break;
+        }
 
         const long diverged_node = diverge_policy[this->start];
 

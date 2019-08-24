@@ -10,10 +10,13 @@ cdef class BRTDP(osmnx_mdp.algorithms.algorithm.Algorithm):
         self.data.set_empty_key(0)
         self.predecessors.set_empty_key(0)
 
+        for action in self.mdp.A[start]:
+            self.mdp.P[1][action] = [(action.second, 1.0)]
+
         for node in self.mdp.G.nodes.data():
             node_id = node[0]
             self.data[node_id] = (node[1]['x'], node[1]['y'])
-            self.predecessors[node_id] = list(self.mdp.G.predecessors(node_id))
+            self.predecessors[node_id] = list(self.mdp.predecessors[node_id])
 
         self.cpp = CPP_BRTDP()
         self.cpp.init(

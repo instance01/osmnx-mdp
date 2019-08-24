@@ -26,9 +26,12 @@ cdef extern from "cpp_mdp.hpp":
         dense_hash_map[long, vector[pair[long, long]]] *A
         dense_hash_map[pair[long, long], double, pair_hash] *C
         dense_hash_map[
-            pair[long, long],
-            vector[pair[long, double]],
-            pair_hash
+            long,
+            dense_hash_map[
+                pair[long, long],
+                vector[pair[long, double]],
+                pair_hash
+            ]
         ] *P
 
         dense_hash_map[pair[long, long], double, pair_hash] V
@@ -52,9 +55,12 @@ cdef extern from "cpp_mdp.hpp":
             dense_hash_map[long, vector[pair[long, long]]] *A,
             dense_hash_map[pair[long, long], double, pair_hash] *C,
             dense_hash_map[
-                pair[long, long],
-                vector[pair[long, double]],
-                pair_hash
+                long,
+                dense_hash_map[
+                    pair[long, long],
+                    vector[pair[long, double]],
+                    pair_hash
+                ]
             ] *P,
             dense_hash_map[pair[long, long], double, pair_hash] *edge_data,
             dense_hash_map[pair[long, long], pair[double, double], pair_hash] *angle_data,
@@ -80,9 +86,12 @@ cdef class MDP(osmnx_mdp.algorithms.algorithm.Algorithm):
     cdef dense_hash_map[long, vector[pair[long, long]]] A
     cdef dense_hash_map[pair[long, long], double, pair_hash] C
     cdef dense_hash_map[
-        pair[long, long],
-        vector[pair[long, double]],
-        pair_hash
+        long,
+        dense_hash_map[
+            pair[long, long],
+            vector[pair[long, double]],
+            pair_hash
+        ]
     ] P
 
     cdef dense_hash_map[pair[long, long], double, pair_hash] edge_data
