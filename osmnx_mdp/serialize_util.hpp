@@ -66,9 +66,12 @@ struct SharedMDPData {
     google::dense_hash_map<long, std::vector<std::pair<long, long>>> A;
     google::dense_hash_map<std::pair<long, long>, double, pair_hash> C;
     google::dense_hash_map<
-        std::pair<long, long>,
-        std::vector<std::pair<long, double>>,
-        pair_hash
+        long,
+        google::dense_hash_map<
+            std::pair<long, long>,
+            std::vector<std::pair<long, double>>,
+            pair_hash
+        >
     > P;
 
     google::dense_hash_map<std::pair<long, long>, double, pair_hash> edge_data;
@@ -81,9 +84,12 @@ struct SharedBRTDPData {
     google::dense_hash_map<long, std::vector<std::pair<long, long>>> A;
     google::dense_hash_map<std::pair<long, long>, double, pair_hash> C;
     google::dense_hash_map<
-        std::pair<long, long>,
-        std::vector<std::pair<long, double>>,
-        pair_hash
+        long,
+        google::dense_hash_map<
+            std::pair<long, long>,
+            std::vector<std::pair<long, double>>,
+            pair_hash
+        >
     > P;
 
     google::dense_hash_map<long, std::pair<double, double>> data;
