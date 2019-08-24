@@ -352,6 +352,9 @@ def run(map_id, location):
         mdp.setup(start, goal, CONFIG['MDP'])
         diverge_policy = gen_diverge_policy_with_uncertain_nodes(G, mdp.uncertain_nodes)
 
+    diverge_policy.pop(start, None)
+    diverge_policy.pop(goal, None)
+
     mdp = MDP(G)
     curr_result.append(run_simulation(mdp, map_id, location_id, start, goal, diverge_policy))
 
