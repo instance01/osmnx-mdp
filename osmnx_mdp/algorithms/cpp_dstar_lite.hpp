@@ -26,6 +26,8 @@ class DStar_Lite {
         long start;
         long goal;
 
+        std::pair<long, long> curr_start;
+
         double heuristic_max_speed;
         bool dijkstra_heuristic;
 

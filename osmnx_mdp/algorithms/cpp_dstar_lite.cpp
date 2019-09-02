@@ -71,6 +71,8 @@ int DStar_Lite::setup(const long &start, const long &goal, std::unordered_map<st
         this->U[{pred, this->goal}] = this->calculate_key({pred, this->goal});
     }
 
+    this->curr_start = {0, this->start};
+
     return 0;
 }
 
@@ -143,13 +145,14 @@ int DStar_Lite::compute_shortest_path()
     int i = 0;
     while (!this->U.empty()) {
         i += 1;
+
         const auto candidate = *std::min_element(
                 this->U.begin(),
                 this->U.end(),
                 [](auto& a, auto& b) { return a.second < b.second; });
 
-        const bool reached_start = candidate.second >= this->calculate_key({0, this->start});
-        const bool start_consistent = this->rhs[{0, this->start}] == this->g[{0, this->start}];
+        const bool reached_start = candidate.second >= this->calculate_key(this->curr_start);
+        const bool start_consistent = this->rhs[this->curr_start] == this->g[this->curr_start];
         if (reached_start && start_consistent)
             break;
         // TODO: Different from the optimized version of D* Lite
@@ -170,6 +173,7 @@ int DStar_Lite::compute_shortest_path()
             for (const auto &pred : (*this->predecessors)[node_pair.second]) {
                 for (const auto &predpred : (*this->predecessors)[pred]) {
                     double penalty = predpred == node_pair.second ? U_TURN_PENALTY : 0.0;
+
                     if (pred != this->goal)
                         this->rhs[{predpred, pred}] = std::min(
                                 this->rhs[{predpred, pred}],
@@ -239,6 +243,7 @@ int DStar_Lite::drive(
                 this->heuristic_map[last_start] : aerial_heuristic(last_start);
             this->k += heuristic_val;
             last_start = this->start;
+            this->curr_start = diverged_pair;
             this->compute_shortest_path();
         }
 
