@@ -28,9 +28,9 @@ CONFIG = {
     'include_traffic_signals_in_metric': True,
     'MDP': {
         # Cython needs byte strings
-        b'max_angle': 35,
+        b'max_angle': 30,
         b'max_length': 200,
-        b'edge_uncertainty': .2
+        b'edge_uncertainty': .1
     },
     'BRTDP': {
         b'alpha': 1e-20,
@@ -104,7 +104,7 @@ LOCATIONS = {
             'goal': (48.1501497, 11.5809987),
             'metadata': {
                 'id': 'RWUNI',
-                'info': 'Richard-Wagner-Str to Geschwister-Scholl-Platz (University)',
+                'info': 'Richard-Wagner-Str to Geschwister-Scholl-Platz (University)'
             }
         }
     ],
@@ -114,7 +114,39 @@ LOCATIONS = {
             'goal': (48.139404, 11.6708573),
             'metadata': {
                 'id': 'AURIMUN',
-                'info': 'Aubing to Riem through Munich',
+                'info': 'Aubing to Riem through Munich'
+            }
+        },
+        {
+            'start': (48.2085997, 11.4586661),
+            'goal': (48.1832655, 11.6284216),
+            'metadata': {
+                'id': 'M2',
+                'info': ''
+            }
+        },
+        {
+            'start': (48.2085997, 11.4586661),
+            'goal': (48.1180978, 11.5756126),
+            'metadata': {
+                'id': 'M3',
+                'info': ''
+            }
+        },
+        {
+            'start': (48.1691419, 11.4148157),
+            'goal': (48.1739931, 11.6512008),
+            'metadata': {
+                'id': 'M4',
+                'info': ''
+            }
+        },
+        {
+            'start': (48.1451966, 11.5634101),
+            'goal': (48.1785633, 11.471546),
+            'metadata': {
+                'id': 'M5',
+                'info': ''
             }
         }
     ],
@@ -163,6 +195,30 @@ LOCATIONS = {
                 'id': 'StarnbergLONG',
                 'info': ''
             }
+        },
+        {
+            'start': (48.0156037, 11.296807),
+            'goal': (47.85181, 11.4085624),
+            'metadata': {
+                'id': 'ST2',
+                'info': ''
+            }
+        },
+        {
+            'start': (48.0156037, 11.296807),
+            'goal': (47.8250368, 11.3375287),
+            'metadata': {
+                'id': 'ST3',
+                'info': ''
+            }
+        },
+        {
+            'start': (48.0156037, 11.296807),
+            'goal': (47.826476, 11.2939973),
+            'metadata': {
+                'id': 'ST4',
+                'info': ''
+            }
         }
     ],
     'Bavaria': [
@@ -198,32 +254,51 @@ def load_map_from_osm(map_metadata):
     return G
 
 
-def _update_locs(G, map_id):
-    # TODO: Weird utility function
-    locs = []
-    for i, location in enumerate(LOCATIONS[map_id]):
-        print(map_id, i, location)
-        # TODO PEP-8
-        LOCATIONS[map_id][i]['start'] = ox.utils.get_nearest_node(G, location['start'])
-        LOCATIONS[map_id][i]['goal'] = ox.utils.get_nearest_node(G, location['goal'])
-    locs = LOCATIONS[map_id]
-    return locs
-
-
 def load_maps():
     for map_id, map_metadata in MAPS.items():
         try:
             with open(map_metadata['file'], 'rb') as f:
                 locs, G = pickle.load(f)
         except Exception as ex:
+            # TODO lmao code quality
             print('Failed loading map pickle for %s.' % map_id, ex)
             print('Loading fresh map from OSM.')
             G = load_map_from_osm(map_metadata)
 
-            locs = _update_locs(G, map_id)
+            for i, location in enumerate(LOCATIONS[map_id]):
+                print(map_id, i, location)
+                LOCATIONS[map_id][i]['start'] = ox.utils.get_nearest_node(
+                        G,
+                        location['start'])
+                LOCATIONS[map_id][i]['goal'] = ox.utils.get_nearest_node(
+                        G,
+                        location['goal'])
+            locs = LOCATIONS[map_id]
 
             print('Projecting graph. This might take a while..')
             G = ox.project_graph(G)
+
+            G2 = G.copy()
+            print('Preprocessing graph (temporary)..')
+            remove_zero_cost_loops(G2)
+            remove_dead_ends(G2, None)
+
+            for i, location in enumerate(LOCATIONS[map_id]):
+                print(map_id, i, location)
+                start = G.nodes[location['start']]
+                goal = G.nodes[location['goal']]
+                print(start['x'], start['y'])
+                print(goal['x'], goal['y'])
+                LOCATIONS[map_id][i]['start'] = ox.utils.get_nearest_node(
+                        G2,
+                        (start['y'], start['x']),
+                        method='euclidean')
+                LOCATIONS[map_id][i]['goal'] = ox.utils.get_nearest_node(
+                        G2,
+                        (goal['y'], goal['x']),
+                        method='euclidean')
+            print(locs)
+            locs = LOCATIONS[map_id]
 
             with open(map_metadata['file'], 'wb+') as f:
                 pickle.dump((locs, G), f)
