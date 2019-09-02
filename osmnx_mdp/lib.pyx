@@ -98,6 +98,8 @@ cdef get_node_properties(G, path, values=None, extra=[]):
 
     node_sizes = []
     node_colors = []
+    edge_colors = []
+    edge_linewidths = []
     for node in G.nodes():
         if node in path:
             # TODO Ugly
@@ -105,12 +107,12 @@ cdef get_node_properties(G, path, values=None, extra=[]):
                 node_colors.append('m')
             else:
                 node_colors.append('g')
-            node_sizes.append(30)
+            node_sizes.append(50)
         elif node in extra:
             node_colors.append('y')
-            node_sizes.append(20)
+            node_sizes.append(30)
         else:
-            node_sizes.append(8)
+            node_sizes.append(6)
             if values is None:
                 node_colors.append('#555555')
                 continue
@@ -123,20 +125,29 @@ cdef get_node_properties(G, path, values=None, extra=[]):
             val = hex(int(254 - (val - min_val) / diff_val * 254))[2:4].zfill(2)
             node_colors.append(HEX_FORMAT % val)
 
-    return node_colors, node_sizes
+    for edge in G.edges():
+        if edge[0] in path and edge[1] in path:
+            edge_colors.append('black')
+            edge_linewidths.append(2)
+        else:
+            edge_colors.append('#999999')
+            edge_linewidths.append(1)
+
+    return node_colors, node_sizes, edge_colors
 
 
 cdef draw_value_graph(G, path, values=None, extra=[], annotate=False):
     """G shall be projected.
     values is a dict of {node: cost, ..}.
     """
-    node_colors, node_sizes = get_node_properties(G, path, values, extra)
+    node_colors, node_sizes, edge_colors = get_node_properties(G, path, values, extra)
 
     ox.plot_graph(
             G,
             node_size=node_sizes,
             node_color=node_colors,
             node_zorder=2,
+            edge_color=edge_colors,
             annotate=annotate)
 
 
