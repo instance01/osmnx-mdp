@@ -10,14 +10,11 @@
 #include "../cpp_queue_util.hpp" // queue_decrease_priority, queue_pop
 
 
-// TODO Rename DStar_Lite
+DStarLite::DStarLite () {}
+DStarLite::~DStarLite () {}
 
 
-DStar_Lite::DStar_Lite () {}
-DStar_Lite::~DStar_Lite () {}
-
-
-int DStar_Lite::init(
+int DStarLite::init(
         google::dense_hash_map<long, std::vector<long>> *predecessors,
         google::dense_hash_map<long, std::vector<long>> *successors,
         google::dense_hash_map<std::pair<long, long>, double, pair_hash> *cost,
@@ -39,7 +36,7 @@ int DStar_Lite::init(
     return 0;
 }
 
-int DStar_Lite::setup(const long &start, const long &goal, std::unordered_map<std::string, double> cfg)
+int DStarLite::setup(const long &start, const long &goal, std::unordered_map<std::string, double> cfg)
 {
     this->start = start;
     this->goal = goal;
@@ -76,7 +73,7 @@ int DStar_Lite::setup(const long &start, const long &goal, std::unordered_map<st
     return 0;
 }
 
-std::pair<long, double> DStar_Lite::get_min_successor(const std::pair<long, long> &node_pair)
+std::pair<long, double> DStarLite::get_min_successor(const std::pair<long, long> &node_pair)
 {
     // For a given node, return the successor which lies on the minimum sum of
     // the estimated path to the node g(x) and the edge cost between the node
@@ -106,7 +103,7 @@ std::pair<long, double> DStar_Lite::get_min_successor(const std::pair<long, long
     return {min_node, min_cost};
 }
 
-float DStar_Lite::aerial_heuristic(const long &node)
+float DStarLite::aerial_heuristic(const long &node)
 {
     float lat1, lon1, lat2, lon2;
     std::tie(lat1, lon1) = (*this->data)[node];
@@ -114,14 +111,14 @@ float DStar_Lite::aerial_heuristic(const long &node)
     return aerial_dist(lat1, lon1, lat2, lon2) / this->heuristic_max_speed; // Hours
 }
 
-std::pair<double, double> DStar_Lite::calculate_key(const std::pair<long, long> &node_pair)
+std::pair<double, double> DStarLite::calculate_key(const std::pair<long, long> &node_pair)
 {
     double key = std::min(this->g[node_pair], this->rhs[node_pair]);
     double heuristic_val = this->dijkstra_heuristic ? this->heuristic_map[node_pair.second] : aerial_heuristic(node_pair.second);
     return std::pair<double, double>(key + heuristic_val + this->k, key);
 }
 
-int DStar_Lite::update_vertex(const std::pair<long, long> &node_pair)
+int DStarLite::update_vertex(const std::pair<long, long> &node_pair)
 {
     if (this->g[node_pair] != this->rhs[node_pair])
         this->U[node_pair] = this->calculate_key(node_pair);
@@ -131,7 +128,7 @@ int DStar_Lite::update_vertex(const std::pair<long, long> &node_pair)
     return 0;
 }
 
-int DStar_Lite::compute_shortest_path()
+int DStarLite::compute_shortest_path()
 {
 #ifdef TESTS
     save_dstar(this, "DSTARcompute_shortest_path.cereal");
@@ -208,7 +205,7 @@ int DStar_Lite::compute_shortest_path()
     return i;
 }
 
-int DStar_Lite::drive(
+int DStarLite::drive(
         std::vector<long> &out,
         google::dense_hash_map<long, long> &diverge_policy)
 {
@@ -221,16 +218,9 @@ int DStar_Lite::drive(
     std::unordered_set<std::pair<long, long>, pair_hash> visited = {start_pair};
     out.push_back(this->start);
 
-    int i = 0;
-
     while (this->start != this->goal) {
         if (this->g[{0, this->start}] == INFINITY)
             throw std::runtime_error("No path found.");
-
-        if (++i > 20000) {
-            std::cout << " (D*) FAIL " << std::endl;
-            break;
-        }
 
         const long diverged_node = diverge_policy[this->start];
 
@@ -264,41 +254,9 @@ int DStar_Lite::drive(
     return 0;
 }
 
-// TODO: COPIED (99%) FROM BRTDP
-void DStar_Lite::init_heuristic() {
+void DStarLite::init_heuristic() {
     // Single source (from goal) all target Dijkstra
-    this->heuristic_map.set_empty_key(0);
-
-    google::dense_hash_map<long, double> dist;
-    google::dense_hash_map<long, long> prev;
-
-    dist.set_empty_key(0);
-    prev.set_empty_key(0);
-
-    std::vector<std::pair<long, double>> queue;
-
-    for (long &state : this->nodes) {
-        dist[state] = INFINITY;
-    }
-    dist[this->goal] = 0;
-    queue.push_back({this->goal, dist[this->goal]});
-
-    std::make_heap(queue.begin(), queue.end());
-
-    while (!queue.empty()) {
-        long node = queue_pop(queue);
-
-        for (long &neighbor : (*this->predecessors)[node]) {
-            double new_dist = dist[node] + (*this->cost)[{neighbor, node}];
-
-            if (new_dist < dist[neighbor] - DBL_EPSILON) {
-                dist[neighbor] = new_dist;
-                prev[neighbor] = node;
-
-                queue_decrease_priority<long, double>(queue, neighbor, new_dist);
-            }
-        }
-    }
+    auto prev = dijkstra(&this->nodes, this->cost, this->predecessors, this->goal);
 
     for (long &state : this->nodes) {
         double curr_cost = 0;

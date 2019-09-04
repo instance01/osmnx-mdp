@@ -110,8 +110,8 @@ void save_brtdp(BRTDP *brtdp, std::string name);
 
 void load_brtdp(BRTDP *brtdp, SharedBRTDPData &data, std::string name);
 
-void save_dstar(DStar_Lite *brtdp, std::string name);
+void save_dstar(DStarLite *brtdp, std::string name);
 
-void load_dstar(DStar_Lite *brtdp, SharedDStarLiteData &data, std::string name);
+void load_dstar(DStarLite *brtdp, SharedDStarLiteData &data, std::string name);
 
 #endif

@@ -13,12 +13,11 @@ cdef extern from "cpp_lib.hpp":
         double lat1,
         double lon1,
         double lat2,
-        double lon2,
-        double R)
+        double lon2)
 
 
 cdef get_edge_cost(G, node_from, node_to)
-cdef aerial_dist(node1, node2, R=*)
+cdef aerial_dist(node1, node2)
 cdef get_time_to_drive(col_nodes, G, include_traffic_signals=*)
 cdef get_node_properties(G, path, values=*, extra=*)
 cdef draw_value_graph(G, path, values=*, extra=*, annotate=*)

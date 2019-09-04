@@ -10,7 +10,7 @@ from osmnx_mdp.algorithms.dense_hash_map cimport dense_hash_map
 cdef extern from "cpp_dstar_lite.cpp":
     struct pair_hash:
         long long operator(pair[long, long] p)
-    cppclass CPP_DStar_Lite "DStar_Lite":
+    cppclass CPP_DStar_Lite "DStarLite":
         CPP_DStar_Lite()
         dense_hash_map[pair[long, long], double, pair_hash] rhs
         dense_hash_map[pair[long, long], double, pair_hash] g
@@ -35,7 +35,7 @@ cdef extern from "cpp_dstar_lite.cpp":
         int compute_shortest_path()
         int drive(vector[long] &out, dense_hash_map[long, long] diverge_policy)
 
-cdef class DStar_Lite(osmnx_mdp.algorithms.algorithm.Algorithm):
+cdef class DStarLite(osmnx_mdp.algorithms.algorithm.Algorithm):
     cdef dense_hash_map[long, vector[long]] predecessors
     cdef dense_hash_map[long, vector[long]] successors
     cdef dense_hash_map[pair[long, long], double, pair_hash] cost

@@ -6,7 +6,6 @@
 
 
 // Cython needs an integer return, thus all void functions return 0.
-// Best viewed with TagList plugin (with vim). :TlistOpen
 
 
 MDP::MDP() {}
@@ -400,7 +399,6 @@ int MDP::make_low_angle_intersections_uncertain(const double &max_angle) {
     return 0;
 }
 
-// TODO Same as BRTDP
 double MDP::get_Q_value(
         google::dense_hash_map<std::pair<long, long>, double, pair_hash> &prev_V,
         const std::pair<long, long> &s_pair,
@@ -521,15 +519,11 @@ int MDP::get_policy() {
             std::pair<long, long> curr_min_action;
 
             for (auto &a : (*this->A)[s]) {
-                // TODO Use Q value function here. Code duplication.
-                double cost = 0;
-                for (auto &outcome : (*this->P)[pred][a]) {
-                    cost += outcome.second * ((*this->C)[a] + V[{s, outcome.first}]);
-                }
-
-                if (a.second == pred) {
-                    cost += U_TURN_PENALTY;
-                }
+                double cost = this->get_Q_value(
+                    this->V,
+                    {pred, s},
+                    a
+                );
 
                 if (cost < curr_min) {
                     curr_min = cost;
@@ -558,16 +552,9 @@ std::vector<long> MDP::drive(google::dense_hash_map<long, long> &diverge_policy)
     std::vector<long> nodes = {this->start};
     std::pair<long, long> curr_node = {(*this->predecessors)[this->start][0], this->start};
 
-    int i = 0;
-
     while (curr_node.second != this->goal) {
         if (policy.find(curr_node) == policy.end())
             break;
-
-        if (++i > 20000) {
-            std::cout << " FAIL " << std::endl;
-            break;
-        }
 
         const long diverged_node = diverge_policy[curr_node.second];
         if (diverged_node == 0 || visited.find(diverged_node) != visited.end()) {

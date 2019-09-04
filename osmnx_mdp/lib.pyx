@@ -40,13 +40,12 @@ cdef get_edge_cost(G, node_from, node_to):
     return length / maxspeed
 
 
-cdef aerial_dist(node1, node2, R=6356.8):
+cdef aerial_dist(node1, node2):
     return cpp_aerial_dist(
         <double>node1['lat'],
         <double>node1['lon'],
         <double>node2['lat'],
-        <double>node2['lon'],
-        <double>R
+        <double>node2['lon']
     )
 
 

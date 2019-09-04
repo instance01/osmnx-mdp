@@ -14,7 +14,6 @@ BRTDP::BRTDP() {};
 BRTDP::~BRTDP() {};
 
 
-// TODO: Same as in MDP
 double BRTDP::get_Q_value(
         google::dense_hash_map<std::pair<long, long>, double, pair_hash> &v,
         const std::pair<long, long> &s_pair,
@@ -111,7 +110,7 @@ std::pair<std::pair<long, long>, double> BRTDP::get_minimum_action(
     std::pair<long, long> curr_min_action;
     double curr_min = INFINITY;
     for (const auto &a : (*this->A)[node_pair.second]) {
-        double q_val = get_Q_value(v, node_pair, a);
+        double q_val = this->get_Q_value(v, node_pair, a);
 
         if (q_val < curr_min) {
             curr_min = q_val;
@@ -253,19 +252,10 @@ std::vector<long> BRTDP::get_path(
 
     int custom_updates = 0;
 
-    int failure_counter = 0;
-
     std::pair<long, long> curr_node_pair = {1, this->start};
     while (curr_node_pair.second != this->goal) {
         long curr_node = curr_node_pair.second;
         path.push_back(curr_node);
-
-        // TODO: Remove this again.
-        failure_counter += 1;
-        if (failure_counter > 20000) {
-            std::cout << " FAILURE. " << std::endl;
-            break;
-        }
 
         const long diverged_node = diverge_policy[curr_node];
 
@@ -317,8 +307,8 @@ std::vector<long> BRTDP::get_path(
 
 void BRTDP::init_upper_bound_heuristic() {
     // Using DS-MPI as described in the paper.
-    // TODO Long function, break up without losing expressiveness of the
-    // algorithm
+    // TODO Extremely long function, break up without losing expressiveness of
+    // the algorithm
     google::dense_hash_map<
         long,
         std::vector<std::pair<std::tuple<long, long, long>, double>>
@@ -344,7 +334,8 @@ void BRTDP::init_upper_bound_heuristic() {
         }
     }
 
-    // TODO: This has got to become a struct. lmao
+    // TODO: This has got to become a struct, i.e. map pair to struct.
+    // TODO: Hashmaps of hashmaps sucks.
     google::dense_hash_map<
         long,
         google::dense_hash_map<std::pair<long, long>, double, pair_hash>
@@ -447,7 +438,15 @@ void BRTDP::init_upper_bound_heuristic() {
         }
     }
 
-    // Let's do it.. Theorem 3
+    // Done with the DS-MPI sweep.
+    // Now, apply Theorem 3 from the BRTDP paper.
+    this->apply_theorem_three(w, pg);
+}
+
+void BRTDP::apply_theorem_three(
+        google::dense_hash_map<std::pair<long, long>, double, pair_hash> w,
+        google::dense_hash_map<std::pair<long, long>, double, pair_hash> pg)
+{
     // Bigger than expected (that's what she said)
     google::dense_hash_map<std::pair<long, long>, double, pair_hash> lambda;
 
@@ -484,7 +483,6 @@ void BRTDP::init_upper_bound_heuristic() {
 
     lambda[{this->goal, this->goal}] = 0;
 
-    // TODO: Too manual? The min_element alternative looks unreadable quite frankly.
     double max_lambda = -INFINITY;
     for (long &state : (*this->S)) {
         double min_action = INFINITY;
@@ -493,17 +491,22 @@ void BRTDP::init_upper_bound_heuristic() {
             min_action = std::min(min_action, lambda[action]);
         }
 
-        // TODO: In case there's a bug, uncomment.
-        //if (min_action == INFINITY) {
-        //    std::cout << " ----- INF "<< state << std::endl;
-        //    min_action = 0;
-        //}
+        // This is not as described in the paper. It only happens with huge maps
+        // such as Bavaria.
+        // Possible ideas could be that dead end removal is not exhaustive yet
+        // (e.g. dead ends that look in more than 2 nodes) or there is a bug
+        // somewhere else in the DS-MPI implementation.
+        if (min_action == INFINITY) {
+            std::cout << " --- INF "<< state << std::endl;
+            min_action = 0;
+        }
 
         max_lambda = std::max(max_lambda, min_action);
     }
 
     std::cout << "Max lambda: " << max_lambda << std::endl;
 
+    // Finally, the upper bound is initialized.
     for (long &state : (*this->S)) {
         for (long &neighbor : (*this->predecessors)[state]) {
             std::pair<long, long> node_pair = {neighbor, state};
@@ -514,40 +517,7 @@ void BRTDP::init_upper_bound_heuristic() {
 
 void BRTDP::init_lower_bound_heuristic() {
     // Single source (from goal) all target Dijkstra
-    google::dense_hash_map<long, double> dist;
-    google::dense_hash_map<long, long> prev;
-
-    dist.set_empty_key(0);
-    prev.set_empty_key(0);
-
-    std::vector<std::pair<long, double>> queue;
-
-    for (long &state : (*this->S)) {
-        dist[state] = INFINITY;
-    }
-    dist[this->goal] = 0;
-    queue.push_back({this->goal, 0});
-
-    std::make_heap(queue.begin(), queue.end());
-
-    auto starttime = std::chrono::high_resolution_clock::now();
-    while (!queue.empty()) {
-        long node = queue_pop(queue);
-
-        for (long &neighbor : (*this->predecessors)[node]) {
-            double new_dist = dist[node] + (*this->C)[{neighbor, node}];
-
-            if (new_dist < dist[neighbor] - DBL_EPSILON) {
-                dist[neighbor] = new_dist;
-                prev[neighbor] = node;
-
-                queue_decrease_priority<long, double>(queue, neighbor, new_dist);
-            }
-        }
-    }
-    auto end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - starttime);
-    std::cout << "Time taken by Dijkstra loop: " << duration.count() << " msec" << std::endl;
+    auto prev = dijkstra(this->S, this->C, this->predecessors, this->goal);
 
     for (long &state : (*this->S)) {
         double curr_cost = 0;

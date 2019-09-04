@@ -8,13 +8,13 @@
 #include "../cpp_lib.hpp"
 
 
-class DStar_Lite {
+class DStarLite {
     private:
         std::pair<long, double> get_min_successor(const std::pair<long, long> &node_pair);
 
     public:
-        DStar_Lite();
-        ~DStar_Lite();
+        DStarLite();
+        ~DStarLite();
 
         google::dense_hash_map<std::pair<long, long>, double, pair_hash> rhs;
         google::dense_hash_map<std::pair<long, long>, double, pair_hash> g;

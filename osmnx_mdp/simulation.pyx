@@ -14,7 +14,7 @@ from osmnx_mdp.lib cimport get_time_to_drive
 from osmnx_mdp.algorithms.mdp cimport MDP
 from osmnx_mdp.algorithms.brtdp cimport BRTDP
 from osmnx_mdp.algorithms.brtdp_replan cimport BRTDP_REPLAN
-from osmnx_mdp.algorithms.dstar_lite cimport DStar_Lite
+from osmnx_mdp.algorithms.dstar_lite cimport DStarLite
 from osmnx_mdp.algorithms.algorithm cimport Algorithm
 
 
@@ -44,7 +44,7 @@ CONFIG = {
         b'beta': .02,
         b'always_replan': 1
     },
-    'DStar_Lite': {
+    'DStarLite': {
         b'heuristic': 1, # Options: 0 for Dijkstra, 1 for aerial distance
         b'heuristic_max_speed': 200 # In km/h
     }
@@ -254,51 +254,55 @@ def load_map_from_osm(map_metadata):
     return G
 
 
+def _update_locs(G, map_id, type_='latlon'):
+    # type_ can be latlon, then location currently has lat/lon coordinates,
+    # or nxid, then location currently has a node id with x and y coordinates.
+    for i, location in enumerate(LOCATIONS[map_id]):
+        if type_ == 'latlon':
+            start = location['start']
+            goal = location['goal']
+            method = 'haversine'
+        else:
+            start = (location['start']['y'], location['start']['x'])
+            goal = (location['goal']['y'], location['goal']['x'])
+            method = 'euclidean'
+
+        LOCATIONS[map_id][i]['start'] = ox.utils.get_nearest_node(
+                G,
+                start,
+                method=method)
+        LOCATIONS[map_id][i]['goal'] = ox.utils.get_nearest_node(
+                G,
+                goal,
+                method=method)
+    return LOCATIONS[map_id]
+
+
 def load_maps():
     for map_id, map_metadata in MAPS.items():
         try:
             with open(map_metadata['file'], 'rb') as f:
                 locs, G = pickle.load(f)
         except Exception as ex:
-            # TODO lmao code quality
             print('Failed loading map pickle for %s.' % map_id, ex)
             print('Loading fresh map from OSM.')
             G = load_map_from_osm(map_metadata)
 
-            for i, location in enumerate(LOCATIONS[map_id]):
-                print(map_id, i, location)
-                LOCATIONS[map_id][i]['start'] = ox.utils.get_nearest_node(
-                        G,
-                        location['start'])
-                LOCATIONS[map_id][i]['goal'] = ox.utils.get_nearest_node(
-                        G,
-                        location['goal'])
-            locs = LOCATIONS[map_id]
+            locs = _update_locs(G, map_id, 'latlon')
 
             print('Projecting graph. This might take a while..')
             G = ox.project_graph(G)
+
+            for i, location in enumerate(LOCATIONS[map_id]):
+                LOCATIONS[map_id][i]['start'] = G.nodes[location['start']]
+                LOCATIONS[map_id][i]['goal'] = G.nodes[location['goal']]
 
             G2 = G.copy()
             print('Preprocessing graph (temporary)..')
             remove_zero_cost_loops(G2)
             remove_dead_ends(G2, None)
 
-            for i, location in enumerate(LOCATIONS[map_id]):
-                print(map_id, i, location)
-                start = G.nodes[location['start']]
-                goal = G.nodes[location['goal']]
-                print(start['x'], start['y'])
-                print(goal['x'], goal['y'])
-                LOCATIONS[map_id][i]['start'] = ox.utils.get_nearest_node(
-                        G2,
-                        (start['y'], start['x']),
-                        method='euclidean')
-                LOCATIONS[map_id][i]['goal'] = ox.utils.get_nearest_node(
-                        G2,
-                        (goal['y'], goal['x']),
-                        method='euclidean')
-            print(locs)
-            locs = LOCATIONS[map_id]
+            locs = _update_locs(G2, map_id, 'nxid')
 
             with open(map_metadata['file'], 'wb+') as f:
                 pickle.dump((locs, G), f)
@@ -403,8 +407,7 @@ def gen_diverge_policy_with_uncertain_nodes(G, uncertain_nodes):
     return gen_diverge_policy(G, func)
 
 
-# TODO Rename
-def run(map_id, location):
+def run_process(map_id, location):
     curr_result = []
 
     location_id = location['metadata']['id']
@@ -427,6 +430,7 @@ def run(map_id, location):
         mdp.setup(start, goal, CONFIG['MDP'])
         diverge_policy = gen_diverge_policy_with_uncertain_nodes(G, mdp.uncertain_nodes)
 
+    # Let's not diverge from start or goal.
     diverge_policy.pop(start, None)
     diverge_policy.pop(goal, None)
 
@@ -443,7 +447,7 @@ def run(map_id, location):
     brtdp = BRTDP(mdp)
     curr_result.append(run_simulation(brtdp, map_id, location_id, start, goal, diverge_policy))
 
-    dstar = DStar_Lite(G)
+    dstar = DStarLite(G)
     curr_result.append(run_simulation(dstar, map_id, location_id, start, goal, diverge_policy))
 
     return curr_result
@@ -470,14 +474,16 @@ def run_simulations(iterations=1):
     pool = multiprocessing.Pool(processes=CONFIG["processes"], maxtasksperchild=1)
 
     for _ in range(iterations):
-        # TODO: Rename all this
-
+        # Per iteration, each map and location runs in its own process.
+        # The overhead of creating processes should be irrelevant, since it is
+        # only a few.
         curr_result = []
         async_results = []
 
         for map_id in MAPS.keys():
             for location in LOCATIONS[map_id]:
-                async_results.append(pool.apply_async(run, (map_id, location)))
+                async_results.append(
+                        pool.apply_async(run_process, (map_id, location)))
 
         for async_result in async_results:
             curr_result.extend(async_result.get())
@@ -487,7 +493,7 @@ def run_simulations(iterations=1):
         # Save results to simulation.pickle after each iteration so if it should
         # ever crash, we have partial results.
         # The point is, they're only improving slightly per iteration, so these
-        # 'partial' results would be very usable.
+        # 'partial' results would still be very usable.
         print('Saving temporary results to simulation.pickle..')
         with open('simulation.pickle', 'wb+') as f:
             pickle.dump(results, f)

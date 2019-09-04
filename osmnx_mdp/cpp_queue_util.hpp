@@ -16,6 +16,8 @@ I queue_pop(std::vector<std::pair<I, P>> &queue) {
 
 template<typename I, typename P>
 void queue_decrease_priority(std::vector<std::pair<I, P>> &queue, I y, P priority) {
+    // Set the priority of item y in the queue.
+    // Adds the item into the queue, if it does not exist.
     auto it = std::find_if (
             queue.begin(),
             queue.end(),

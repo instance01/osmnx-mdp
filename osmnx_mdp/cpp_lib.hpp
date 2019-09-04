@@ -2,8 +2,7 @@
 #define LIB_INCLUDE
 
 #include <vector>
-
-// TODO Move comments to cpp
+#include <google/dense_hash_map>
 
 // TODO: Explain why collisions probably won't happen with this.
 // We assume a 64 bit system.
@@ -29,8 +28,8 @@ struct pair_hash {
 const double U_TURN_PENALTY = 30 / 3600.; // 30 seconds converted to hours.
 
 std::vector<std::pair<std::pair<long, long>, std::pair<long, long>>> combinations(
-        long origin_node,
-        std::vector<long> successors);
+    long origin_node,
+    std::vector<long> successors);
 
 double get_angle(
         double p1_x,
@@ -40,12 +39,12 @@ double get_angle(
         double origin_x,
         double origin_y);
 
-// Returns aerial distance in km.
-//
-// @param R Radius of earth in km.
-//
-// Source:
-// R. W. Sinnott, "Virtues of the Haversine", Sky and Telescope 68 (2), p.159 (1984).
-double aerial_dist(double lat1, double lon1, double lat2, double lon2, double R=6356.8);
+double aerial_dist(double lat1, double lon1, double lat2, double lon2);
+
+google::dense_hash_map<long, long> dijkstra(
+    std::vector<long> *S,
+    google::dense_hash_map<std::pair<long, long>, double, pair_hash> *C,
+    google::dense_hash_map<long, std::vector<long>> *predecessors,
+    long goal);
 
 #endif

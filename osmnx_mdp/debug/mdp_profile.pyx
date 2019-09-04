@@ -4,7 +4,7 @@ import pstats
 import pickle
 
 from osmnx_mdp.algorithms.mdp cimport MDP
-from osmnx_mdp.algorithms.dstar_lite cimport DStar_Lite
+from osmnx_mdp.algorithms.dstar_lite cimport DStarLite
 from osmnx_mdp.lib cimport remove_dead_ends
 from osmnx_mdp.lib cimport remove_zero_cost_loops
 

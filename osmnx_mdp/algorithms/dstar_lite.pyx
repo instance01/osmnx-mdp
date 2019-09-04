@@ -7,7 +7,7 @@ from osmnx_mdp.algorithms.dense_hash_map cimport dense_hash_map
 # TODO: unittests
 
 
-cdef class DStar_Lite(osmnx_mdp.algorithms.algorithm.Algorithm):
+cdef class DStarLite(osmnx_mdp.algorithms.algorithm.Algorithm):
     def __init__(self, G):
         self.G = G
 

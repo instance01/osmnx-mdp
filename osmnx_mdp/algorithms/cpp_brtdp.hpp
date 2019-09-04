@@ -79,6 +79,9 @@ class BRTDP {
         int run_trials();
         std::vector<long> get_path(google::dense_hash_map<long, long> &diverge_policy);
 
+        void apply_theorem_three(
+            google::dense_hash_map<std::pair<long, long>, double, pair_hash> w,
+            google::dense_hash_map<std::pair<long, long>, double, pair_hash> pg);
         void init_upper_bound_heuristic();
         void init_lower_bound_heuristic();
 };

@@ -94,7 +94,7 @@ void load_brtdp(BRTDP *brtdp, SharedBRTDPData &data, std::string name)
     brtdp->data = &data.data;
 }
 
-void save_dstar(DStar_Lite *dstar, std::string name)
+void save_dstar(DStarLite *dstar, std::string name)
 {
     std::ofstream os(name, std::ios::binary);
     cereal::BinaryOutputArchive archive(os);
@@ -113,7 +113,7 @@ void save_dstar(DStar_Lite *dstar, std::string name)
     );
 }
 
-void load_dstar(DStar_Lite *dstar, SharedDStarLiteData &data, std::string name)
+void load_dstar(DStarLite *dstar, SharedDStarLiteData &data, std::string name)
 {
     std::ifstream is(name, std::ios::binary);
     cereal::BinaryInputArchive archive(is);
