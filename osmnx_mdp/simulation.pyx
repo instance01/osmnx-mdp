@@ -15,6 +15,7 @@ from osmnx_mdp.algorithms.mdp cimport MDP
 from osmnx_mdp.algorithms.brtdp cimport BRTDP
 from osmnx_mdp.algorithms.brtdp_replan cimport BRTDP_REPLAN
 from osmnx_mdp.algorithms.dstar_lite cimport DStarLite
+from osmnx_mdp.algorithms.improved_dstar_lite cimport ImprovedDStarLite
 from osmnx_mdp.algorithms.algorithm cimport Algorithm
 
 
@@ -45,6 +46,10 @@ CONFIG = {
         b'always_replan': 1
     },
     'DStarLite': {
+        b'heuristic': 1, # Options: 0 for Dijkstra, 1 for aerial distance
+        b'heuristic_max_speed': 200 # In km/h
+    },
+    'ImprovedDStarLite': {
         b'heuristic': 1, # Options: 0 for Dijkstra, 1 for aerial distance
         b'heuristic_max_speed': 200 # In km/h
     }
@@ -347,9 +352,6 @@ def run_simulation(
             MAPS[map_id]['map'],
             CONFIG['include_traffic_signals_in_metric'])
 
-    if debug:
-        draw_value_graph(MAPS[map_id]['map'], path)
-
     result = {
         'algorithm': algorithm_name,
         'id': location_id,
@@ -447,7 +449,14 @@ def run_process(map_id, location):
     brtdp = BRTDP(mdp)
     curr_result.append(run_simulation(brtdp, map_id, location_id, start, goal, diverge_policy))
 
-    dstar = DStarLite(G)
+    mdp = MDP(G)
+    mdp.setup(start, goal, CONFIG['MDP'])
+    dstar = DStarLite(mdp)
+    curr_result.append(run_simulation(dstar, map_id, location_id, start, goal, diverge_policy))
+
+    mdp = MDP(G)
+    mdp.setup(start, goal, CONFIG['MDP'])
+    dstar = ImprovedDStarLite(mdp)
     curr_result.append(run_simulation(dstar, map_id, location_id, start, goal, diverge_policy))
 
     return curr_result

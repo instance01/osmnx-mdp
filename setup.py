@@ -26,6 +26,11 @@ setup(
             include_dirs=["osmnx_mdp/external/"]
         ),
         Extension(
+            "cpp_improved_dstar_lite",
+            ["osmnx_mdp/algorithms/cpp_improved_dstar_lite.cpp"],
+            include_dirs=["osmnx_mdp/external/"]
+        ),
+        Extension(
             "cpp_brtdp",
             ["osmnx_mdp/algorithms/cpp_brtdp.cpp", "osmnx_mdp/serialize_util.cpp"],
             include_dirs=["osmnx_mdp/external/"]

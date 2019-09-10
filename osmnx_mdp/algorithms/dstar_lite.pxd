@@ -1,6 +1,6 @@
 # cython: language_level=3
 cimport osmnx_mdp.algorithms.algorithm
-
+from osmnx_mdp.algorithms.mdp cimport MDP
 from libcpp.unordered_map cimport unordered_map
 from libcpp.string cimport string
 from libcpp.pair cimport pair
@@ -41,6 +41,7 @@ cdef class DStarLite(osmnx_mdp.algorithms.algorithm.Algorithm):
     cdef dense_hash_map[pair[long, long], double, pair_hash] cost
     cdef dense_hash_map[long, pair[double, double]] data
 
+    cdef MDP mdp
     cdef CPP_DStar_Lite cpp
 
     cdef G

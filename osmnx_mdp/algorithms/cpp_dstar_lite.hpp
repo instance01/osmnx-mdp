@@ -43,6 +43,7 @@ class DStarLite {
                 google::dense_hash_map<std::pair<long, long>, double, pair_hash> *cost,
                 google::dense_hash_map<long, std::pair<double, double>> *data);
         int setup(const long &start, const long &goal, std::unordered_map<std::string, double> cfg);
+        virtual double get_penalty(long predecessor, std::pair<long, long> action);
         float aerial_heuristic(const long &node);
         std::pair<double, double> calculate_key(const std::pair<long, long> &node_pair);
         int update_vertex(const std::pair<long, long> &node_pair);

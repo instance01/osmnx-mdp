@@ -73,6 +73,16 @@ int DStarLite::setup(const long &start, const long &goal, std::unordered_map<std
     return 0;
 }
 
+double DStarLite::get_penalty(long predecessor, std::pair<long, long> action) {
+    double penalty = 0.0;
+
+    if (predecessor == action.second) {
+        penalty += U_TURN_PENALTY;
+    }
+
+    return penalty;
+}
+
 std::pair<long, double> DStarLite::get_min_successor(const std::pair<long, long> &node_pair)
 {
     // For a given node, return the successor which lies on the minimum sum of
@@ -89,10 +99,7 @@ std::pair<long, double> DStarLite::get_min_successor(const std::pair<long, long>
         const double edge_cost = (*this->cost)[{node, succ}];
         double cost = this->g[{node, succ}] + edge_cost;
 
-        // Penalize U-turns.
-        if (node_pair.first == succ) {
-            cost += U_TURN_PENALTY;
-        }
+        cost += this->get_penalty(node_pair.first, {node, succ});
 
         if (cost <= min_cost) {
             min_cost = cost;
@@ -169,12 +176,16 @@ int DStarLite::compute_shortest_path()
             this->U.erase(node_pair);
             for (const auto &pred : (*this->predecessors)[node_pair.second]) {
                 for (const auto &predpred : (*this->predecessors)[pred]) {
-                    double penalty = predpred == node_pair.second ? U_TURN_PENALTY : 0.0;
+                    if (pred != this->goal) {
+                        double new_rhs = ((*this->cost)[{pred, node_pair.second}] + this->g[{pred, node_pair.second}]);
 
-                    if (pred != this->goal)
+                        new_rhs += this->get_penalty(predpred, {pred, node_pair.second});
+
                         this->rhs[{predpred, pred}] = std::min(
-                                this->rhs[{predpred, pred}],
-                                ((*this->cost)[{pred, node_pair.second}] + this->g[node_pair]) + penalty);
+                            this->rhs[{predpred, pred}],
+                            new_rhs
+                        );
+                    }
                     this->update_vertex({predpred, pred});
                 }
             }
