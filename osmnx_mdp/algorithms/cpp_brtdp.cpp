@@ -2,10 +2,13 @@
 #include <cfloat> // DBL_EPSILON
 #include <stack>
 #include <unordered_set>
-
-#include "../serialize_util.hpp"
 #include "../cpp_queue_util.hpp" // queue_decrease_priority, queue_pop
 
+#ifdef TESTS
+#include "../serialize_util.hpp"
+#else
+#include <iostream>
+#endif
 
 #include <chrono>
 

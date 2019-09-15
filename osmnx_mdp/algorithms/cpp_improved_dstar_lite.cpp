@@ -1,13 +1,15 @@
+#include "cpp_improved_dstar_lite.hpp"
 #include <cmath> // sin, asin, cos, pow, M_PI
 #include <cfloat> // DBL_EPSILON
 #include <algorithm> // min_element
 #include <stdexcept> // runtime_error
 #include <unordered_set>
 
-#include "cpp_improved_dstar_lite.hpp"
-
-#include "../serialize_util.hpp"
 #include "../cpp_queue_util.hpp" // queue_decrease_priority, queue_pop
+
+#ifdef TESTS
+#include "../serialize_util.hpp"
+#endif
 
 
 ImprovedDStarLite::ImprovedDStarLite () {}

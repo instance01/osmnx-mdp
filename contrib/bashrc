@@ -66,10 +66,10 @@ alias grep='grep --color=auto'
 alias setup='cd /app && ./run_build.sh && cd -'
 
 run() {
-    LD_PRELOAD="/app/cpp_mdp.cpython-37m-x86_64-linux-gnu.so /app/lib.cpython-37m-x86_64-linux-gnu.so /app/cpp_brtdp.cpython-37m-x86_64-linux-gnu.so /app/cpp_brtdp_replan.cpython-37m-x86_64-linux-gnu.so" gdb --args python3 -c "import $1"
+    LD_PRELOAD="/app/cpp_dstar_lite.cpython-37m-x86_64-linux-gnu.so /app/cpp_mdp.cpython-37m-x86_64-linux-gnu.so /app/lib.cpython-37m-x86_64-linux-gnu.so /app/cpp_brtdp.cpython-37m-x86_64-linux-gnu.so /app/cpp_brtdp_replan.cpython-37m-x86_64-linux-gnu.so" gdb --args python3 -c "import $1"
 }
 run2() {
-    LD_PRELOAD="/app/cpp_mdp.cpython-37m-x86_64-linux-gnu.so /app/lib.cpython-37m-x86_64-linux-gnu.so /app/cpp_brtdp.cpython-37m-x86_64-linux-gnu.so /app/cpp_brtdp_replan.cpython-37m-x86_64-linux-gnu.so" python3 -c "import $1"
+    LD_PRELOAD="/app/cpp_dstar_lite.cpython-37m-x86_64-linux-gnu.so /app/cpp_mdp.cpython-37m-x86_64-linux-gnu.so /app/lib.cpython-37m-x86_64-linux-gnu.so /app/cpp_brtdp.cpython-37m-x86_64-linux-gnu.so /app/cpp_brtdp_replan.cpython-37m-x86_64-linux-gnu.so" python3 -c "import $1"
 }
 
 # enable programmable completion features (you don't need to enable

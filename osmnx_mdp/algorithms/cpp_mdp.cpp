@@ -2,7 +2,12 @@
 #include <cfloat> // DBL_EPSILON
 #include "cpp_mdp.hpp"
 #include "../cpp_lib.hpp" // combinations
+
+#ifdef TESTS
 #include "../serialize_util.hpp"
+#else
+#include <iostream>
+#endif
 
 
 // Cython needs an integer return, thus all void functions return 0.

@@ -1,3 +1,4 @@
+#ifdef TESTS
 #include "serialize_util.hpp"
 
 void save_mdp(MDP *mdp, std::string name)
@@ -136,3 +137,4 @@ void load_dstar(DStarLite *dstar, SharedDStarLiteData &data, std::string name)
     dstar->data = &data.data;
     dstar->cost = &data.cost;
 }
+#endif
