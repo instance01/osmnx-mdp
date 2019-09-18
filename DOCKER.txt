@@ -1,6 +1,6 @@
 
 BUILD
-sudo docker build -t lesgo2 -f Dockerfile2 .
+sudo docker build -t lesgo2 -f Dockerfile .
 
 RUN
 sudo docker run -v $(pwd):/app -e "DISPLAY" -v "/tmp/.X11-unix:/tmp/.X11-unix:rw" --privileged -it lesgo2 bash

@@ -9,23 +9,16 @@ a good real world application of the algorithms below.
 
 Algorithms implemented right now:
 * Value iteration
-* (RTDP)
-* (LPA*)
 * BRTDP with DS-MPI
 * D* Lite
 
-Miscellaneous methods:
-* Angles using arctan2 (lib)
-* Haversine (lib)
-* Simple min-priority queue with decrease-key operation (cpp_queue_util.hpp)
-
-Technologies:
+Dependencies:
 * osmnx (OpenStreetMap + networkx)
 * Google's dense hashmap (sparsehash package)
 
 Running/Development:
-sudo docker build -t osmnx -f Dockerfile2 .
-sudo docker run -v $(pwd):/app -it osmnx bash
+sudo docker build -t osmnx-mdp -f Dockerfile .
+sudo docker run -v $(pwd):/app -it osmnx-mdp bash
 
 There's a few custom commands in the image (contrib/bashrc), most notably setup and run2.
 
@@ -36,10 +29,11 @@ run2 runner
 
 
 Goodies for learners and code readers:
-* np.rec.array and numpy indexing: visualize.py
+* np.rec.array and numpy indexing: visualize.py, extract_for_pgfplots.py
 * Adding a custom data structure to Cython: dense_hash_map.pxd
 * Cython inheritance: algorithm.pxd/pyx
 * DBL_EPSILON: cpp_brtdp.cpp
 * Very simple min-priority queue with decrease-key operation (no extra class): cpp_queue_util.hpp
 * Design pattern 'Strategy': simulation.pyx, run_simulation function
 * Multiprocessing pool example: simulation.pyx
+* Simple example on how to do the t-test for the means of two samples, using ttest_ind: stat_test/
